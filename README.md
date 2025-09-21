@@ -1,6 +1,6 @@
 # Orbit: An Intelligent Calendar and Planning Solution Powered by AI
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev) [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev) Apache
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev) [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 This is the Flutter frontend repository for the Orbit app, a smart calendar and planning mobile application developed as a Final Year Project (FYP) at HKUST (2025-2026). Orbit uses AI to provide personalized scheduling, habit tracking, natural language input, OCR-based event extraction, and conversational assistance. It aims to address gaps in existing apps like Apple Calendar, Google Calendar, Todoist, and Notion by offering proactive, adaptive features.
 
 ## Project Overview
