@@ -21,8 +21,6 @@ This is the Flutter frontend repository for the Orbit app, a smart calendar and 
 - **Backend Integration**: Communicates with Golang backend (REST/gRPC) and Python AI services (e.g., Gemini API, vLLM for LLMs).
 - **Data Storage**: Local (Hive/SQLite for offline), synced to PostgreSQL/MongoDB backend.
 
-For full details, see the [FYP Proposal](./docs/CECI2_fyp_proposal.docx) (or convert to PDF/Markdown for repo inclusion).
-
 ## Tech Stack
 - **Frontend**: Flutter (Dart) with Riverpod/Bloc for state management.
 - **AI/ML**: Google ML Kit (on-device OCR), Gemini API (NLP/chatbot), Sentence-BERT (classification), TensorFlow Recommenders (location suggestions).
