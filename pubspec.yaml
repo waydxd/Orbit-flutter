@@ -35,6 +35,51 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # State Management
+  provider: ^6.1.2
+
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+
+  # Network & API
+  dio: ^5.7.0
+  connectivity_plus: ^6.0.5
+  http: ^1.2.2
+
+  # UI & Design
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  # Calendar & Date/Time
+  table_calendar: ^3.1.2
+  intl: ^0.19.0
+
+  # Location & Maps
+  geolocator: ^13.0.1
+  google_maps_flutter: ^2.9.0
+  geocoding: ^3.0.0
+
+  # Notifications
+  flutter_local_notifications: ^17.2.3
+
+  # Image & Camera
+  image_picker: ^1.1.2
+  camera: ^0.11.0+2
+
+  # Permissions
+  permission_handler: ^11.3.1
+
+  # Utils
+  uuid: ^4.5.1
+  path_provider: ^2.1.4
+  equatable: ^2.0.5
+  json_annotation: ^4.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -45,6 +90,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+  # Code Generation
+  build_runner: ^2.4.13
+  hive_generator: ^2.0.1
+  json_serializable: ^6.8.0
+
+  # Testing
+  mockito: ^5.4.4
+  integration_test:
+    sdk: flutter
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
