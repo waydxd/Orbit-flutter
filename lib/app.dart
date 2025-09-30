@@ -9,27 +9,15 @@ class OrbitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: const [
-        // Add providers here as they are implemented
-        // ChangeNotifierProvider(create: (_) => AuthViewModel()),
-        // ChangeNotifierProvider(create: (_) => CalendarViewModel()),
-        // ChangeNotifierProvider(create: (_) => ThemeViewModel()),
-      ],
-      child: Consumer<ThemeMode>(
-        builder: (context, themeMode, child) {
-          return MaterialApp(
-            title: AppConfig.appName,
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.system, // Will be controlled by ThemeViewModel later
-            home: const SplashScreen(),
-            // Add routes here as screens are implemented
-            // routes: AppRoutes.routes,
-          );
-        },
-      ),
+    return MaterialApp(
+      title: AppConfig.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Will be controlled by ThemeViewModel later
+      home: const SplashScreen(),
+      // Add routes here as screens are implemented
+      // routes: AppRoutes.routes,
     );
   }
 }
