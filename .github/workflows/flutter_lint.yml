@@ -1,3 +1,6 @@
+  # This GitHub Actions workflow lints and analyzes a Flutter project. If ur code
+  # is not properly formatted, or if there are any analyzer issues, the workflow
+  # will fail. It also runs tests and collects coverage information. Good Luck!
   name: Flutter Lint & Analyze
 
   on:
