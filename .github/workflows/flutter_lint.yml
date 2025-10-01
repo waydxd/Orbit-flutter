@@ -29,8 +29,11 @@
         - name: Format check
           run: dart format --set-exit-if-changed .
 
-        - name: Static analysis
-          run: flutter analyze --no-fatal-infos --no-fatal-warnings --fail-on-severe
+        - name: Flutter analyze
+          run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+        - name: Dart analyze with stricter rules
+          run: dart analyze --fatal-infos --no-fatal-warnings
 
         - name: Run tests
           run: flutter test --coverage
