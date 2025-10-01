@@ -1,0 +1,37 @@
+  yaml
+  name: Flutter Lint & Analyze
+
+  on:
+    pull_request:
+      paths:
+        - '**/*.dart'
+        - 'lib/**'
+        - 'test/**'
+    push:
+      branches:
+        - main
+
+  jobs:
+    analyze:
+      name: Lint and tests
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - name: Setup Flutter
+          uses: subosito/flutter-action@v2
+          with:
+            flutter-version: 'stable'
+
+        - name: Install dependencies
+          run: flutter pub get
+
+        - name: Format check
+          run: dart format --set-exit-if-changed .
+
+        - name: Static analysis
+          run: flutter analyze --no-fatal-infos --no-fatal-warnings --fail-on-severe
+
+        - name: Run tests
+          run: flutter test --coverage
