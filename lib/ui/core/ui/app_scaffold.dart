@@ -11,7 +11,7 @@ class AppScaffold extends StatelessWidget {
   final bool showAppBar;
   final bool extendBodyBehindAppBar;
   final Color? backgroundColor;
-  
+
   const AppScaffold({
     required this.body,
     super.key,
@@ -24,21 +24,16 @@ class AppScaffold extends StatelessWidget {
     this.extendBodyBehindAppBar = false,
     this.backgroundColor,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.surface,
       extendBodyBehindAppBar: extendBodyBehindAppBar,
       appBar: showAppBar
-          ? AppBar(
-              title: title != null ? Text(title!) : null,
-              actions: actions,
-            )
+          ? AppBar(title: title != null ? Text(title!) : null, actions: actions)
           : null,
-      body: SafeArea(
-        child: body,
-      ),
+      body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,
       drawer: drawer,

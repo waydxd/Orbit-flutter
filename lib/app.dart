@@ -50,7 +50,9 @@ class SplashScreen extends StatelessWidget {
             Text(
               'Intelligent Calendar & Planning',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 48),

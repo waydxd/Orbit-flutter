@@ -6,14 +6,14 @@ class AppErrorWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
   final IconData? icon;
-  
+
   const AppErrorWidget({
     required this.message,
     super.key,
     this.onRetry,
     this.icon,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -22,11 +22,7 @@ class AppErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon ?? Icons.error_outline,
-              size: 64,
-              color: AppColors.error,
-            ),
+            Icon(icon ?? Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               'Oops! Something went wrong',
@@ -39,9 +35,9 @@ class AppErrorWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
@@ -62,12 +58,9 @@ class AppErrorWidget extends StatelessWidget {
 /// Inline error widget for forms
 class InlineErrorWidget extends StatelessWidget {
   final String message;
-  
-  const InlineErrorWidget({
-    required this.message,
-    super.key,
-  });
-  
+
+  const InlineErrorWidget({required this.message, super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -83,18 +76,14 @@ class InlineErrorWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 20,
-            color: AppColors.error,
-          ),
+          const Icon(Icons.error_outline, size: 20, color: AppColors.error),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.error,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.error),
             ),
           ),
         ],
