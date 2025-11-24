@@ -52,6 +52,52 @@ class Logger {
     );
   }
 
+  /// Log error message with tag
+  static void errorWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+    developer.log(
+      '[$tag] $message',
+      name: _name,
+      level: 1000, // Error level
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Log warning message with tag
+  static void warningWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+    developer.log(
+      '[$tag] $message',
+      name: _name,
+      level: 900, // Warning level
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Log info message with tag
+  static void infoWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+    developer.log(
+      '[$tag] $message',
+      name: _name,
+      level: 800, // Info level
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Log debug message with tag
+  static void debugWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+    if (EnvironmentConfig.isDebug) {
+      developer.log(
+        '[$tag] $message',
+        name: _name,
+        level: 500, // Debug level
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Log API request
   static void apiRequest(
     String method,

@@ -168,4 +168,15 @@ class Validators {
       return null;
     };
   }
+
+  /// Check if email is valid (returns boolean)
+  static bool isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  /// Check if password is valid (returns boolean)
+  static bool isValidPassword(String password) {
+    return password.length >= 8;
+  }
 }
