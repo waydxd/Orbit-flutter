@@ -67,7 +67,7 @@ class _CalendarPageState extends State<CalendarPage>
     double targetHeight;
     CalendarViewMode targetMode;
 
-    double velocity = details.velocity.pixelsPerSecond.dy;
+    final double velocity = details.velocity.pixelsPerSecond.dy;
 
     // If moving down fast, snap to next larger view
     if (velocity > 500) {
@@ -106,10 +106,12 @@ class _CalendarPageState extends State<CalendarPage>
     setState(() {
       _currentHeight = targetHeight;
       _viewMode = targetMode;
-      if (targetMode == CalendarViewMode.week)
+      if (targetMode == CalendarViewMode.week) {
         _calendarFormat = CalendarFormat.week;
-      if (targetMode == CalendarViewMode.month)
+      }
+      if (targetMode == CalendarViewMode.month) {
         _calendarFormat = CalendarFormat.month;
+      }
     });
   }
 
@@ -472,25 +474,25 @@ class _CalendarPageState extends State<CalendarPage>
     // Define tasks with their timing information
     final tasks = [
       (
-        title: "Math",
-        subtitle: "Saber & Oro",
-        time: "9:00 AM - 10:30 AM",
+        title: 'Math',
+        subtitle: 'Saber & Oro',
+        time: '9:00 AM - 10:30 AM',
         color: const Color(0xFF50C8AA),
         startHour: 9.0,
         duration: 1.5,
       ),
       (
-        title: "English",
-        subtitle: "Saber & Mike",
-        time: "11:00 AM - 12:30 PM",
+        title: 'English',
+        subtitle: 'Saber & Mike',
+        time: '11:00 AM - 12:30 PM',
         color: const Color(0xFF8B80F0),
         startHour: 11.0,
         duration: 1.5,
       ),
       (
-        title: "History",
-        subtitle: "Saber & Fahim",
-        time: "1:00 PM - 2:30 PM",
+        title: 'History',
+        subtitle: 'Saber & Fahim',
+        time: '1:00 PM - 2:30 PM',
         color: const Color(0xFF0096FF),
         startHour: 13.0,
         duration: 1.5,
@@ -510,7 +512,7 @@ class _CalendarPageState extends State<CalendarPage>
         children: [
           const SizedBox(height: 20),
           const Text(
-            "Ongoing",
+            'Ongoing',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -583,9 +585,9 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   String _formatHour(int hour) {
-    if (hour == 12) return "12PM";
-    if (hour > 12) return "${hour - 12}PM";
-    return "${hour}AM";
+    if (hour == 12) return '12PM';
+    if (hour > 12) return '${hour - 12}PM';
+    return '${hour}AM';
   }
 
   Widget _buildTaskCard(
