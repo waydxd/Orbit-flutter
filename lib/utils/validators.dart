@@ -177,6 +177,10 @@ class Validators {
 
   /// Check if password is valid (returns boolean)
   static bool isValidPassword(String password) {
-    return password.length >= 8;
+    if (password.length < 8) return false;
+    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+    final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
+    final hasDigit = RegExp(r'\d').hasMatch(password);
+    return hasUppercase && hasLowercase && hasDigit;
   }
 }
