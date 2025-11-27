@@ -49,12 +49,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeAuth();
     });
-    await Future.delayed(const Duration(milliseconds: 100));
+  }
 
-    if (!mounted) return;
+  Future<void> _initializeAuth() async {
     // Note: previous implementation used a small Future.delayed to ensure the
     // widget was built; using addPostFrameCallback above serves the same
     // purpose without creating timers that persist in tests.
+
+    if (!mounted) return;
+
+    try {
+      // Check authentication status with a timeout
       await Provider.of<AuthViewModel>(
         context,
         listen: false,
