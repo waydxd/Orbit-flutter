@@ -6,6 +6,8 @@ import 'ui/auth/view_model/auth_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
 
+import 'ui/calendar/view/calendar_page.dart';
+
 /// Main application widget
 class OrbitApp extends StatelessWidget {
   const OrbitApp({super.key});
@@ -153,51 +155,12 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
-/// Placeholder home screen - TODO: Replace with actual home screen
+/// Placeholder home screen - Replaced with CalendarPage
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Orbit Calendar'),
-        actions: [
-          Consumer<AuthViewModel>(
-            builder: (context, authViewModel, child) {
-              return IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () async {
-                  await authViewModel.logout();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged out successfully')),
-                    );
-                  }
-                },
-              );
-            },
-          ),
-        ],
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.home, size: Constants.homeIconSize),
-            SizedBox(height: Constants.spacingM),
-            Text(
-              'Welcome to Orbit Calendar!',
-              style: TextStyle(
-                fontSize: Constants.fontSizeL,
-                fontWeight: Constants.fontWeightBold,
-              ),
-            ),
-            SizedBox(height: Constants.spacingS),
-            Text('Home screen coming soon...'),
-          ],
-        ),
-      ),
-    );
+    return const CalendarPage();
   }
 }
