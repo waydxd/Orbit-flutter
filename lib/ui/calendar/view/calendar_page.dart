@@ -227,14 +227,8 @@ class _CalendarPageState extends State<CalendarPage>
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        leftChevronIcon: Icon(
-          Icons.chevron_left,
-          color: AppColors.primary,
-        ),
-        rightChevronIcon: Icon(
-          Icons.chevron_right,
-          color: AppColors.primary,
-        ),
+        leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.primary),
+        rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.primary),
       ),
       calendarStyle: CalendarStyle(
         selectedDecoration: const BoxDecoration(
