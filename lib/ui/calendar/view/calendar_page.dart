@@ -10,18 +10,19 @@ class CalendarPage extends StatefulWidget {
   State<CalendarPage> createState() => _CalendarPageState();
 }
 
-class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMixin {
+class _CalendarPageState extends State<CalendarPage>
+    with TickerProviderStateMixin {
   // Calendar State
   CalendarFormat _calendarFormat = CalendarFormat.week;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  
+
   // Drag & Layout State
   double _currentHeight = 140.0; // Start with Week view height
   final double _weekHeight = 140.0;
   final double _monthHeight = 420.0;
   // Height will be calculated dynamically
-  
+
   // View Mode
   CalendarViewMode _viewMode = CalendarViewMode.week;
 
@@ -65,9 +66,9 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
     // Improved snapping logic with velocity assistance
     double targetHeight;
     CalendarViewMode targetMode;
-    
+
     double velocity = details.velocity.pixelsPerSecond.dy;
-    
+
     // If moving down fast, snap to next larger view
     if (velocity > 500) {
       if (_currentHeight < _monthHeight) {
@@ -77,7 +78,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
         targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
       }
-    } 
+    }
     // If moving up fast, snap to next smaller view
     else if (velocity < -500) {
       if (_currentHeight > _monthHeight) {
@@ -105,8 +106,10 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
     setState(() {
       _currentHeight = targetHeight;
       _viewMode = targetMode;
-      if (targetMode == CalendarViewMode.week) _calendarFormat = CalendarFormat.week;
-      if (targetMode == CalendarViewMode.month) _calendarFormat = CalendarFormat.month;
+      if (targetMode == CalendarViewMode.week)
+        _calendarFormat = CalendarFormat.week;
+      if (targetMode == CalendarViewMode.month)
+        _calendarFormat = CalendarFormat.month;
     });
   }
 
@@ -128,10 +131,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFEAFFFE),
-                  Color(0xFFCDC9F1),
-                ],
+                colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
               ),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(24),
@@ -179,11 +179,9 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
               ],
             ),
           ),
-          
+
           // Task List (Occupies remaining space)
-          Expanded(
-            child: _buildTaskList(),
-          ),
+          Expanded(child: _buildTaskList()),
         ],
       ),
     );
@@ -200,8 +198,8 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
       focusedDay: _focusedDay,
       calendarFormat: _calendarFormat,
       // Disable scrolling in week view by locking the available gestures
-      availableGestures: _calendarFormat == CalendarFormat.week 
-          ? AvailableGestures.none 
+      availableGestures: _calendarFormat == CalendarFormat.week
+          ? AvailableGestures.none
           : AvailableGestures.all,
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       onDaySelected: (selectedDay, focusedDay) {
@@ -221,16 +219,22 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
         _focusedDay = focusedDay;
       },
       // Styling to match the aesthetic
-      headerStyle: HeaderStyle(
+      headerStyle: const HeaderStyle(
         titleCentered: true,
         formatButtonVisible: false,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontSize: 20.0,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.primary),
-        rightChevronIcon: const Icon(Icons.chevron_right, color: AppColors.primary),
+        leftChevronIcon: Icon(
+          Icons.chevron_left,
+          color: AppColors.primary,
+        ),
+        rightChevronIcon: Icon(
+          Icons.chevron_right,
+          color: AppColors.primary,
+        ),
       ),
       calendarStyle: CalendarStyle(
         selectedDecoration: const BoxDecoration(
@@ -238,7 +242,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
           shape: BoxShape.circle,
         ),
         todayDecoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.5),
+          color: AppColors.primary.withValues(alpha: 0.5),
           shape: BoxShape.circle,
         ),
         markerDecoration: const BoxDecoration(
@@ -254,15 +258,19 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
             bottom: 1,
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: events.map((_) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: AppColors.secondary,
-                  shape: BoxShape.circle,
-                ),
-              )).toList(),
+              children: events
+                  .map(
+                    (_) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                      width: 4,
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        color: AppColors.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           );
         },
@@ -283,10 +291,16 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.chevron_left, color: AppColors.primary),
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      color: AppColors.primary,
+                    ),
                     onPressed: () {
                       setState(() {
-                        _focusedDay = DateTime(_focusedDay.year - 1, _focusedDay.month);
+                        _focusedDay = DateTime(
+                          _focusedDay.year - 1,
+                          _focusedDay.month,
+                        );
                       });
                     },
                   ),
@@ -299,10 +313,16 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.chevron_right, color: AppColors.primary),
+                    icon: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.primary,
+                    ),
                     onPressed: () {
                       setState(() {
-                        _focusedDay = DateTime(_focusedDay.year + 1, _focusedDay.month);
+                        _focusedDay = DateTime(
+                          _focusedDay.year + 1,
+                          _focusedDay.month,
+                        );
                       });
                     },
                   ),
@@ -310,92 +330,113 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
               ),
             ),
             // Days of week header (Only once at the top)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0), // Match TableCalendar padding
-          child: Row(
-            children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => 
-              Expanded(
-                child: Center(
-                  child: Text(
-                    day,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary, // Or your preferred color
-                      fontSize: 13, // Standard TableCalendar size
-                    ),
-                  ),
-                ),
-              )
-            ).toList(),
-          ),
-        ),
-        // Scrollable List of Months
-        Expanded(
-          child: ListView.builder(
-            itemCount: 12,
-            padding: EdgeInsets.zero,
-            itemBuilder: (context, index) {
-              final monthDate = DateTime(_focusedDay.year, index + 1, 1);
-              
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Text(
-                        DateFormat('MMMM').format(monthDate),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 4.0,
+              ), // Match TableCalendar padding
+              child: Row(
+                children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                    .map(
+                      (day) => Expanded(
+                        child: Center(
+                          child: Text(
+                            day,
+                            style: const TextStyle(
+                              color: AppColors
+                                  .textSecondary, // Or your preferred color
+                              fontSize: 13, // Standard TableCalendar size
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox( // Wrap TableCalendar in SizedBox to constrain height if needed or ensure it fits
-                      child: TableCalendar(
-                        firstDay: DateTime(monthDate.year, monthDate.month, 1),
-                        lastDay: DateTime(monthDate.year, monthDate.month + 1, 0),
-                        focusedDay: monthDate,
-                        calendarFormat: CalendarFormat.month,
-                        headerVisible: false,
-                        daysOfWeekVisible: false, // Hide repetitive days of week
-                        pageJumpingEnabled: false,
-                        availableGestures: AvailableGestures.none, // Disable swiping in this view
-                        calendarStyle: CalendarStyle(
-                          selectedDecoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
+                    )
+                    .toList(),
+              ),
+            ),
+            // Scrollable List of Months
+            Expanded(
+              child: ListView.builder(
+                itemCount: 12,
+                padding: EdgeInsets.zero,
+                itemBuilder: (context, index) {
+                  final monthDate = DateTime(_focusedDay.year, index + 1, 1);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
                           ),
-                          todayDecoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.5),
-                            shape: BoxShape.circle,
+                          child: Text(
+                            DateFormat('MMMM').format(monthDate),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
                           ),
-                          markerDecoration: const BoxDecoration(
-                            color: AppColors.secondary,
-                            shape: BoxShape.circle,
-                          ),
-                          outsideDaysVisible: false,
                         ),
-                        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                        onDaySelected: (selectedDay, focusedDay) {
-                          setState(() {
-                            _selectedDay = selectedDay;
-                            _focusedDay = focusedDay;
-                            // Transition back to month view for the selected month
-                            _viewMode = CalendarViewMode.month;
-                            _calendarFormat = CalendarFormat.month;
-                            _currentHeight = _monthHeight;
-                          });
-                        },
-                      ),
+                        SizedBox(
+                          // Wrap TableCalendar in SizedBox to constrain height if needed or ensure it fits
+                          child: TableCalendar(
+                            firstDay: DateTime(
+                              monthDate.year,
+                              monthDate.month,
+                              1,
+                            ),
+                            lastDay: DateTime(
+                              monthDate.year,
+                              monthDate.month + 1,
+                              0,
+                            ),
+                            focusedDay: monthDate,
+                            calendarFormat: CalendarFormat.month,
+                            headerVisible: false,
+                            daysOfWeekVisible:
+                                false, // Hide repetitive days of week
+                            pageJumpingEnabled: false,
+                            availableGestures: AvailableGestures
+                                .none, // Disable swiping in this view
+                            calendarStyle: CalendarStyle(
+                              selectedDecoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              todayDecoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              markerDecoration: const BoxDecoration(
+                                color: AppColors.secondary,
+                                shape: BoxShape.circle,
+                              ),
+                              outsideDaysVisible: false,
+                            ),
+                            selectedDayPredicate: (day) =>
+                                isSameDay(_selectedDay, day),
+                            onDaySelected: (selectedDay, focusedDay) {
+                              setState(() {
+                                _selectedDay = selectedDay;
+                                _focusedDay = focusedDay;
+                                // Transition back to month view for the selected month
+                                _viewMode = CalendarViewMode.month;
+                                _calendarFormat = CalendarFormat.month;
+                                _currentHeight = _monthHeight;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
         // Floating Back Button - Top Left
@@ -442,7 +483,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
         time: "9:00 AM - 10:30 AM",
         color: const Color(0xFF50C8AA),
         startHour: 9.0,
-        duration: 1.5
+        duration: 1.5,
       ),
       (
         title: "English",
@@ -450,7 +491,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
         time: "11:00 AM - 12:30 PM",
         color: const Color(0xFF8B80F0),
         startHour: 11.0,
-        duration: 1.5
+        duration: 1.5,
       ),
       (
         title: "History",
@@ -458,7 +499,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
         time: "1:00 PM - 2:30 PM",
         color: const Color(0xFF0096FF),
         startHour: 13.0,
-        duration: 1.5
+        duration: 1.5,
       ),
     ];
 
@@ -519,14 +560,17 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
                           ],
                         ),
                       ),
-                    
+
                     // Task Cards
                     for (final task in tasks)
                       Positioned(
-                        top: (task.startHour - startHour) * hourHeight + 10, // Offset slightly from the line
+                        top:
+                            (task.startHour - startHour) * hourHeight +
+                            10, // Offset slightly from the line
                         left: leftMargin,
                         right: 0,
-                        height: task.duration * hourHeight - 20, // Leave some gap
+                        height:
+                            task.duration * hourHeight - 20, // Leave some gap
                         child: _buildTaskCard(
                           task.title,
                           task.subtitle,
@@ -550,7 +594,12 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
     return "${hour}AM";
   }
 
-  Widget _buildTaskCard(String title, String subtitle, String time, Color color) {
+  Widget _buildTaskCard(
+    String title,
+    String subtitle,
+    String time,
+    Color color,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -559,7 +608,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -579,10 +628,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 24),
           Align(
@@ -602,11 +648,7 @@ class _CalendarPageState extends State<CalendarPage> with TickerProviderStateMix
   }
 }
 
-enum CalendarViewMode {
-  week,
-  month,
-  year,
-}
+enum CalendarViewMode { week, month, year }
 
 class DottedLinePainter extends CustomPainter {
   @override
