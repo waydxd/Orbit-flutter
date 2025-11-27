@@ -36,7 +36,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
         _passwordController.text,
         _confirmPasswordController.text,
       );
-      
+
       if (success && mounted) {
         // Navigation will be handled by the app's auth state listener
         ScaffoldMessenger.of(context).showSnackBar(
@@ -109,7 +109,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -150,7 +152,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                      _obscureConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -186,11 +190,17 @@ class _RegistrationFormState extends State<RegistrationForm> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(Constants.radiusM),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.error, size: Constants.iconS),
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: Constants.iconS,
+                      ),
                       const SizedBox(width: Constants.spacingS),
                       Expanded(
                         child: Text(
@@ -214,7 +224,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(Constants.radiusM),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: Constants.buttonHeight),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: Constants.buttonHeight,
+                    ),
                   ),
                   onPressed: authViewModel.isLoading ? null : _submit,
                   child: authViewModel.isLoading
@@ -223,7 +235,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
                           width: Constants.iconS,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -271,8 +285,3 @@ class _RegistrationFormState extends State<RegistrationForm> {
     );
   }
 }
-
-
-
-
-

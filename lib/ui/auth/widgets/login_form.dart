@@ -33,7 +33,7 @@ class _LoginFormState extends State<LoginForm> {
         _emailController.text.trim(),
         _passwordController.text,
       );
-      
+
       if (success && mounted) {
         // Navigation will be handled by the app's auth state listener
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +107,9 @@ class _LoginFormState extends State<LoginForm> {
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -143,11 +145,17 @@ class _LoginFormState extends State<LoginForm> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(Constants.radiusM),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.error, size: Constants.iconS),
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: Constants.iconS,
+                      ),
                       const SizedBox(width: Constants.spacingS),
                       Expanded(
                         child: Text(
@@ -171,7 +179,9 @@ class _LoginFormState extends State<LoginForm> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(Constants.radiusM),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: Constants.buttonHeight),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: Constants.buttonHeight,
+                    ),
                   ),
                   onPressed: authViewModel.isLoading ? null : _submit,
                   child: authViewModel.isLoading
@@ -180,7 +190,9 @@ class _LoginFormState extends State<LoginForm> {
                           width: Constants.iconS,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -219,7 +231,9 @@ class _LoginFormState extends State<LoginForm> {
                     onTap: () {
                       // TODO: Navigate to forgot password page
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Password reset coming soon!')),
+                        const SnackBar(
+                          content: Text('Password reset coming soon!'),
+                        ),
                       );
                     },
                     child: const Text(

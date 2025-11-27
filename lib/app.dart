@@ -45,28 +45,34 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   void initState() {
     super.initState();
-    // Check authentication status on app start
-    _initializeAuth();
+    // Schedule auth initialization after the first frame to avoid creating
+    // timers (e.g. Future.delayed) which can leave pending timers in widget
+    // tests. Using addPostFrameCallback does not create a test timer.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeAuth();
+    });
   }
 
   Future<void> _initializeAuth() async {
-    // Add a small delay to ensure the widget is fully built
-    await Future.delayed(const Duration(milliseconds: 100));
-    
+    // Note: previous implementation used a small Future.delayed to ensure the
+    // widget was built; using addPostFrameCallback above serves the same
+    // purpose without creating timers that persist in tests.
+
     if (!mounted) return;
 
     try {
       // Check authentication status with a timeout
-      await Provider.of<AuthViewModel>(context, listen: false)
-          .checkAuthStatus()
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              // If check takes too long, just proceed without authentication
-              debugPrint('Auth check timed out, proceeding to login');
-              return;
-            },
-          );
+      await Provider.of<AuthViewModel>(
+        context,
+        listen: false,
+      ).checkAuthStatus().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          // If check takes too long, just proceed without authentication
+          debugPrint('Auth check timed out, proceeding to login');
+          return;
+        },
+      );
     } catch (e) {
       // If check fails, proceed without authentication
       debugPrint('Auth check failed: $e');
@@ -123,20 +129,19 @@ class SplashScreen extends StatelessWidget {
                 Text(
                   AppConfig.appName,
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontWeight: Constants.fontWeightBold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    fontWeight: Constants.fontWeightBold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: Constants.spacingS),
                 Text(
                   'Intelligent Calendar & Planning',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: Constants.opacityHigh),
-                      ),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(
+                      alpha: Constants.opacityHigh,
+                    ),
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: Constants.spacingXXL),

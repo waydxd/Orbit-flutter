@@ -39,10 +39,7 @@ class AuthRepository {
     try {
       final response = await _apiClient.post(
         '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -51,11 +48,11 @@ class AuthRepository {
         final userJson = data['user'] as Map<String, dynamic>;
         final user = UserModel.fromJson(userJson);
 
-        Logger.infoWithTag('AuthRepository', 'Login successful for user: ${user.email}');
-        return {
-          'token': token,
-          'user': user,
-        };
+        Logger.infoWithTag(
+          'AuthRepository',
+          'Login successful for user: ${user.email}',
+        );
+        return {'token': token, 'user': user};
       } else {
         throw Exception('Invalid response from server');
       }
@@ -72,10 +69,7 @@ class AuthRepository {
     try {
       final response = await _apiClient.post(
         '/auth/register',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -84,17 +78,20 @@ class AuthRepository {
         final userJson = data['user'] as Map<String, dynamic>;
         final user = UserModel.fromJson(userJson);
 
-        Logger.infoWithTag('AuthRepository', 'Registration successful for user: ${user.email}');
-        return {
-          'token': token,
-          'user': user,
-        };
+        Logger.infoWithTag(
+          'AuthRepository',
+          'Registration successful for user: ${user.email}',
+        );
+        return {'token': token, 'user': user};
       } else {
         throw Exception('Invalid response from server');
       }
     } catch (e) {
       final errorMessage = _extractErrorMessage(e);
-      Logger.errorWithTag('AuthRepository', 'Registration failed: $errorMessage');
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Registration failed: $errorMessage',
+      );
       throw Exception(errorMessage);
     }
   }
@@ -127,4 +124,3 @@ class AuthRepository {
     }
   }
 }
-
