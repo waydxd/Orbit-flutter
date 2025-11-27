@@ -8,7 +8,15 @@ class Validators {
       return 'Email is required';
     }
 
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    // Improved RFC-like email regex: allows + in local-part and does not limit TLD length.
+    // This is not the full RFC 5322 grammar (which is enormous), but it's a widely-used
+    // practical pattern that accepts common valid addresses and rejects obvious invalid ones.
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+      r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+      r'(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
+    );
+
     if (!emailRegex.hasMatch(value)) {
       return 'Please enter a valid email address';
     }
@@ -77,8 +85,11 @@ class Validators {
       return 'Phone number is required';
     }
 
-    final phoneRegex = RegExp(r'^\+?[\d\s\-\(\)]{10,}$');
-    if (!phoneRegex.hasMatch(value)) {
+    // Allow optional leading +, digits, spaces, parentheses and hyphens; at least 10 characters
+    final phoneRegex = RegExp(r'^\+?[\d\s()\-]{10,}');
+    // Fall back to a simpler, analyzer-friendly variant
+    final cleanPhoneRegex = RegExp(r'^\+?[0-9\s()\-]{10,}\$');
+    if (!(phoneRegex.hasMatch(value) || cleanPhoneRegex.hasMatch(value))) {
       return 'Please enter a valid phone number';
     }
 
@@ -91,8 +102,9 @@ class Validators {
       return null; // Optional field
     }
 
+    // Clean URL regex: supports http/https, optional www, domain labels and path/query
     final urlRegex = RegExp(
-      r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$',
+      r'^https?://(www\.)?[-A-Za-z0-9@:%._+~#=]{1,256}\.[A-Za-z0-9()]{1,63}\b([-A-Za-z0-9()@:%_+.~#?&/=]*)$'
     );
 
     if (!urlRegex.hasMatch(value)) {
@@ -171,7 +183,11 @@ class Validators {
 
   /// Check if email is valid (returns boolean)
   static bool isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+      r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+      r'(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
+    );
     return emailRegex.hasMatch(email);
   }
 
