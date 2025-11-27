@@ -85,11 +85,9 @@ class Validators {
       return 'Phone number is required';
     }
 
-    // Allow optional leading +, digits, spaces, parentheses and hyphens; at least 10 characters
-    final phoneRegex = RegExp(r'^\+?[\d\s()\-]{10,}');
-    // Fall back to a simpler, analyzer-friendly variant
-    final cleanPhoneRegex = RegExp(r'^\+?[0-9\s()\-]{10,}\$');
-    if (!(phoneRegex.hasMatch(value) || cleanPhoneRegex.hasMatch(value))) {
+    // Allow optional leading +, digits, spaces, parentheses and hyphens; at least 10 characters, must match entire string
+    final phoneRegex = RegExp(r'^\+?[\d\s()\-]{10,}$');
+    if (!phoneRegex.hasMatch(value)) {
       return 'Please enter a valid phone number';
     }
 
