@@ -94,12 +94,15 @@ class ApiClient {
       while (_isRefreshing) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
-      return await LocalStorageService.getSecure(AppConfig.accessTokenKey) != null;
+      return await LocalStorageService.getSecure(AppConfig.accessTokenKey) !=
+          null;
     }
 
     _isRefreshing = true;
     try {
-      final refreshToken = await LocalStorageService.getSecure(AppConfig.refreshTokenKey);
+      final refreshToken = await LocalStorageService.getSecure(
+        AppConfig.refreshTokenKey,
+      );
       if (refreshToken == null) {
         Logger.warningWithTag('API', 'No refresh token available');
         return false;
@@ -108,11 +111,14 @@ class ApiClient {
       // TODO: Replace with actual refresh token API call
       // For now, simulate token refresh
       await Future.delayed(const Duration(seconds: 1));
-      
+
       // Mock successful refresh - in real implementation, you'd call your refresh endpoint
       const newAccessToken = 'new_mock_access_token';
-      await LocalStorageService.storeSecure(AppConfig.accessTokenKey, newAccessToken);
-      
+      await LocalStorageService.storeSecure(
+        AppConfig.accessTokenKey,
+        newAccessToken,
+      );
+
       Logger.infoWithTag('API', 'Token refreshed successfully');
       return true;
     } catch (e) {
@@ -154,8 +160,11 @@ class ApiClient {
         break;
     }
 
-    Logger.errorWithTag('API', 'Request failed: $message (Status: $statusCode)');
-    
+    Logger.errorWithTag(
+      'API',
+      'Request failed: $message (Status: $statusCode)',
+    );
+
     return DioException(
       requestOptions: error.requestOptions,
       response: error.response,
@@ -170,7 +179,7 @@ class ApiClient {
       final data = response!.data as Map<String, dynamic>;
       return data['message'] ?? data['error'] ?? 'An error occurred';
     }
-    
+
     switch (response?.statusCode) {
       case 400:
         return 'Bad request. Please check your input.';

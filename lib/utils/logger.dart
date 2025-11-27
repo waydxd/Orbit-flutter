@@ -53,7 +53,12 @@ class Logger {
   }
 
   /// Log error message with tag
-  static void errorWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+  static void errorWithTag(
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
     developer.log(
       '[$tag] $message',
       name: _name,
@@ -64,7 +69,12 @@ class Logger {
   }
 
   /// Log warning message with tag
-  static void warningWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+  static void warningWithTag(
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
     developer.log(
       '[$tag] $message',
       name: _name,
@@ -75,7 +85,12 @@ class Logger {
   }
 
   /// Log info message with tag
-  static void infoWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+  static void infoWithTag(
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
     developer.log(
       '[$tag] $message',
       name: _name,
@@ -86,7 +101,12 @@ class Logger {
   }
 
   /// Log debug message with tag
-  static void debugWithTag(String tag, String message, [Object? error, StackTrace? stackTrace]) {
+  static void debugWithTag(
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
     if (EnvironmentConfig.isDebug) {
       developer.log(
         '[$tag] $message',

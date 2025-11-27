@@ -36,4 +36,3 @@ class UserModel extends BaseModel {
   @override
   List<Object?> get props => [id, email, firstName, lastName];
 }
-

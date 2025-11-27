@@ -23,7 +23,8 @@ class RegistrationPage extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: Constants.loginFormWidth,
-                  maxHeight: MediaQuery.of(context).size.height -
+                  maxHeight:
+                      MediaQuery.of(context).size.height -
                       MediaQuery.of(context).padding.top -
                       MediaQuery.of(context).padding.bottom -
                       Constants.spacingM * 2,
@@ -44,8 +45,10 @@ class RegistrationPage extends StatelessWidget {
                         color: Color(0x3318303F),
                         blurRadius: Constants.shadowBlurRadius,
                         offset: Offset(
-                            Constants.shadowOffset, Constants.shadowOffset),
-                      )
+                          Constants.shadowOffset,
+                          Constants.shadowOffset,
+                        ),
+                      ),
                     ],
                   ),
                   child: const RegistrationForm(),
@@ -58,6 +61,3 @@ class RegistrationPage extends StatelessWidget {
     );
   }
 }
-
-
-
