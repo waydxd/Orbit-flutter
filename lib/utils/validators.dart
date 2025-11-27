@@ -103,6 +103,9 @@ class Validators {
     }
 
     // Clean URL regex: supports http/https, optional www, domain labels and path/query
+    // Note: The TLD length was changed from {1,6} to {1,63} to match the DNS specification,
+    // which allows TLDs up to 63 characters. This relaxes the previous validation and may
+    // accept longer TLDs than before. See RFC 1035 section 2.3.1 for details.
     final urlRegex = RegExp(
       r'^https?://(www\.)?[-A-Za-z0-9@:%._+~#=]{1,256}\.[A-Za-z0-9()]{1,63}\b([-A-Za-z0-9()@:%_+.~#?&/=]*)$',
     );
