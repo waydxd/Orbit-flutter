@@ -104,7 +104,7 @@ class Validators {
 
     // Clean URL regex: supports http/https, optional www, domain labels and path/query
     final urlRegex = RegExp(
-      r'^https?://(www\.)?[-A-Za-z0-9@:%._+~#=]{1,256}\.[A-Za-z0-9()]{1,63}\b([-A-Za-z0-9()@:%_+.~#?&/=]*)$'
+      r'^https?://(www\.)?[-A-Za-z0-9@:%._+~#=]{1,256}\.[A-Za-z0-9()]{1,63}\b([-A-Za-z0-9()@:%_+.~#?&/=]*)$',
     );
 
     if (!urlRegex.hasMatch(value)) {
