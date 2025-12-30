@@ -7,8 +7,9 @@ import 'data/services/local_storage_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set environment
-  EnvironmentConfig.setEnvironment(Environment.development);
+  // Set environment - use local for development with local backend
+  EnvironmentConfig.setEnvironment(Environment.local);
+  //EnvironmentConfig.setEnvironment(Environment.development);
 
   // Initialize local storage
   await LocalStorageService.initialize();

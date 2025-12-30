@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
+import 'ui/chat/chatbot_screen.dart';
 import 'config/app_config.dart';
 
 /// Main application widget
@@ -56,6 +57,22 @@ class SplashScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 48),
+            // Chat Assistant Button
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChatbotScreen(
+                      userId: 'demo-user-id', // TODO: Replace with actual user ID from auth
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: const Text('Chat Assistant'),
+            ),
+            const SizedBox(height: 16),
             const CircularProgressIndicator(),
           ],
         ),

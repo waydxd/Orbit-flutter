@@ -80,6 +80,9 @@ dependencies:
   equatable: ^2.0.5
   json_annotation: ^4.9.0
 
+  # WebSocket for chat streaming
+  web_socket_channel: ^2.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
