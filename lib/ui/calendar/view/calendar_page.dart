@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
+import '../widgets/floating_nav_bar.dart';
+import '../../tasks/view/task_list_page.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -123,67 +125,91 @@ class _CalendarPageState extends State<CalendarPage>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: Column(
+      body: Stack(
         children: [
-          // Animated Calendar Container
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: _currentHeight + topPadding,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: topPadding), // Safe Area padding
-                // Calendar Content
-                Expanded(
-                  child: OverflowBox(
-                    alignment: Alignment.topCenter,
-                    minHeight: _weekHeight,
-                    maxHeight: yearHeight,
-                    child: _buildCalendarContent(),
+          Column(
+            children: [
+              // Animated Calendar Container
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: _currentHeight + topPadding,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
                   ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                // Drag Handle
-                GestureDetector(
-                  onVerticalDragUpdate: _handleDragUpdate,
-                  onVerticalDragEnd: _handleDragEnd,
-                  child: Container(
-                    height: 24,
-                    width: double.infinity,
-                    color: Colors.transparent, // Hit test area
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.grey300,
-                        borderRadius: BorderRadius.circular(2),
+                child: Column(
+                  children: [
+                    SizedBox(height: topPadding), // Safe Area padding
+                    // Calendar Content
+                    Expanded(
+                      child: OverflowBox(
+                        alignment: Alignment.topCenter,
+                        minHeight: _weekHeight,
+                        maxHeight: yearHeight,
+                        child: _buildCalendarContent(),
                       ),
                     ),
-                  ),
+                    // Drag Handle
+                    GestureDetector(
+                      onVerticalDragUpdate: _handleDragUpdate,
+                      onVerticalDragEnd: _handleDragEnd,
+                      child: Container(
+                        height: 24,
+                        width: double.infinity,
+                        color: Colors.transparent, // Hit test area
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.grey300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          // Task List (Occupies remaining space)
-          Expanded(child: _buildTaskList()),
+              // Task List (Occupies remaining space)
+              Expanded(child: _buildTaskList()),
+            ],
+          ),
+          
+          // Floating Navigation Bar
+          FloatingNavBar(
+            currentIndex: 0,
+            onCalendarTap: () {
+              // Already on calendar page
+              debugPrint('Calendar tapped');
+            },
+            onCreateTaskTap: () {
+              // TODO: Navigate to create task page
+              debugPrint('Create task tapped');
+            },
+            onTodoListTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TaskListPage()),
+              );
+              debugPrint('Todo list tapped');
+            },
+          ),
         ],
       ),
     );
