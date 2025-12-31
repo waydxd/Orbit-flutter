@@ -4,6 +4,7 @@ import '../../core/themes/app_colors.dart';
 class FloatingNavBar extends StatelessWidget {
   final VoidCallback onCalendarTap;
   final VoidCallback onCreateTaskTap;
+  final VoidCallback onCreateTaskLongPress;
   final VoidCallback onTodoListTap;
   final int currentIndex;
 
@@ -11,6 +12,7 @@ class FloatingNavBar extends StatelessWidget {
     super.key,
     required this.onCalendarTap,
     required this.onCreateTaskTap,
+    required this.onCreateTaskLongPress,
     required this.onTodoListTap,
     this.currentIndex = 0,
   });
@@ -74,6 +76,7 @@ class FloatingNavBar extends StatelessWidget {
             top: -35,
             child: GestureDetector(
               onTap: onCreateTaskTap,
+              onLongPress: onCreateTaskLongPress,
               child: Container(
                 width: 100,
                 height: 100,

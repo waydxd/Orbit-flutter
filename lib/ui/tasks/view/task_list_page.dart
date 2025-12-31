@@ -6,6 +6,7 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/task_model.dart';
 import 'create_item_page.dart';
+import '../../ai_chat/view/ai_chat_page.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -77,6 +78,13 @@ class _TaskListPageState extends State<TaskListPage> {
                     MaterialPageRoute(builder: (context) => const CreateItemPage()),
                   );
                   debugPrint('Create task tapped');
+                },
+                onCreateTaskLongPress: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AiChatPage()),
+                  );
+                  debugPrint('AI Chat long press');
                 },
                 onTodoListTap: () {
                   // Already here

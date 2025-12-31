@@ -6,6 +6,7 @@ import '../../core/themes/app_colors.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
+import '../../ai_chat/view/ai_chat_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/event_model.dart';
@@ -37,6 +38,8 @@ class _CalendarPageState extends State<CalendarPage>
   late PageController _pageController;
   final int _initialPage = 10000;
   late DateTime _referenceDate;
+
+  static const double _hourHeight = 80.0;
 
   @override
   void initState() {
@@ -228,13 +231,20 @@ class _CalendarPageState extends State<CalendarPage>
                   // Already on calendar page
                   debugPrint('Calendar tapped');
                 },
-            onCreateTaskTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CreateItemPage()),
-              );
-              debugPrint('Create task tapped');
-            },
+                onCreateTaskTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CreateItemPage()),
+                  );
+                  debugPrint('Create task tapped');
+                },
+                onCreateTaskLongPress: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AiChatPage()),
+                  );
+                  debugPrint('AI Chat long press');
+                },
                 onTodoListTap: () {
                   Navigator.push(
                     context,
@@ -644,23 +654,28 @@ class _CalendarPageState extends State<CalendarPage>
     // Sort events by start time
     dayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    const double hourHeight = 80.0;
     const int startHour = 0;
     const int endHour = 23;
     const double leftMargin = 60.0;
 
+    final now = DateTime.now();
+    final bool isToday = isSameDay(date, now);
+
     return SingleChildScrollView(
+      controller: ScrollController(
+        initialScrollOffset: _getInitialScrollOffset(),
+      ),
       physics: const AlwaysScrollableScrollPhysics(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: SizedBox(
-          height: (endHour - startHour + 1) * hourHeight,
+          height: (endHour - startHour + 1) * _hourHeight,
           child: Stack(
             children: [
               // Grid Lines & Times
               for (int i = 0; i <= endHour - startHour; i++)
                 Positioned(
-                  top: i * hourHeight,
+                  top: i * _hourHeight,
                   left: 0,
                   right: 0,
                   height: 20,
@@ -695,10 +710,10 @@ class _CalendarPageState extends State<CalendarPage>
                 final double duration = endH - startH;
                 
                 return Positioned(
-                  top: (startH - startHour) * hourHeight + 10,
+                  top: (startH - startHour) * _hourHeight + 10,
                   left: leftMargin,
                   right: 0,
-                  height: duration * hourHeight - 20,
+                  height: duration * _hourHeight - 20,
                   child: _buildTaskCard(
                     event.title,
                     event.location,
@@ -707,6 +722,43 @@ class _CalendarPageState extends State<CalendarPage>
                   ),
                 );
               }),
+
+              // Current Time Line (Rendered last to be on top)
+              if (isToday)
+                Positioned(
+                  top: (now.hour + now.minute / 60.0) * _hourHeight,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        child: Text(
+                          DateFormat('HH:mm').format(now),
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const Expanded(
+                        child: Divider(
+                          color: Colors.redAccent,
+                          thickness: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -725,6 +777,12 @@ class _CalendarPageState extends State<CalendarPage>
 
   String _formatHour(int hour) {
     return '${hour.toString().padLeft(2, '0')}:00';
+  }
+
+  // Helper to get initial scroll offset for all days
+  double _getInitialScrollOffset() {
+    final now = DateTime.now();
+    return (now.hour + now.minute / 60.0) * _hourHeight;
   }
 
   Widget _buildTaskCard(
