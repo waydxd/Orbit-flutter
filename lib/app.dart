@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
 import 'config/app_config.dart';
 import 'ui/auth/view_model/auth_view_model.dart';
+import 'ui/calendar/view_model/calendar_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
 
@@ -17,7 +18,7 @@ class OrbitApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
-        // Add other ViewModels here as needed
+        ChangeNotifierProvider(create: (_) => CalendarViewModel()),
       ],
       child: MaterialApp(
         title: AppConfig.appName,

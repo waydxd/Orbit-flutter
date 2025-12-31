@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../../tasks/view/task_list_page.dart';
+import '../../tasks/view/create_item_page.dart';
+import '../view_model/calendar_view_model.dart';
+import '../../auth/view_model/auth_view_model.dart';
+import '../../../data/models/event_model.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -28,10 +33,33 @@ class _CalendarPageState extends State<CalendarPage>
   // View Mode
   CalendarViewMode _viewMode = CalendarViewMode.week;
 
+  // PageView Controller for Timetable
+  late PageController _pageController;
+  final int _initialPage = 10000;
+  late DateTime _referenceDate;
+
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    final now = DateTime.now();
+    _referenceDate = DateTime(now.year, now.month, now.day);
+    _pageController = PageController(initialPage: _initialPage);
+    
+    // Fetch data from backend
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authViewModel = context.read<AuthViewModel>();
+      final userId = authViewModel.currentUser?.id;
+      if (userId != null) {
+        context.read<CalendarViewModel>().fetchAll(userId: userId);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
@@ -125,99 +153,144 @@ class _CalendarPageState extends State<CalendarPage>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: Stack(
-        children: [
-          Column(
+      body: Consumer<CalendarViewModel>(
+        builder: (context, viewModel, child) {
+          return Stack(
             children: [
-              // Animated Calendar Container
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: _currentHeight + topPadding,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    SizedBox(height: topPadding), // Safe Area padding
-                    // Calendar Content
-                    Expanded(
-                      child: OverflowBox(
-                        alignment: Alignment.topCenter,
-                        minHeight: _weekHeight,
-                        maxHeight: yearHeight,
-                        child: _buildCalendarContent(),
+              Column(
+                children: [
+                  // Animated Calendar Container
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: _currentHeight + topPadding,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
                       ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    // Drag Handle
-                    GestureDetector(
-                      onVerticalDragUpdate: _handleDragUpdate,
-                      onVerticalDragEnd: _handleDragEnd,
-                      child: Container(
-                        height: 24,
-                        width: double.infinity,
-                        color: Colors.transparent, // Hit test area
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppColors.grey300,
-                            borderRadius: BorderRadius.circular(2),
+                    child: Column(
+                      children: [
+                        SizedBox(height: topPadding), // Safe Area padding
+                        // Calendar Content
+                        Expanded(
+                          child: OverflowBox(
+                            alignment: Alignment.topCenter,
+                            minHeight: _weekHeight,
+                            maxHeight: yearHeight,
+                            child: _buildCalendarContent(viewModel),
                           ),
                         ),
-                      ),
+                        // Drag Handle
+                        GestureDetector(
+                          onVerticalDragUpdate: _handleDragUpdate,
+                          onVerticalDragEnd: _handleDragEnd,
+                          child: Container(
+                            height: 24,
+                            width: double.infinity,
+                            color: Colors.transparent, // Hit test area
+                            alignment: Alignment.center,
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: AppColors.grey300,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // Task List (Occupies remaining space)
-              Expanded(child: _buildTaskList()),
-            ],
-          ),
-          
-          // Floating Navigation Bar
-          FloatingNavBar(
-            currentIndex: 0,
-            onCalendarTap: () {
-              // Already on calendar page
-              debugPrint('Calendar tapped');
-            },
+                  // Task List (Occupies remaining space)
+                  Expanded(child: _buildTaskList(viewModel)),
+                ],
+              ),
+              
+              // Floating Navigation Bar
+              FloatingNavBar(
+                currentIndex: 0,
+                onCalendarTap: () {
+                  // Already on calendar page
+                  debugPrint('Calendar tapped');
+                },
             onCreateTaskTap: () {
-              // TODO: Navigate to create task page
-              debugPrint('Create task tapped');
-            },
-            onTodoListTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const TaskListPage()),
+                MaterialPageRoute(builder: (context) => const CreateItemPage()),
               );
-              debugPrint('Todo list tapped');
+              debugPrint('Create task tapped');
             },
-          ),
-        ],
+                onTodoListTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TaskListPage()),
+                  );
+                  debugPrint('Todo list tapped');
+                },
+              ),
+              
+              if (viewModel.isLoading)
+                const Center(child: CircularProgressIndicator()),
+                
+              if (viewModel.error != null)
+                Positioned(
+                  top: topPadding + 60,
+                  left: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Connection Error: ${viewModel.error}',
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () {
+                          final userId = context.read<AuthViewModel>().currentUser?.id;
+                          if (userId != null) {
+                            viewModel.fetchAll(userId: userId);
+                          }
+                        },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildCalendarContent() {
+  Widget _buildCalendarContent(CalendarViewModel viewModel) {
     if (_viewMode == CalendarViewMode.year) {
-      return _buildYearView();
+      return _buildYearView(viewModel);
     }
 
     return TableCalendar(
@@ -225,6 +298,9 @@ class _CalendarPageState extends State<CalendarPage>
       lastDay: DateTime.utc(2030, 3, 14),
       focusedDay: _focusedDay,
       calendarFormat: _calendarFormat,
+      eventLoader: (day) {
+        return viewModel.events.where((e) => isSameDay(e.startTime, day)).toList();
+      },
       // Disable scrolling in week view by locking the available gestures
       availableGestures: _calendarFormat == CalendarFormat.week
           ? AvailableGestures.none
@@ -235,6 +311,15 @@ class _CalendarPageState extends State<CalendarPage>
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
+        
+        // Sync PageView
+        final difference = DateTime(selectedDay.year, selectedDay.month, selectedDay.day)
+            .difference(_referenceDate).inDays;
+        _pageController.animateToPage(
+          _initialPage + difference,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       },
       onFormatChanged: (format) {
         if (_calendarFormat != format) {
@@ -300,7 +385,7 @@ class _CalendarPageState extends State<CalendarPage>
     );
   }
 
-  Widget _buildYearView() {
+  Widget _buildYearView(CalendarViewModel viewModel) {
     // Rebuilt Year View as an extension of month view (scrolling list of months)
     return Stack(
       children: [
@@ -418,6 +503,9 @@ class _CalendarPageState extends State<CalendarPage>
                             ),
                             focusedDay: monthDate,
                             calendarFormat: CalendarFormat.month,
+                            eventLoader: (day) {
+                              return viewModel.events.where((e) => isSameDay(e.startTime, day)).toList();
+                            },
                             headerVisible: false,
                             daysOfWeekVisible:
                                 false, // Hide repetitive days of week
@@ -496,113 +584,52 @@ class _CalendarPageState extends State<CalendarPage>
     );
   }
 
-  Widget _buildTaskList() {
-    // Define tasks with their timing information
-    final tasks = [
-      (
-        title: 'Math',
-        subtitle: 'Saber & Oro',
-        time: '9:00 AM - 10:30 AM',
-        color: const Color(0xFF50C8AA),
-        startHour: 9.0,
-        duration: 1.5,
-      ),
-      (
-        title: 'English',
-        subtitle: 'Saber & Mike',
-        time: '11:00 AM - 12:30 PM',
-        color: const Color(0xFF8B80F0),
-        startHour: 11.0,
-        duration: 1.5,
-      ),
-      (
-        title: 'History',
-        subtitle: 'Saber & Fahim',
-        time: '1:00 PM - 2:30 PM',
-        color: const Color(0xFF0096FF),
-        startHour: 13.0,
-        duration: 1.5,
-      ),
-    ];
-
-    const double hourHeight = 100.0;
-    const int startHour = 9;
-    const int endHour = 16; // 4 PM
-    const double leftMargin = 60.0;
-
+  Widget _buildTaskList(CalendarViewModel viewModel) {
     return Container(
       color: AppColors.grey50,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-          const Text(
-            'Ongoing',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Ongoing',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (_selectedDay != null)
+                  Text(
+                    DateFormat('EEE, MMM d').format(_selectedDay!),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: (endHour - startHour + 1) * hourHeight,
-                child: Stack(
-                  children: [
-                    // Grid Lines & Times
-                    for (int i = 0; i <= endHour - startHour; i++)
-                      Positioned(
-                        top: i * hourHeight,
-                        left: 0,
-                        right: 0,
-                        height: 20,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 50,
-                              child: Text(
-                                _formatHour(startHour + i),
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: CustomPaint(
-                                painter: DottedLinePainter(),
-                                size: const Size(double.infinity, 1),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Task Cards
-                    for (final task in tasks)
-                      Positioned(
-                        top:
-                            (task.startHour - startHour) * hourHeight +
-                            10, // Offset slightly from the line
-                        left: leftMargin,
-                        right: 0,
-                        height:
-                            task.duration * hourHeight - 20, // Leave some gap
-                        child: _buildTaskCard(
-                          task.title,
-                          task.subtitle,
-                          task.time,
-                          task.color,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                final newDate = _referenceDate.add(Duration(days: index - _initialPage));
+                setState(() {
+                  _selectedDay = newDate;
+                  _focusedDay = newDate;
+                });
+              },
+              itemBuilder: (context, index) {
+                final date = _referenceDate.add(Duration(days: index - _initialPage));
+                return _buildDayTimetable(viewModel, date);
+              },
             ),
           ),
         ],
@@ -610,10 +637,94 @@ class _CalendarPageState extends State<CalendarPage>
     );
   }
 
+  Widget _buildDayTimetable(CalendarViewModel viewModel, DateTime date) {
+    // Filter events for this specific date
+    final dayEvents = viewModel.events.where((e) => isSameDay(e.startTime, date)).toList();
+    
+    // Sort events by start time
+    dayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    const double hourHeight = 80.0;
+    const int startHour = 0;
+    const int endHour = 23;
+    const double leftMargin = 60.0;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SizedBox(
+          height: (endHour - startHour + 1) * hourHeight,
+          child: Stack(
+            children: [
+              // Grid Lines & Times
+              for (int i = 0; i <= endHour - startHour; i++)
+                Positioned(
+                  top: i * hourHeight,
+                  left: 0,
+                  right: 0,
+                  height: 20,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        child: Text(
+                          _formatHour(startHour + i),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: CustomPaint(
+                          painter: DottedLinePainter(),
+                          size: const Size(double.infinity, 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Task Cards (from backend events)
+              ...dayEvents.map((event) {
+                final double startH = event.startTime.hour + (event.startTime.minute / 60.0);
+                final double endH = event.endTime.hour + (event.endTime.minute / 60.0);
+                final double duration = endH - startH;
+                
+                return Positioned(
+                  top: (startH - startHour) * hourHeight + 10,
+                  left: leftMargin,
+                  right: 0,
+                  height: duration * hourHeight - 20,
+                  child: _buildTaskCard(
+                    event.title,
+                    event.location,
+                    '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                    _getEventColor(event.title),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getEventColor(String title) {
+    // Map titles to colors for visual consistency
+    final lowerTitle = title.toLowerCase();
+    if (lowerTitle.contains('math')) return const Color(0xFF50C8AA);
+    if (lowerTitle.contains('english')) return const Color(0xFF8B80F0);
+    if (lowerTitle.contains('history')) return const Color(0xFF0096FF);
+    return AppColors.primary;
+  }
+
   String _formatHour(int hour) {
-    if (hour == 12) return '12PM';
-    if (hour > 12) return '${hour - 12}PM';
-    return '${hour}AM';
+    return '${hour.toString().padLeft(2, '0')}:00';
   }
 
   Widget _buildTaskCard(

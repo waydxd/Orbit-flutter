@@ -1,71 +1,116 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
 import '../../calendar/widgets/floating_nav_bar.dart';
+import '../../calendar/view_model/calendar_view_model.dart';
+import '../../auth/view_model/auth_view_model.dart';
+import '../../../data/models/task_model.dart';
+import 'create_item_page.dart';
 
-class TaskListPage extends StatelessWidget {
+class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
+
+  @override
+  State<TaskListPage> createState() => _TaskListPageState();
+}
+
+class _TaskListPageState extends State<TaskListPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data from backend on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authViewModel = context.read<AuthViewModel>();
+      final userId = authViewModel.currentUser?.id;
+      if (userId != null) {
+        context.read<CalendarViewModel>().fetchAll(userId: userId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F9),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildSummaryCard(),
-                      const SizedBox(height: 30),
-                      _buildTaskItem(
-                        title: 'Buy groceries',
-                        color: Colors.redAccent,
-                      ),
-                      _buildTaskItem(
-                        title: 'Swimming',
-                        subtitle: '#Health',
-                        color: Colors.blueAccent,
-                      ),
-                      _buildTaskItem(
-                        title: 'Coding assignment',
-                        color: Colors.redAccent,
-                        deadline: '0 days',
-                        isUrgent: true,
-                      ),
-                      _buildTaskItem(
-                        title: 'Proposal',
-                        subtitle: '#FYP',
-                        color: Colors.blueAccent,
-                        deadline: '5 days',
-                      ),
-                      const SizedBox(height: 120), // Space for FAB
-                    ],
-                  ),
+      body: Consumer<CalendarViewModel>(
+        builder: (context, viewModel, child) {
+          final pendingTasks = viewModel.tasks.where((t) => !t.completed).toList();
+          
+          return Stack(
+            children: [
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    Expanded(
+                      child: viewModel.isLoading 
+                        ? const Center(child: CircularProgressIndicator())
+                        : ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            children: [
+                              const SizedBox(height: 20),
+                              _buildSummaryCard(pendingTasks),
+                              const SizedBox(height: 30),
+                              ...viewModel.tasks.map((task) => _buildTaskItem(
+                                title: task.title,
+                                subtitle: task.description,
+                                color: _getPriorityColor(task.priority),
+                                deadline: _getDeadlineText(task.dueDate),
+                                isUrgent: task.priority == 'urgent',
+                              )),
+                              const SizedBox(height: 120), // Space for FAB
+                            ],
+                          ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          FloatingNavBar(
-            currentIndex: 1,
-            onCalendarTap: () {
-              Navigator.pop(context);
-            },
-            onCreateTaskTap: () {
-              debugPrint('Create task tapped');
-            },
-            onTodoListTap: () {
-              // Already here
-            },
-          ),
-        ],
+              ),
+              FloatingNavBar(
+                currentIndex: 1,
+                onCalendarTap: () {
+                  Navigator.pop(context);
+                },
+                onCreateTaskTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CreateItemPage()),
+                  );
+                  debugPrint('Create task tapped');
+                },
+                onTodoListTap: () {
+                  // Already here
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return Colors.redAccent;
+      case 'high':
+        return Colors.orangeAccent;
+      case 'medium':
+        return Colors.blueAccent;
+      case 'low':
+        return Colors.greenAccent;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String? _getDeadlineText(DateTime? dueDate) {
+    if (dueDate == null) return null;
+    final now = DateTime.now();
+    final difference = dueDate.difference(now).inDays;
+    if (difference < 0) return 'Overdue';
+    if (difference == 0) return 'Today';
+    return '$difference days';
   }
 
   Widget _buildHeader() {
@@ -103,7 +148,18 @@ class TaskListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard() {
+  Widget _buildSummaryCard(List<TaskModel> pendingTasks) {
+    final taskCount = pendingTasks.length;
+    
+    TaskModel? urgentTask;
+    try {
+      urgentTask = pendingTasks.firstWhere((t) => t.priority == 'urgent');
+    } catch (_) {
+      if (pendingTasks.isNotEmpty) {
+        urgentTask = pendingTasks.first;
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -137,9 +193,9 @@ class TaskListPage extends StatelessWidget {
               height: 1.2,
             ),
           ),
-          const Text(
-            '4 tasks',
-            style: TextStyle(
+          Text(
+            '$taskCount tasks',
+            style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -157,27 +213,40 @@ class TaskListPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC84B6B),
-                  borderRadius: BorderRadius.circular(2),
+          if (urgentTask != null)
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(urgentTask.priority),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Coding assignment',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    urgentTask.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+              ],
+            )
+          else
+            const Text(
+              'No upcoming tasks',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -272,4 +341,3 @@ class TaskListPage extends StatelessWidget {
     );
   }
 }
-
