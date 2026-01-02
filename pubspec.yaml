@@ -151,7 +151,7 @@ flutter_launcher_icons:
   ios: true # can specify file name here e.g. "My-Launcher-Icon"
   image_path_ios_dark_transparent: "assets/images/icon-foreground-1024x1024.png"
   image_path_ios_tinted_grayscale: "assets/images/icon-monochrome-1024x1024.png"
-  adaptive_icon_background: "#BAB3FA" # only available for Android 8.0 devices and above
+  adaptive_icon_background: "icon-background-1024x1024.png" # only available for Android 8.0 devices and above
   adaptive_icon_foreground: "assets/images/icon-foreground-1024x1024.png" # only available for Android 8.0 devices and above
   adaptive_icon_foreground_inset: 16 # only available for Android 8.0 devices and above
   adaptive_icon_monochrome: "assets/images/icon-monochrome-1024x1024.png" # only available for Android 13 devices and above
