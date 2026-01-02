@@ -39,7 +39,7 @@ This is the Flutter frontend repository for the Orbit app, a smart calendar and 
 - API Keys: Google Maps, Gemini API, Resend (email) – store in `.env` (use `flutter_dotenv` package).
 
 ### Installation
-1. Clone the repo: `git clone https://github.com/yourusername/orbit-smart-calendar-flutter.git`
+1. Clone the repo: `git clone https://github.com/waydxd/orbit-smart-calendar-flutter.git`
 2. Navigate: `cd orbit-smart-calendar-flutter`
 3. Install dependencies: `flutter pub get`
 4. Run: `flutter run` (select device/emulator)
