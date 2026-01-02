@@ -8,7 +8,15 @@ class Validators {
       return 'Email is required';
     }
 
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    // Improved RFC-like email regex: allows + in local-part and does not limit TLD length.
+    // This is not the full RFC 5322 grammar (which is enormous), but it's a widely-used
+    // practical pattern that accepts common valid addresses and rejects obvious invalid ones.
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+      r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+      r'(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
+    );
+
     if (!emailRegex.hasMatch(value)) {
       return 'Please enter a valid email address';
     }
@@ -77,7 +85,8 @@ class Validators {
       return 'Phone number is required';
     }
 
-    final phoneRegex = RegExp(r'^\+?[\d\s\-\(\)]{10,}$');
+    // Allow optional leading +, digits, spaces, parentheses and hyphens; at least 10 characters, must match entire string
+    final phoneRegex = RegExp(r'^\+?[\d\s()\-]{10,}$');
     if (!phoneRegex.hasMatch(value)) {
       return 'Please enter a valid phone number';
     }
@@ -91,8 +100,12 @@ class Validators {
       return null; // Optional field
     }
 
+    // Clean URL regex: supports http/https, optional www, domain labels and path/query
+    // Note: The TLD length was changed from {1,6} to {1,63} to match the DNS specification,
+    // which allows TLDs up to 63 characters. This relaxes the previous validation and may
+    // accept longer TLDs than before. See RFC 1035 section 2.3.1 for details.
     final urlRegex = RegExp(
-      r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$',
+      r'^https?://(www\.)?[-A-Za-z0-9@:%._+~#=]{1,256}\.[A-Za-z0-9()]{1,63}\b([-A-Za-z0-9()@:%_+.~#?&/=]*)$',
     );
 
     if (!urlRegex.hasMatch(value)) {
@@ -167,5 +180,24 @@ class Validators {
       }
       return null;
     };
+  }
+
+  /// Check if email is valid (returns boolean)
+  static bool isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+      r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+      r'(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
+    );
+    return emailRegex.hasMatch(email);
+  }
+
+  /// Check if password is valid (returns boolean)
+  static bool isValidPassword(String password) {
+    if (password.length < 8) return false;
+    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+    final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
+    final hasDigit = RegExp(r'\d').hasMatch(password);
+    return hasUppercase && hasLowercase && hasDigit;
   }
 }
