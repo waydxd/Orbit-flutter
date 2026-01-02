@@ -16,11 +16,11 @@ class TaskModel extends BaseModel {
     required this.userId,
     required this.title,
     required this.description,
+    required this.createdAt,
+    required this.updatedAt,
     this.dueDate,
     this.completed = false,
     this.priority = 'medium',
-    required this.createdAt,
-    required this.updatedAt,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -29,7 +29,9 @@ class TaskModel extends BaseModel {
       userId: json['user_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String? ?? '',
-      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date'] as String) : null,
+      dueDate: json['due_date'] != null
+          ? DateTime.parse(json['due_date'] as String)
+          : null,
       completed: json['completed'] as bool? ?? false,
       priority: json['priority'] as String? ?? 'medium',
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -53,7 +55,17 @@ class TaskModel extends BaseModel {
   }
 
   @override
-  List<Object?> get props => [id, userId, title, description, dueDate, completed, priority, createdAt, updatedAt];
+  List<Object?> get props => [
+    id,
+    userId,
+    title,
+    description,
+    dueDate,
+    completed,
+    priority,
+    createdAt,
+    updatedAt,
+  ];
 
   TaskModel copyWith({
     String? id,
@@ -79,5 +91,3 @@ class TaskModel extends BaseModel {
     );
   }
 }
-
-

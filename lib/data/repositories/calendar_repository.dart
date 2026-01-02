@@ -8,11 +8,13 @@ class CalendarRepository {
 
   CalendarRepository(this._apiClient);
 
-  Future<List<EventModel>> getEvents({required String userId, DateTime? startTime, DateTime? endTime}) async {
+  Future<List<EventModel>> getEvents({
+    required String userId,
+    DateTime? startTime,
+    DateTime? endTime,
+  }) async {
     try {
-      final queryParams = {
-        'user_id': userId,
-      };
+      final queryParams = {'user_id': userId};
       if (startTime != null) {
         queryParams['start_time'] = startTime.toIso8601String();
       }
@@ -25,13 +27,21 @@ class CalendarRepository {
         queryParameters: queryParams,
       );
 
-      Logger.infoWithTag('CalendarRepository', 'GET /calendar/events status: ${response.statusCode}');
-      
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'GET /calendar/events status: ${response.statusCode}',
+      );
+
       if (response.statusCode == 200 && response.data != null) {
         final dynamic rawData = response.data;
         if (rawData is List) {
-          Logger.infoWithTag('CalendarRepository', 'Received ${rawData.length} events');
-          return rawData.map((json) => EventModel.fromJson(json as Map<String, dynamic>)).toList();
+          Logger.infoWithTag(
+            'CalendarRepository',
+            'Received ${rawData.length} events',
+          );
+          return rawData
+              .map((json) => EventModel.fromJson(json as Map<String, dynamic>))
+              .toList();
         }
       }
       return [];
@@ -41,11 +51,12 @@ class CalendarRepository {
     }
   }
 
-  Future<List<TaskModel>> getTasks({required String userId, bool? completed}) async {
+  Future<List<TaskModel>> getTasks({
+    required String userId,
+    bool? completed,
+  }) async {
     try {
-      final queryParams = {
-        'user_id': userId,
-      };
+      final queryParams = {'user_id': userId};
       if (completed != null) {
         queryParams['completed'] = completed.toString();
       }
@@ -55,13 +66,21 @@ class CalendarRepository {
         queryParameters: queryParams,
       );
 
-      Logger.infoWithTag('CalendarRepository', 'GET /calendar/tasks status: ${response.statusCode}');
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'GET /calendar/tasks status: ${response.statusCode}',
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         final dynamic rawData = response.data;
         if (rawData is List) {
-          Logger.infoWithTag('CalendarRepository', 'Received ${rawData.length} tasks');
-          return rawData.map((json) => TaskModel.fromJson(json as Map<String, dynamic>)).toList();
+          Logger.infoWithTag(
+            'CalendarRepository',
+            'Received ${rawData.length} tasks',
+          );
+          return rawData
+              .map((json) => TaskModel.fromJson(json as Map<String, dynamic>))
+              .toList();
         }
       }
       return [];
@@ -78,9 +97,13 @@ class CalendarRepository {
         data: event.toJson(),
       );
 
-      Logger.infoWithTag('CalendarRepository', 'POST /calendar/events status: ${response.statusCode}');
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'POST /calendar/events status: ${response.statusCode}',
+      );
 
-      if ((response.statusCode == 200 || response.statusCode == 201) && response.data != null) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
         return EventModel.fromJson(response.data as Map<String, dynamic>);
       }
       throw Exception('Failed to create event: ${response.statusCode}');
@@ -97,9 +120,13 @@ class CalendarRepository {
         data: task.toJson(),
       );
 
-      Logger.infoWithTag('CalendarRepository', 'POST /calendar/tasks status: ${response.statusCode}');
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'POST /calendar/tasks status: ${response.statusCode}',
+      );
 
-      if ((response.statusCode == 200 || response.statusCode == 201) && response.data != null) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
         return TaskModel.fromJson(response.data as Map<String, dynamic>);
       }
       throw Exception('Failed to create task: ${response.statusCode}');
@@ -109,4 +136,3 @@ class CalendarRepository {
     }
   }
 }
-

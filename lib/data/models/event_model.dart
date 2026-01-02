@@ -53,7 +53,17 @@ class EventModel extends BaseModel {
   }
 
   @override
-  List<Object?> get props => [id, userId, title, description, startTime, endTime, location, createdAt, updatedAt];
+  List<Object?> get props => [
+    id,
+    userId,
+    title,
+    description,
+    startTime,
+    endTime,
+    location,
+    createdAt,
+    updatedAt,
+  ];
 
   EventModel copyWith({
     String? id,
@@ -79,5 +89,3 @@ class EventModel extends BaseModel {
     );
   }
 }
-
-

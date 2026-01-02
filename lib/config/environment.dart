@@ -14,7 +14,7 @@ class EnvironmentConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://localhost:8080';
+        return 'http://vml1wk238.cse.ust.hk';
       case Environment.staging:
         return 'https://staging-api.orbit-calendar.com';
       case Environment.production:

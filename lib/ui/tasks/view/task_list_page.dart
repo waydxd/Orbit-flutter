@@ -35,8 +35,10 @@ class _TaskListPageState extends State<TaskListPage> {
       backgroundColor: const Color(0xFFF3F5F9),
       body: Consumer<CalendarViewModel>(
         builder: (context, viewModel, child) {
-          final pendingTasks = viewModel.tasks.where((t) => !t.completed).toList();
-          
+          final pendingTasks = viewModel.tasks
+              .where((t) => !t.completed)
+              .toList();
+
           return Stack(
             children: [
               SafeArea(
@@ -45,24 +47,28 @@ class _TaskListPageState extends State<TaskListPage> {
                   children: [
                     _buildHeader(),
                     Expanded(
-                      child: viewModel.isLoading 
-                        ? const Center(child: CircularProgressIndicator())
-                        : ListView(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            children: [
-                              const SizedBox(height: 20),
-                              _buildSummaryCard(pendingTasks),
-                              const SizedBox(height: 30),
-                              ...viewModel.tasks.map((task) => _buildTaskItem(
-                                title: task.title,
-                                subtitle: task.description,
-                                color: _getPriorityColor(task.priority),
-                                deadline: _getDeadlineText(task.dueDate),
-                                isUrgent: task.priority == 'urgent',
-                              )),
-                              const SizedBox(height: 120), // Space for FAB
-                            ],
-                          ),
+                      child: viewModel.isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ListView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              children: [
+                                const SizedBox(height: 20),
+                                _buildSummaryCard(pendingTasks),
+                                const SizedBox(height: 30),
+                                ...viewModel.tasks.map(
+                                  (task) => _buildTaskItem(
+                                    title: task.title,
+                                    subtitle: task.description,
+                                    color: _getPriorityColor(task.priority),
+                                    deadline: _getDeadlineText(task.dueDate),
+                                    isUrgent: task.priority == 'urgent',
+                                  ),
+                                ),
+                                const SizedBox(height: 120), // Space for FAB
+                              ],
+                            ),
                     ),
                   ],
                 ),
@@ -75,7 +81,9 @@ class _TaskListPageState extends State<TaskListPage> {
                 onCreateTaskTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CreateItemPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const CreateItemPage(),
+                    ),
                   );
                   debugPrint('Create task tapped');
                 },
@@ -133,7 +141,11 @@ class _TaskListPageState extends State<TaskListPage> {
               const SizedBox(width: 15),
               Stack(
                 children: [
-                  const Icon(Icons.notifications_outlined, color: AppColors.black, size: 28),
+                  const Icon(
+                    Icons.notifications_outlined,
+                    color: AppColors.black,
+                    size: 28,
+                  ),
                   Positioned(
                     right: 4,
                     top: 4,
@@ -158,7 +170,7 @@ class _TaskListPageState extends State<TaskListPage> {
 
   Widget _buildSummaryCard(List<TaskModel> pendingTasks) {
     final taskCount = pendingTasks.length;
-    
+
     TaskModel? urgentTask;
     try {
       urgentTask = pendingTasks.firstWhere((t) => t.priority == 'urgent');
@@ -176,14 +188,11 @@ class _TaskListPageState extends State<TaskListPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFD4DAF3),
-            Color(0xFFE2E7F5),
-          ],
+          colors: [Color(0xFFD4DAF3), Color(0xFFE2E7F5)],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -262,8 +271,8 @@ class _TaskListPageState extends State<TaskListPage> {
 
   Widget _buildTaskItem({
     required String title,
-    String? subtitle,
     required Color color,
+    String? subtitle,
     String? deadline,
     bool isUrgent = false,
   }) {
@@ -313,7 +322,7 @@ class _TaskListPageState extends State<TaskListPage> {
                 if (subtitle != null)
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.grey400,
                       fontWeight: FontWeight.w500,

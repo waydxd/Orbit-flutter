@@ -9,7 +9,6 @@ import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
-import '../../../data/models/event_model.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -48,7 +47,7 @@ class _CalendarPageState extends State<CalendarPage>
     final now = DateTime.now();
     _referenceDate = DateTime(now.year, now.month, now.day);
     _pageController = PageController(initialPage: _initialPage);
-    
+
     // Fetch data from backend
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authViewModel = context.read<AuthViewModel>();
@@ -223,7 +222,7 @@ class _CalendarPageState extends State<CalendarPage>
                   Expanded(child: _buildTaskList(viewModel)),
                 ],
               ),
-              
+
               // Floating Navigation Bar
               FloatingNavBar(
                 currentIndex: 0,
@@ -234,7 +233,9 @@ class _CalendarPageState extends State<CalendarPage>
                 onCreateTaskTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CreateItemPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const CreateItemPage(),
+                    ),
                   );
                   debugPrint('Create task tapped');
                 },
@@ -248,15 +249,17 @@ class _CalendarPageState extends State<CalendarPage>
                 onTodoListTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TaskListPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const TaskListPage(),
+                    ),
                   );
                   debugPrint('Todo list tapped');
                 },
               ),
-              
+
               if (viewModel.isLoading)
                 const Center(child: CircularProgressIndicator()),
-                
+
               if (viewModel.error != null)
                 Positioned(
                   top: topPadding + 60,
@@ -275,17 +278,23 @@ class _CalendarPageState extends State<CalendarPage>
                         Expanded(
                           child: Text(
                             'Connection Error: ${viewModel.error}',
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.white),
                           onPressed: () {
-                          final userId = context.read<AuthViewModel>().currentUser?.id;
-                          if (userId != null) {
-                            viewModel.fetchAll(userId: userId);
-                          }
-                        },
+                            final userId = context
+                                .read<AuthViewModel>()
+                                .currentUser
+                                ?.id;
+                            if (userId != null) {
+                              viewModel.fetchAll(userId: userId);
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -309,7 +318,9 @@ class _CalendarPageState extends State<CalendarPage>
       focusedDay: _focusedDay,
       calendarFormat: _calendarFormat,
       eventLoader: (day) {
-        return viewModel.events.where((e) => isSameDay(e.startTime, day)).toList();
+        return viewModel.events
+            .where((e) => isSameDay(e.startTime, day))
+            .toList();
       },
       // Disable scrolling in week view by locking the available gestures
       availableGestures: _calendarFormat == CalendarFormat.week
@@ -321,10 +332,13 @@ class _CalendarPageState extends State<CalendarPage>
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
-        
+
         // Sync PageView
-        final difference = DateTime(selectedDay.year, selectedDay.month, selectedDay.day)
-            .difference(_referenceDate).inDays;
+        final difference = DateTime(
+          selectedDay.year,
+          selectedDay.month,
+          selectedDay.day,
+        ).difference(_referenceDate).inDays;
         _pageController.animateToPage(
           _initialPage + difference,
           duration: const Duration(milliseconds: 300),
@@ -514,7 +528,9 @@ class _CalendarPageState extends State<CalendarPage>
                             focusedDay: monthDate,
                             calendarFormat: CalendarFormat.month,
                             eventLoader: (day) {
-                              return viewModel.events.where((e) => isSameDay(e.startTime, day)).toList();
+                              return viewModel.events
+                                  .where((e) => isSameDay(e.startTime, day))
+                                  .toList();
                             },
                             headerVisible: false,
                             daysOfWeekVisible:
@@ -630,14 +646,18 @@ class _CalendarPageState extends State<CalendarPage>
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
-                final newDate = _referenceDate.add(Duration(days: index - _initialPage));
+                final newDate = _referenceDate.add(
+                  Duration(days: index - _initialPage),
+                );
                 setState(() {
                   _selectedDay = newDate;
                   _focusedDay = newDate;
                 });
               },
               itemBuilder: (context, index) {
-                final date = _referenceDate.add(Duration(days: index - _initialPage));
+                final date = _referenceDate.add(
+                  Duration(days: index - _initialPage),
+                );
                 return _buildDayTimetable(viewModel, date);
               },
             ),
@@ -649,8 +669,10 @@ class _CalendarPageState extends State<CalendarPage>
 
   Widget _buildDayTimetable(CalendarViewModel viewModel, DateTime date) {
     // Filter events for this specific date
-    final dayEvents = viewModel.events.where((e) => isSameDay(e.startTime, date)).toList();
-    
+    final dayEvents = viewModel.events
+        .where((e) => isSameDay(e.startTime, date))
+        .toList();
+
     // Sort events by start time
     dayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
 
@@ -705,10 +727,12 @@ class _CalendarPageState extends State<CalendarPage>
 
               // Task Cards (from backend events)
               ...dayEvents.map((event) {
-                final double startH = event.startTime.hour + (event.startTime.minute / 60.0);
-                final double endH = event.endTime.hour + (event.endTime.minute / 60.0);
+                final double startH =
+                    event.startTime.hour + (event.startTime.minute / 60.0);
+                final double endH =
+                    event.endTime.hour + (event.endTime.minute / 60.0);
                 final double duration = endH - startH;
-                
+
                 return Positioned(
                   top: (startH - startHour) * _hourHeight + 10,
                   left: leftMargin,
@@ -751,10 +775,7 @@ class _CalendarPageState extends State<CalendarPage>
                         ),
                       ),
                       const Expanded(
-                        child: Divider(
-                          color: Colors.redAccent,
-                          thickness: 2,
-                        ),
+                        child: Divider(color: Colors.redAccent, thickness: 2),
                       ),
                     ],
                   ),

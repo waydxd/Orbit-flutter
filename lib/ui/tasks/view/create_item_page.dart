@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import '../../core/themes/app_colors.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/event_model.dart';
@@ -21,15 +20,17 @@ class _CreateItemPageState extends State<CreateItemPage> {
   // Form controllers and state
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
-  
+
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   DateTime _endDate = DateTime.now().add(const Duration(hours: 1));
-  TimeOfDay _endTime = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
-  
+  TimeOfDay _endTime = TimeOfDay.fromDateTime(
+    DateTime.now().add(const Duration(hours: 1)),
+  );
+
   DateTime? _deadlineDate;
   TimeOfDay? _deadlineTime;
-  
+
   String _selectedRepeat = 'Never';
   String _selectedPriority = 'medium';
   String _selectedTag = '';
@@ -89,7 +90,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     }
   }
 
-  Future<void> _selectDeadline(BuildContext context) async {
+  Future<void> _selectDeadline() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _deadlineDate ?? DateTime.now(),
@@ -97,6 +98,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
       lastDate: DateTime(2101),
     );
     if (picked != null) {
+      if (!mounted) return;
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
         initialTime: _deadlineTime ?? TimeOfDay.now(),
@@ -112,9 +114,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
   void _handleCreate() async {
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a name')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a name')));
       return;
     }
 
@@ -123,9 +125,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
     final currentUserId = authViewModel.currentUser?.id;
 
     if (currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not authenticated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('User not authenticated')));
       return;
     }
 
@@ -134,12 +136,18 @@ class _CreateItemPageState extends State<CreateItemPage> {
     try {
       if (isEvent) {
         final start = DateTime(
-          _startDate.year, _startDate.month, _startDate.day,
-          _startTime.hour, _startTime.minute,
+          _startDate.year,
+          _startDate.month,
+          _startDate.day,
+          _startTime.hour,
+          _startTime.minute,
         );
         final end = DateTime(
-          _endDate.year, _endDate.month, _endDate.day,
-          _endTime.hour, _endTime.minute,
+          _endDate.year,
+          _endDate.month,
+          _endDate.day,
+          _endTime.hour,
+          _endTime.minute,
         );
 
         final event = EventModel(
@@ -158,13 +166,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
         DateTime? deadline;
         if (_deadlineDate != null && _deadlineTime != null) {
           deadline = DateTime(
-            _deadlineDate!.year, _deadlineDate!.month, _deadlineDate!.day,
-            _deadlineTime!.hour, _deadlineTime!.minute,
+            _deadlineDate!.year,
+            _deadlineDate!.month,
+            _deadlineDate!.day,
+            _deadlineTime!.hour,
+            _deadlineTime!.minute,
           );
         }
 
-        final fullDescription = _selectedTag.isNotEmpty 
-            ? '#$_selectedTag ${_detailsController.text}' 
+        final fullDescription = _selectedTag.isNotEmpty
+            ? '#$_selectedTag ${_detailsController.text}'
             : _detailsController.text;
 
         final task = TaskModel(
@@ -184,13 +195,19 @@ class _CreateItemPageState extends State<CreateItemPage> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${isEvent ? 'Event' : 'Task'} created successfully!')),
+          SnackBar(
+            content: Text(
+              '${isEvent ? 'Event' : 'Task'} created successfully!',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create ${isEvent ? 'event' : 'task'}: $e')),
+          SnackBar(
+            content: Text('Failed to create ${isEvent ? 'event' : 'task'}: $e'),
+          ),
         );
       }
     }
@@ -243,7 +260,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Color(0xFF6366F1), size: 32),
+            icon: const Icon(
+              Icons.chevron_left,
+              color: Color(0xFF6366F1),
+              size: 32,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -259,7 +280,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -347,19 +368,25 @@ class _CreateItemPageState extends State<CreateItemPage> {
         _buildTextField(_nameController, 'Task name'),
         const SizedBox(height: 20),
         GestureDetector(
-          onTap: () => _selectDeadline(context),
+          onTap: _selectDeadline,
           child: _buildTimeField(
-            _deadlineDate != null 
-                ? '${_deadlineDate!.day}/${_deadlineDate!.month} ${_deadlineTime!.format(context)}' 
-                : 'Deadline', 
-            Icons.access_time, 
-            isTask: true
+            _deadlineDate != null
+                ? '${_deadlineDate!.day}/${_deadlineDate!.month} ${_deadlineTime!.format(context)}'
+                : 'Deadline',
+            Icons.access_time,
+            isTask: true,
           ),
         ),
         const SizedBox(height: 20),
-        _buildDropdownField('# Tag', _selectedTag, (val) {
-          setState(() => _selectedTag = val!);
-        }, ['', 'Health', 'Work', 'Study', 'FYP'], isTag: true),
+        _buildDropdownField(
+          '# Tag',
+          _selectedTag,
+          (val) {
+            setState(() => _selectedTag = val!);
+          },
+          ['', 'Health', 'Work', 'Study', 'FYP'],
+          isTag: true,
+        ),
         const SizedBox(height: 20),
         _buildDropdownField('Priority', _selectedPriority, (val) {
           setState(() => _selectedPriority = val!);
@@ -379,7 +406,10 @@ class _CreateItemPageState extends State<CreateItemPage> {
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade400),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -402,7 +432,13 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
-  Widget _buildDropdownField(String label, String value, void Function(String?) onChanged, List<String> items, {bool isTag = false}) {
+  Widget _buildDropdownField(
+    String label,
+    String value,
+    void Function(String?) onChanged,
+    List<String> items, {
+    bool isTag = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       decoration: _fieldDecoration(),
@@ -416,12 +452,19 @@ class _CreateItemPageState extends State<CreateItemPage> {
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
-              icon: Icon(Icons.unfold_more_rounded, color: Colors.cyan.shade300, size: 20),
+              icon: Icon(
+                Icons.unfold_more_rounded,
+                color: Colors.cyan.shade300,
+                size: 20,
+              ),
               onChanged: onChanged,
               items: items.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
-                  child: Text(value.isEmpty && isTag ? 'None' : value, style: TextStyle(color: Colors.grey.shade600)),
+                  child: Text(
+                    value.isEmpty && isTag ? 'None' : value,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
                 );
               }).toList(),
             ),
@@ -450,7 +493,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
           Positioned(
             bottom: 12,
             right: 12,
-            child: Icon(Icons.drag_handle_rounded, color: Colors.grey.shade300, size: 20),
+            child: Icon(
+              Icons.drag_handle_rounded,
+              color: Colors.grey.shade300,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -483,12 +530,23 @@ class _CreateItemPageState extends State<CreateItemPage> {
                       ? Border.all(color: Colors.white, width: 3)
                       : null,
                   boxShadow: selectedColorIndex == index
-                      ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                          ),
+                        ]
                       : null,
                 ),
-                child: index == 0 
-                  ? Center(child: Icon(Icons.public, size: 20, color: Colors.grey.shade400))
-                  : null,
+                child: index == 0
+                    ? Center(
+                        child: Icon(
+                          Icons.public,
+                          size: 20,
+                          color: Colors.grey.shade400,
+                        ),
+                      )
+                    : null,
               ),
             );
           }),
@@ -510,7 +568,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -540,7 +598,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.03),
+          color: Colors.black.withValues(alpha: 0.03),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

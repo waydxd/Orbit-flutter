@@ -7,17 +7,22 @@ import '../../../utils/logger.dart';
 
 class CalendarViewModel extends BaseViewModel {
   final CalendarRepository _calendarRepository;
-  
+
   List<EventModel> _events = [];
   List<TaskModel> _tasks = [];
-  
+
   List<EventModel> get events => _events;
   List<TaskModel> get tasks => _tasks;
-  
-  CalendarViewModel({CalendarRepository? calendarRepository})
-      : _calendarRepository = calendarRepository ?? CalendarRepository(ApiClient());
 
-  Future<void> fetchEvents({required String userId, DateTime? startTime, DateTime? endTime}) async {
+  CalendarViewModel({CalendarRepository? calendarRepository})
+    : _calendarRepository =
+          calendarRepository ?? CalendarRepository(ApiClient());
+
+  Future<void> fetchEvents({
+    required String userId,
+    DateTime? startTime,
+    DateTime? endTime,
+  }) async {
     await executeAsync(() async {
       final fetchedEvents = await _calendarRepository.getEvents(
         userId: userId,
@@ -55,7 +60,10 @@ class CalendarViewModel extends BaseViewModel {
         ]);
         _events = results[0] as List<EventModel>;
         _tasks = results[1] as List<TaskModel>;
-        Logger.infoWithTag('CalendarViewModel', 'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks');
+        Logger.infoWithTag(
+          'CalendarViewModel',
+          'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks',
+        );
       } catch (e) {
         Logger.errorWithTag('CalendarViewModel', 'Fetch all failed: $e');
         rethrow;
@@ -77,4 +85,3 @@ class CalendarViewModel extends BaseViewModel {
     });
   }
 }
-

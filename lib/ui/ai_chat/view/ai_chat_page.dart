@@ -22,7 +22,7 @@ class AiChatPage extends StatelessWidget {
                     const SizedBox(height: 30),
                     _buildSuggestionsCard(),
                     const SizedBox(height: 100), // Space before bubble
-                    _buildChatBubble("Hi, I am Orbi! How can I help you?"),
+                    _buildChatBubble('Hi, I am Orbi! How can I help you?'),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -64,8 +64,8 @@ class AiChatPage extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6366F1).withOpacity(0.15 / i),
-                    const Color(0xFF6366F1).withOpacity(0),
+                    const Color(0xFF6366F1).withValues(alpha: 0.15 / i),
+                    const Color(0xFF6366F1).withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -87,18 +87,14 @@ class AiChatPage extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6366F1).withOpacity(0.4),
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.4),
                   blurRadius: 25,
                   spreadRadius: 2,
                 ),
               ],
             ),
             child: const Center(
-              child: Icon(
-                Icons.auto_awesome,
-                color: Colors.white,
-                size: 36,
-              ),
+              child: Icon(Icons.auto_awesome, color: Colors.white, size: 36),
             ),
           ),
         ],
@@ -117,12 +113,16 @@ class AiChatPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.auto_awesome_outlined, color: Color(0xFF6366F1), size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                "You can ask me about...",
+              Icon(
+                Icons.auto_awesome_outlined,
+                color: Color(0xFF6366F1),
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'You can ask me about...',
                 style: TextStyle(
                   color: Color(0xFF5E6272),
                   fontSize: 16,
@@ -136,10 +136,10 @@ class AiChatPage extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _buildSuggestionChip("Task creation"),
-              _buildSuggestionChip("Available time"),
-              _buildSuggestionChip("Rearrange schedules"),
-              _buildSuggestionChip("Next event"),
+              _buildSuggestionChip('Task creation'),
+              _buildSuggestionChip('Available time'),
+              _buildSuggestionChip('Rearrange schedules'),
+              _buildSuggestionChip('Next event'),
             ],
           ),
         ],
@@ -153,7 +153,9 @@ class AiChatPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.4)),
+        border: Border.all(
+          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+        ),
       ),
       child: Text(
         label,
@@ -175,7 +177,7 @@ class AiChatPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -229,11 +231,15 @@ class AiChatPage extends StatelessWidget {
           Container(
             width: 54,
             height: 54,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDDE1FF),
+            decoration: const BoxDecoration(
+              color: Color(0xFFDDE1FF),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.send_rounded, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.send_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
         ],
       ),

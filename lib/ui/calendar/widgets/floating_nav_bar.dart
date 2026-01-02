@@ -9,11 +9,11 @@ class FloatingNavBar extends StatelessWidget {
   final int currentIndex;
 
   const FloatingNavBar({
-    super.key,
     required this.onCalendarTap,
     required this.onCreateTaskTap,
     required this.onCreateTaskLongPress,
     required this.onTodoListTap,
+    super.key,
     this.currentIndex = 0,
   });
 
@@ -35,7 +35,7 @@ class FloatingNavBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(40),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 25,
                   offset: const Offset(0, 8),
                 ),
@@ -53,10 +53,10 @@ class FloatingNavBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Spacer for the center button
                 const SizedBox(width: 80),
-                
+
                 // Todo List Button (Right)
                 Expanded(
                   child: Center(
@@ -70,7 +70,7 @@ class FloatingNavBar extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Create Task Button (Center) - Floating above
           Positioned(
             top: -35,
@@ -84,7 +84,7 @@ class FloatingNavBar extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
