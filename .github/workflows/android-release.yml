@@ -36,10 +36,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Preinstall CMake
-        run: | 
-          sdkmanager "cmake;3.22.1" 
-          ls $ANDROID_HOME/cmake
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Decode Android keystore
         run: |
