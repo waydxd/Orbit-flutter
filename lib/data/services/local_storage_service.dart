@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalStorageService {
   const LocalStorageService._();
   static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
