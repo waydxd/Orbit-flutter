@@ -68,25 +68,18 @@ jobs:
       - name: List produced APKs
         run: ls -l build/app/outputs/flutter-apk || true
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Create/update GitHub Release and upload APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
+          # Upload the built APK(s) to the release. Use newline-separated globs if needed.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           body: "Release ${{ github.ref_name }} — APK for F-Droid"
+          overwrite_files: true
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK to release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: build/app/outputs/flutter-apk/app-release.apk
-          asset_name: app-${{ github.ref_name }}.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Warn if keystore was not provided
-        run: |
-          echo "WARNING: ANDROID_KEYSTORE_BASE64 secret not set. Uploaded APK will be unsigned (or signed with debug key) and not suitable for production/F-Droid installs."
 
