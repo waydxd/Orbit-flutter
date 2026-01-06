@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.calendar"
+    namespace = "com.orbit.calendar"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "28.2.13676358"
 
@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.calendar"
+        applicationId = "com.orbit.calendar"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
