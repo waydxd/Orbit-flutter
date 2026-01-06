@@ -14,7 +14,7 @@ class EnvironmentConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://localhost:8000';
+        return 'https://wayd.zapto.org';
       case Environment.staging:
         return 'https://wayd.zapto.org';
       case Environment.production:

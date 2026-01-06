@@ -1,4 +1,4 @@
-name: Orbit
+name: orbit_calendar
 description: "AI-powered calendar app with elegant UX, smart scheduling, natural language input, and cross-device sync for seamless productivity."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
