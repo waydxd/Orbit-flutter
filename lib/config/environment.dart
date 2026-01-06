@@ -14,11 +14,11 @@ class EnvironmentConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://vml1wk238.cse.ust.hk';
+        return 'https://wayd.zapto.org';
       case Environment.staging:
-        return 'https://staging-api.orbit-calendar.com';
+        return 'https://wayd.zapto.org';
       case Environment.production:
-        return 'https://api.orbit-calendar.com';
+        return 'https://wayd.zapto.org';
     }
   }
 
