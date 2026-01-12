@@ -1,10 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../view_model/chat_view_model.dart';
+import '../../../data/models/chat_message_model.dart';
 
 class AiChatPage extends StatelessWidget {
   const AiChatPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ChatViewModel(),
+      child: const _AiChatView(),
+    );
+  }
+}
+
+class _AiChatView extends StatefulWidget {
+  const _AiChatView();
+
+  @override
+  State<_AiChatView> createState() => _AiChatViewState();
+}
+
+class _AiChatViewState extends State<_AiChatView> {
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _handleSend(ChatViewModel viewModel, String text) {
+    if (text.trim().isEmpty) return;
+    viewModel.sendMessage(text);
+    _textController.clear();
+    _scrollToBottom();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<ChatViewModel>();
+
+    // Auto-scroll when messages change
+    if (viewModel.messages.isNotEmpty) {
+      _scrollToBottom();
+    }
+
+    final hasInteracted = viewModel.messages.length > 1;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -12,23 +70,46 @@ class AiChatPage extends StatelessWidget {
           children: [
             _buildHeader(context),
             Expanded(
-              child: SingleChildScrollView(
+              child: ListView.builder(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    _buildAvatar(),
-                    const SizedBox(height: 30),
-                    _buildSuggestionsCard(),
-                    const SizedBox(height: 100), // Space before bubble
-                    _buildChatBubble('Hi, I am Orbi! How can I help you?'),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+                itemCount: viewModel.messages.isEmpty ? 1 : viewModel.messages.length + 1, // +1 for header items
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    // Header items (Avatar + Suggestions)
+                    if (hasInteracted) {
+                      return const SizedBox(height: 20);
+                    }
+                    return Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        _buildAvatar(),
+                        const SizedBox(height: 30),
+                        _buildSuggestionsCard(viewModel),
+                        const SizedBox(height: 40),
+                      ],
+                    );
+                  }
+
+                  final message = viewModel.messages[index - 1];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _buildChatBubble(message),
+                  );
+                },
               ),
             ),
-            _buildInputSection(),
+            if (viewModel.isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: LinearProgressIndicator(
+                   backgroundColor: Colors.transparent,
+                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                   minHeight: 2,
+                ),
+              ),
+            _buildInputSection(viewModel),
           ],
         ),
       ),
@@ -102,7 +183,7 @@ class AiChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestionsCard() {
+  Widget _buildSuggestionsCard(ChatViewModel viewModel) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -136,10 +217,10 @@ class AiChatPage extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _buildSuggestionChip('Task creation'),
-              _buildSuggestionChip('Available time'),
-              _buildSuggestionChip('Rearrange schedules'),
-              _buildSuggestionChip('Next event'),
+              _buildSuggestionChip('Task creation', viewModel),
+              _buildSuggestionChip('Available time', viewModel),
+              _buildSuggestionChip('Rearrange schedules', viewModel),
+              _buildSuggestionChip('Next event', viewModel),
             ],
           ),
         ],
@@ -147,55 +228,72 @@ class AiChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestionChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
-        ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFF5E6272),
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChatBubble(String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF5E6272),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
+  Widget _buildSuggestionChip(String label, ChatViewModel viewModel) {
+    return InkWell(
+      onTap: () => _handleSend(viewModel, label),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
           color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF5E6272),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInputSection() {
+  Widget _buildChatBubble(ChatMessage message) {
+    final isUser = message.isUser;
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        margin: EdgeInsets.only(
+          left: isUser ? 50 : 0,
+          right: isUser ? 0 : 50,
+        ),
+        decoration: BoxDecoration(
+          color: isUser ? const Color(0xFF6366F1) : const Color(0xFF5E6272),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isUser ? 20 : 5),
+            bottomRight: Radius.circular(isUser ? 5 : 20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          message.content,
+          textAlign: TextAlign.left,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputSection(ChatViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(25, 0, 25, 25),
       child: Row(
@@ -208,37 +306,43 @@ class AiChatPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE0E7FF), width: 1.5),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
-                        decoration: InputDecoration(
+                        controller: _textController,
+                        onSubmitted: (value) => _handleSend(viewModel, value),
+                        decoration: const InputDecoration(
                           border: InputBorder.none,
-                          hintText: '',
+                          hintText: 'Type a message...',
                         ),
                       ),
                     ),
                   ),
-                  Icon(Icons.mic, color: Color(0xFF5E6272), size: 24),
-                  SizedBox(width: 16),
+                  const Icon(Icons.mic, color: Color(0xFF5E6272), size: 24),
+                  const SizedBox(width: 16),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 15),
-          Container(
-            width: 54,
-            height: 54,
-            decoration: const BoxDecoration(
-              color: Color(0xFFDDE1FF),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.send_rounded,
-              color: Colors.white,
-              size: 24,
+          InkWell(
+            onTap: () => _handleSend(viewModel, _textController.text),
+            borderRadius: BorderRadius.circular(50),
+            child: Container(
+              width: 54,
+              height: 54,
+              decoration: const BoxDecoration(
+                color: Color(0xFFDDE1FF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ),
         ],
