@@ -4,7 +4,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
 
   // API Configuration
-  static const String baseUrl = 'https://api.orbit-calendar.com';
+  static const String baseUrl = 'https://wayd.zapto.org';
   static const String apiVersion = 'v1';
 
   // Local Storage Keys

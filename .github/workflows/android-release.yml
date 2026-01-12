@@ -1,0 +1,85 @@
+# Workflow: Build Android APK and publish to GitHub Release (for F-Droid)
+# Triggers on push to tags like v1.2.3 and on manual dispatch.
+# - Builds a release APK with Flutter
+# - Optionally decodes a keystore from secrets to sign the APK
+# - Creates/updates a GitHub Release and uploads the APK asset
+
+name: android-release
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # needed to create releases and upload assets
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.21.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+      - run: flutter --version
+
+      - name: Set up JDK (for Gradle)
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode Android keystore
+        run: |
+          mkdir -p android/app
+          echo "Decoding keystore to android/app/keystore.jks"
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
+
+      - name: Write android/key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=app/keystore.jks
+          EOF
+
+      - name: Show Java and Flutter versions
+        run: |
+          java -version
+          flutter --version
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build release APK (universal)
+        run: flutter build apk --release
+
+      - name: List produced APKs
+        run: ls -l build/app/outputs/flutter-apk || true
+
+      - name: Create/update GitHub Release and upload APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          # Upload the built APK(s) to the release. Use newline-separated globs if needed.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: "Release ${{ github.ref_name }} — APK for F-Droid"
+          overwrite_files: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
