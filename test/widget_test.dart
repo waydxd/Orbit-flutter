@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:calendar/app.dart';
+import 'package:orbit_calendar/app.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {

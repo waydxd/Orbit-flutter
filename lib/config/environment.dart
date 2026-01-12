@@ -34,11 +34,11 @@ class EnvironmentConfig {
       case Environment.local:
         return 'http://$_localHost:8080';
       case Environment.development:
-        return 'https://dev-api.orbit-calendar.com';
+        return 'https://wayd.zapto.org';
       case Environment.staging:
-        return 'https://staging-api.orbit-calendar.com';
+        return 'https://wayd.zapto.org';
       case Environment.production:
-        return 'https://api.orbit-calendar.com';
+        return 'https://wayd.zapto.org';
     }
   }
 
