@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
+import 'ui/home/home_screen.dart';
 import 'config/app_config.dart';
 
 /// Main application widget
@@ -22,9 +23,30 @@ class OrbitApp extends StatelessWidget {
   }
 }
 
-/// Temporary splash screen
-class SplashScreen extends StatelessWidget {
+/// Temporary splash screen with auto-navigation
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _navigateToHome();
+  }
+
+  Future<void> _navigateToHome() async {
+    // Wait for 2 seconds to show splash, then navigate to home
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
