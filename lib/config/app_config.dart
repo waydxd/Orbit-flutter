@@ -25,4 +25,10 @@ class AppConfig {
   // Timeouts
   static const Duration networkTimeout = Duration(seconds: 30);
   static const Duration syncInterval = Duration(minutes: 15);
+
+  // Hugging Face API Configuration
+  static const String huggingFaceBaseUrl = 'https://router.huggingface.co';
+  static const String huggingFaceApiKey = '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'; // Set via environment or secure storage
+  static const String hfClassificationModel = 'facebook/bart-large-mnli';
+  static const String hfNerModel = 'dslim/bert-base-NER';
 }

@@ -7,6 +7,7 @@ import '../widgets/floating_nav_bar.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
+import '../../nlp_input/view/nlp_input_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 
@@ -300,6 +301,53 @@ class _CalendarPageState extends State<CalendarPage>
                     ),
                   ),
                 ),
+
+              // NLP Test Button (top-right corner)
+              Positioned(
+                top: topPadding + 10,
+                right: 16,
+                child: Material(
+                  color: const Color(0xFF6366F1),
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NlpInputPage(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'NLP Test',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           );
         },

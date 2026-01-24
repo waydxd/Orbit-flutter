@@ -7,19 +7,31 @@ import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
 
 class CreateItemPage extends StatefulWidget {
-  const CreateItemPage({super.key});
+  final bool initialIsEvent;
+  
+
+  const CreateItemPage({
+    super.key,
+    this.initialIsEvent = true,
+  });
 
   @override
   State<CreateItemPage> createState() => _CreateItemPageState();
 }
 
 class _CreateItemPageState extends State<CreateItemPage> {
-  bool isEvent = true;
+  late bool isEvent;
   int selectedColorIndex = 0;
 
   // Form controllers and state
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    isEvent = widget.initialIsEvent;
+  }
 
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();

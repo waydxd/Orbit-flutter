@@ -14,7 +14,8 @@ class EnvironmentConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'https://wayd.zapto.org';
+        // Use localhost for iOS simulator and web, 10.0.2.2 for Android emulator
+        return 'http://localhost:8080';
       case Environment.staging:
         return 'https://wayd.zapto.org';
       case Environment.production:
