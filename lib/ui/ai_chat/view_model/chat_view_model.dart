@@ -61,6 +61,10 @@ class ChatViewModel extends BaseViewModel {
         );
 
         // Validate response format
+        if (!response.containsKey('reply')) {
+          throw Exception('Invalid response from server. Please try again.');
+        }
+        
         final dynamic replyRaw = response['reply'];
         if (replyRaw is! String || replyRaw.isEmpty) {
           throw Exception('Invalid response from server. Please try again.');
@@ -88,11 +92,20 @@ class ChatViewModel extends BaseViewModel {
         // Remove the user message on failure
         _messages.remove(userMsg);
         
+        // Extract error message for display
+        String errorMessage = 'Sorry, I couldn\'t send that message. Please try again.';
+        if (e is Exception) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          if (msg.isNotEmpty) {
+            errorMessage = msg;
+          }
+        }
+        
         // Add error message in chat
         final errorMsg = ChatMessage(
           id: const Uuid().v4(),
           role: 'assistant',
-          content: 'Sorry, I couldn\'t send that message. Please try again.',
+          content: errorMessage,
           createdAt: DateTime.now(),
         );
         _messages.add(errorMsg);
