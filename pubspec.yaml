@@ -1,5 +1,5 @@
-name: calendar
-description: "A new Flutter project."
+name: orbit_calendar
+description: "AI-powered calendar app with elegant UX, smart scheduling, natural language input, and cross-device sync for seamless productivity."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -152,7 +152,7 @@ flutter_launcher_icons:
   image_path_ios_dark_transparent: "assets/images/icon-foreground-1024x1024.png"
   image_path_ios_tinted_grayscale: "assets/images/icon-monochrome-1024x1024.png"
   adaptive_icon_background: "assets/images/icon-background-1024x1024.png" # only available for Android 8.0 devices and above
-  adaptive_icon_foreground: "assets/images/icon-foreground-1024x1024.png" # only available for Android 8.0 devices and above
+  adaptive_icon_foreground: "assets/images/icon-monochrome-1024x1024.png" # only available for Android 8.0 devices and above
   adaptive_icon_foreground_inset: 16 # only available for Android 8.0 devices and above
   adaptive_icon_monochrome: "assets/images/icon-monochrome-1024x1024.png" # only available for Android 13 devices and above
   min_sdk_android: 21 # android min sdk min:16, default 21

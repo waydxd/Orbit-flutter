@@ -1,8 +1,10 @@
 # Orbit: An Intelligent Calendar and Planning Solution Powered by AI
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev) [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev) [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev) [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 This is the Flutter frontend repository for the Orbit app, a smart calendar and planning mobile application developed as a Final Year Project (FYP) at HKUST (2025-2026). Orbit uses AI to provide personalized scheduling, habit tracking, natural language input, OCR-based event extraction, and conversational assistance. It aims to address gaps in existing apps like Apple Calendar, Google Calendar, Todoist, and Notion by offering proactive, adaptive features.
+
+License: This project is licensed under the GNU Affero General Public License v3.0 — see the [LICENSE](./LICENSE) file for details.
 
 ## Project Overview
 - **Objectives** (from proposal):
@@ -39,8 +41,8 @@ This is the Flutter frontend repository for the Orbit app, a smart calendar and 
 - API Keys: Google Maps, Gemini API, Resend (email) – store in `.env` (use `flutter_dotenv` package).
 
 ### Installation
-1. Clone the repo: `git clone https://github.com/waydxd/orbit-smart-calendar-flutter.git`
-2. Navigate: `cd orbit-smart-calendar-flutter`
+1. Clone the repo: `git clone https://github.com/waydxd/Orbit-flutter.git`
+2. Navigate: `cd Orbit-flutter`
 3. Install dependencies: `flutter pub get`
 4. Run: `flutter run` (select device/emulator)
 
@@ -48,3 +50,4 @@ For iOS: Ensure CocoaPods is installed (`pod install` in `ios/` folder).
 
 ### Environment Configuration
 - Create `.env` in root:
+
