@@ -65,8 +65,8 @@ class ChatViewModel extends BaseViewModel {
           throw Exception('Invalid response from server. Please try again.');
         }
         
-        final dynamic replyRaw = response['reply'];
-        if (replyRaw is! String || replyRaw.isEmpty) {
+        final reply = response['reply'] as String?;
+        if (reply == null || reply.isEmpty) {
           throw Exception('Invalid response from server. Please try again.');
         }
 
@@ -76,7 +76,6 @@ class ChatViewModel extends BaseViewModel {
         }
 
         // Add assistant reply
-        final reply = replyRaw;
         final assistantMsg = ChatMessage(
           id: const Uuid().v4(),
           role: 'assistant',
