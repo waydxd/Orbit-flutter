@@ -64,7 +64,7 @@ dependencies:
   geocoding: ^4.0.0
 
   # Notifications
-  flutter_local_notifications: ^19.5.0
+  flutter_local_notifications: ^20.0.0
 
   # Image & Camera
   image_picker: ^1.1.2
