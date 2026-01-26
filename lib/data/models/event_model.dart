@@ -89,4 +89,3 @@ class EventModel extends BaseModel {
     );
   }
 }
-

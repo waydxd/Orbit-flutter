@@ -91,4 +91,3 @@ class TaskModel extends BaseModel {
     );
   }
 }
-

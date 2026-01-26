@@ -74,7 +74,9 @@ class _AiChatViewState extends State<_AiChatView> {
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 30),
-                itemCount: viewModel.messages.isEmpty ? 1 : viewModel.messages.length + 1, // +1 for header items
+                itemCount: viewModel.messages.isEmpty
+                    ? 1
+                    : viewModel.messages.length + 1, // +1 for header items
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     // Header items (Avatar + Suggestions)
@@ -104,9 +106,9 @@ class _AiChatViewState extends State<_AiChatView> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: LinearProgressIndicator(
-                   backgroundColor: Colors.transparent,
-                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
-                   minHeight: 2,
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                  minHeight: 2,
                 ),
               ),
             _buildInputSection(viewModel),
@@ -259,10 +261,7 @@ class _AiChatViewState extends State<_AiChatView> {
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        margin: EdgeInsets.only(
-          left: isUser ? 50 : 0,
-          right: isUser ? 0 : 50,
-        ),
+        margin: EdgeInsets.only(left: isUser ? 50 : 0, right: isUser ? 0 : 50),
         decoration: BoxDecoration(
           color: isUser ? const Color(0xFF6366F1) : const Color(0xFF5E6272),
           borderRadius: BorderRadius.only(

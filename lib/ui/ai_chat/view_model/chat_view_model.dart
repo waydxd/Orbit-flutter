@@ -11,17 +11,17 @@ class ChatViewModel extends BaseViewModel {
   String? _conversationId;
 
   ChatViewModel({ChatRepository? chatRepository})
-      : _chatRepository = chatRepository ?? ChatRepository(ApiClient()) {
-        // Add initial welcome message
-        _messages.add(
-          ChatMessage(
-            id: const Uuid().v4(),
-            role: 'assistant',
-            content: 'Hi, I am Orbi! How can I help you?',
-            createdAt: DateTime.now(),
-          ),
-        );
-      }
+    : _chatRepository = chatRepository ?? ChatRepository(ApiClient()) {
+    // Add initial welcome message
+    _messages.add(
+      ChatMessage(
+        id: const Uuid().v4(),
+        role: 'assistant',
+        content: 'Hi, I am Orbi! How can I help you?',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
 
@@ -66,9 +66,9 @@ class ChatViewModel extends BaseViewModel {
           createdAt: DateTime.now(),
         );
         _messages.add(assistantMsg);
-        
+
         // TODO: Handle proposed actions if any (response['proposed_action_summary'])
-        
+
         notifyListeners();
       } catch (e) {
         // Remove user message if failed? Or show error state?
@@ -78,4 +78,3 @@ class ChatViewModel extends BaseViewModel {
     }, showLoading: true); // Show loading indicator (e.g. typing animation)
   }
 }
-
