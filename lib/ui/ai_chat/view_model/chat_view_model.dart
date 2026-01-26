@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:uuid/uuid.dart';
 import '../../core/view_models/base_view_model.dart';
 import '../../../data/repositories/chat_repository.dart';
@@ -9,9 +10,11 @@ class ChatViewModel extends BaseViewModel {
   final ChatRepository _chatRepository;
   final List<ChatMessage> _messages = [];
   String? _conversationId;
+  final List<Completer<void>> _messageQueue = [];
+  bool _isSending = false;
 
-  ChatViewModel({ChatRepository? chatRepository})
-    : _chatRepository = chatRepository ?? ChatRepository(ApiClient()) {
+  ChatViewModel({required ChatRepository chatRepository})
+    : _chatRepository = chatRepository {
     // Add initial welcome message
     _messages.add(
       ChatMessage(
@@ -28,9 +31,29 @@ class ChatViewModel extends BaseViewModel {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    // Create a completer for this message to queue it
+    final completer = Completer<void>();
+    _messageQueue.add(completer);
+
+    // Process the queue
+    await _processMessageQueue(text, completer);
+  }
+
+  Future<void> _processMessageQueue(String text, Completer<void> completer) async {
+    // Wait for previous messages to complete
+    if (_isSending) {
+      await completer.future;
+      return;
+    }
+
+    _isSending = true;
+
     final userId = LocalStorageService.getPreference<String>('user_id');
     if (userId == null) {
       setError('User not found. Please login again.');
+      _isSending = false;
+      _messageQueue.remove(completer);
+      completer.complete();
       return;
     }
 
@@ -52,13 +75,19 @@ class ChatViewModel extends BaseViewModel {
           conversationId: _conversationId,
         );
 
-        // Update conversation ID if it's new
+        // Validate response format
+        final dynamic replyRaw = response['reply'];
+        if (replyRaw is! String || replyRaw.isEmpty) {
+          throw Exception('Invalid response from server. Please try again.');
+        }
+
+        // Update conversation ID if it's new (only after successful response)
         if (response.containsKey('conversation_id')) {
           _conversationId = response['conversation_id'];
         }
 
         // Add assistant reply
-        final reply = response['reply'] as String;
+        final reply = replyRaw;
         final assistantMsg = ChatMessage(
           id: const Uuid().v4(),
           role: 'assistant',
@@ -71,9 +100,31 @@ class ChatViewModel extends BaseViewModel {
 
         notifyListeners();
       } catch (e) {
-        // Remove user message if failed? Or show error state?
-        // For now, just show error toast via BaseViewModel
+        // Remove the user message on failure
+        _messages.remove(userMsg);
+        
+        // Add error message in chat
+        final errorMsg = ChatMessage(
+          id: const Uuid().v4(),
+          role: 'assistant',
+          content: 'Sorry, I couldn\'t send that message. Please try again.',
+          createdAt: DateTime.now(),
+        );
+        _messages.add(errorMsg);
+        notifyListeners();
+        
+        // Rethrow so BaseViewModel can handle global error UI
         rethrow;
+      } finally {
+        _isSending = false;
+        _messageQueue.remove(completer);
+        completer.complete();
+        
+        // Process next message in queue if any
+        if (_messageQueue.isNotEmpty) {
+          final nextCompleter = _messageQueue.first;
+          // The next message will be processed when sendMessage is called again
+        }
       }
     }, showLoading: true); // Show loading indicator (e.g. typing animation)
   }
