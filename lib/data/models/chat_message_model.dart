@@ -2,6 +2,8 @@ import 'package:uuid/uuid.dart';
 import 'base_model.dart';
 
 class ChatMessage extends BaseModel {
+  static const _uuid = Uuid();
+  
   final String id;
   final String role; // 'user' or 'assistant'
   final String content;
@@ -18,7 +20,7 @@ class ChatMessage extends BaseModel {
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      id: json['id'] as String? ?? const Uuid().v4(),
+      id: json['id'] as String? ?? _uuid.v4(),
       role: json['role'] as String,
       content: json['content'] as String,
       createdAt: json['created_at'] != null

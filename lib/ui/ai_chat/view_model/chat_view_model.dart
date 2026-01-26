@@ -10,7 +10,6 @@ class ChatViewModel extends BaseViewModel {
   final ChatRepository _chatRepository;
   final List<ChatMessage> _messages = [];
   String? _conversationId;
-  final List<Completer<void>> _messageQueue = [];
   bool _isSending = false;
 
   ChatViewModel({required ChatRepository chatRepository})
@@ -31,20 +30,8 @@ class ChatViewModel extends BaseViewModel {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    // Create a completer for this message to queue it
-    final completer = Completer<void>();
-    _messageQueue.add(completer);
-
-    // Process the queue
-    await _processMessageQueue(text, completer);
-  }
-
-  Future<void> _processMessageQueue(String text, Completer<void> completer) async {
-    // Wait for previous messages to complete
-    if (_isSending) {
-      await completer.future;
-      return;
-    }
+    // Prevent sending multiple messages simultaneously
+    if (_isSending) return;
 
     _isSending = true;
 
@@ -52,8 +39,6 @@ class ChatViewModel extends BaseViewModel {
     if (userId == null) {
       setError('User not found. Please login again.');
       _isSending = false;
-      _messageQueue.remove(completer);
-      completer.complete();
       return;
     }
 
@@ -117,14 +102,6 @@ class ChatViewModel extends BaseViewModel {
         rethrow;
       } finally {
         _isSending = false;
-        _messageQueue.remove(completer);
-        completer.complete();
-        
-        // Process next message in queue if any
-        if (_messageQueue.isNotEmpty) {
-          final nextCompleter = _messageQueue.first;
-          // The next message will be processed when sendMessage is called again
-        }
       }
     }, showLoading: true); // Show loading indicator (e.g. typing animation)
   }

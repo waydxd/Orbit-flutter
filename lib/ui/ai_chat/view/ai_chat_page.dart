@@ -33,7 +33,7 @@ class _AiChatView extends StatefulWidget {
 class _AiChatViewState extends State<_AiChatView> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  int _lastMessageCount = 0;
+  bool _shouldScrollToBottom = false;
 
   @override
   void dispose() {
@@ -44,12 +44,13 @@ class _AiChatViewState extends State<_AiChatView> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (_scrollController.hasClients && _shouldScrollToBottom) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+        _shouldScrollToBottom = false;
       }
     });
   }
@@ -58,16 +59,16 @@ class _AiChatViewState extends State<_AiChatView> {
     if (text.trim().isEmpty) return;
     viewModel.sendMessage(text);
     _textController.clear();
-    _scrollToBottom();
+    // Mark that we should scroll to bottom after the next rebuild
+    _shouldScrollToBottom = true;
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ChatViewModel>();
 
-    // Only auto-scroll when messages are actually added, not on every rebuild
-    if (viewModel.messages.length > _lastMessageCount) {
-      _lastMessageCount = viewModel.messages.length;
+    // Scroll to bottom when needed
+    if (_shouldScrollToBottom) {
       _scrollToBottom();
     }
 
