@@ -98,8 +98,7 @@ class ChatViewModel extends BaseViewModel {
         _messages.add(errorMsg);
         notifyListeners();
         
-        // Rethrow so BaseViewModel can handle global error UI
-        rethrow;
+        // Don't rethrow - we've already handled the error in the UI
       } finally {
         _isSending = false;
       }
