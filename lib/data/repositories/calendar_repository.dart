@@ -8,6 +8,18 @@ class CalendarRepository {
 
   CalendarRepository(this._apiClient);
 
+  /// Format DateTime to RFC3339 format expected by the backend
+  /// Converts to UTC and appends 'Z' suffix
+  static String _formatDateTimeForApi(DateTime dateTime) {
+    final utc = dateTime.toUtc();
+    return '${utc.year.toString().padLeft(4, '0')}-'
+        '${utc.month.toString().padLeft(2, '0')}-'
+        '${utc.day.toString().padLeft(2, '0')}T'
+        '${utc.hour.toString().padLeft(2, '0')}:'
+        '${utc.minute.toString().padLeft(2, '0')}:'
+        '${utc.second.toString().padLeft(2, '0')}Z';
+  }
+
   Future<List<EventModel>> getEvents({
     required String userId,
     DateTime? startTime,
@@ -16,10 +28,10 @@ class CalendarRepository {
     try {
       final queryParams = {'user_id': userId};
       if (startTime != null) {
-        queryParams['start_time'] = startTime.toIso8601String();
+        queryParams['start_time'] = _formatDateTimeForApi(startTime);
       }
       if (endTime != null) {
-        queryParams['end_time'] = endTime.toIso8601String();
+        queryParams['end_time'] = _formatDateTimeForApi(endTime);
       }
 
       final response = await _apiClient.get(

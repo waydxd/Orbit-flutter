@@ -9,6 +9,8 @@ import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import '../../../data/models/event_model.dart';
+import 'event_detail_page.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -738,11 +740,14 @@ class _CalendarPageState extends State<CalendarPage>
                   left: leftMargin,
                   right: 0,
                   height: duration * _hourHeight - 20,
-                  child: _buildTaskCard(
-                    event.title,
-                    event.location,
-                    '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
-                    _getEventColor(event.title),
+                  child: GestureDetector(
+                    onTap: () => _navigateToEventDetail(event),
+                    child: _buildTaskCard(
+                      event.title,
+                      event.location,
+                      '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                      _getEventColor(event.title),
+                    ),
                   ),
                 );
               }),
@@ -806,6 +811,16 @@ class _CalendarPageState extends State<CalendarPage>
     return (now.hour + now.minute / 60.0) * _hourHeight;
   }
 
+  // Navigate to event detail page with AI suggestions
+  void _navigateToEventDetail(EventModel event) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EventDetailPage(event: event),
+      ),
+    );
+  }
+
   Widget _buildTaskCard(
     String title,
     String subtitle,
@@ -814,7 +829,7 @@ class _CalendarPageState extends State<CalendarPage>
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(16),
@@ -828,28 +843,39 @@ class _CalendarPageState extends State<CalendarPage>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Flexible(
+              child: Text(
+                subtitle,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+          const Spacer(),
           Align(
             alignment: Alignment.bottomRight,
             child: Text(
               time,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
             ),

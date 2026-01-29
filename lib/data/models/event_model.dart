@@ -44,12 +44,24 @@ class EventModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
+      'start_time': _formatDateTimeForApi(startTime),
+      'end_time': _formatDateTimeForApi(endTime),
       'location': location,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': _formatDateTimeForApi(createdAt),
+      'updated_at': _formatDateTimeForApi(updatedAt),
     };
+  }
+
+  /// Format DateTime to RFC3339 format expected by the backend
+  /// Converts to UTC and appends 'Z' suffix
+  static String _formatDateTimeForApi(DateTime dateTime) {
+    final utc = dateTime.toUtc();
+    return '${utc.year.toString().padLeft(4, '0')}-'
+        '${utc.month.toString().padLeft(2, '0')}-'
+        '${utc.day.toString().padLeft(2, '0')}T'
+        '${utc.hour.toString().padLeft(2, '0')}:'
+        '${utc.minute.toString().padLeft(2, '0')}:'
+        '${utc.second.toString().padLeft(2, '0')}Z';
   }
 
   @override
