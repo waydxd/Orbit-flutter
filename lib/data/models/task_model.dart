@@ -39,6 +39,11 @@ class TaskModel extends BaseModel {
     );
   }
 
+  /// Format DateTime for API (without milliseconds)
+  static String _formatDateTime(DateTime dt) {
+    return '${dt.toUtc().toIso8601String().split('.')[0]}Z';
+  }
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -46,11 +51,11 @@ class TaskModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'due_date': dueDate?.toIso8601String(),
+      'due_date': dueDate != null ? _formatDateTime(dueDate!) : null,
       'completed': completed,
       'priority': priority,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': _formatDateTime(createdAt),
+      'updated_at': _formatDateTime(updatedAt),
     };
   }
 

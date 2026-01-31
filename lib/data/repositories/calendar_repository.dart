@@ -8,6 +8,11 @@ class CalendarRepository {
 
   CalendarRepository(this._apiClient);
 
+  /// Format DateTime for API (without milliseconds)
+  String _formatDateTime(DateTime dt) {
+    return dt.toUtc().toIso8601String().split('.')[0] + 'Z';
+  }
+
   Future<List<EventModel>> getEvents({
     required String userId,
     DateTime? startTime,
@@ -16,10 +21,10 @@ class CalendarRepository {
     try {
       final queryParams = {'user_id': userId};
       if (startTime != null) {
-        queryParams['start_time'] = startTime.toIso8601String();
+        queryParams['start_time'] = _formatDateTime(startTime);
       }
       if (endTime != null) {
-        queryParams['end_time'] = endTime.toIso8601String();
+        queryParams['end_time'] = _formatDateTime(endTime);
       }
 
       final response = await _apiClient.get(

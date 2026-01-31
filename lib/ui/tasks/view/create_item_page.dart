@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -5,6 +6,8 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
+import '../../../data/models/hashtag_prediction.dart';
+import '../../../data/services/hashtag_service.dart';
 
 class CreateItemPage extends StatefulWidget {
   const CreateItemPage({super.key});
@@ -20,6 +23,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   // Form controllers and state
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
+  final TextEditingController _hashtagInputController = TextEditingController();
 
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
@@ -34,6 +38,14 @@ class _CreateItemPageState extends State<CreateItemPage> {
   String _selectedRepeat = 'Never';
   String _selectedPriority = 'medium';
   String _selectedTag = '';
+
+  // Hashtag state
+  final HashtagService _hashtagService = HashtagService();
+  final List<String> _selectedHashtags = [];
+  List<HashtagScore> _suggestedHashtags = [];
+  bool _isLoadingHashtags = false;
+  String? _hashtagError;
+  Timer? _debounceTimer;
 
   final List<Color> eventColors = [
     const Color(0xFFE0E5EC), // The planet/moon one (placeholder)
@@ -50,7 +62,83 @@ class _CreateItemPageState extends State<CreateItemPage> {
   void dispose() {
     _nameController.dispose();
     _detailsController.dispose();
+    _hashtagInputController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  /// Fetch AI hashtag suggestions with debouncing
+  void _fetchHashtagSuggestions() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 800), () async {
+      final eventText = '${_nameController.text} ${_detailsController.text}'.trim();
+      if (eventText.isEmpty) {
+        setState(() {
+          _suggestedHashtags = [];
+          _hashtagError = null;
+        });
+        return;
+      }
+
+      setState(() {
+        _isLoadingHashtags = true;
+        _hashtagError = null;
+      });
+
+      try {
+        final prediction = await _hashtagService.predictHashtags(eventText);
+        if (mounted) {
+          setState(() {
+            _suggestedHashtags = prediction.top5;
+            _isLoadingHashtags = false;
+          });
+        }
+      } on AuthenticationException catch (e) {
+        if (mounted) {
+          setState(() {
+            _hashtagError = e.message;
+            _isLoadingHashtags = false;
+          });
+          // Handle 401 - redirect to login
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Session expired. Please login again.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _hashtagError = 'Failed to get suggestions';
+            _isLoadingHashtags = false;
+          });
+        }
+      }
+    });
+  }
+
+  /// Add a hashtag to selected list
+  void _addHashtag(String hashtag) {
+    final cleanHashtag = hashtag.startsWith('#') ? hashtag : '#$hashtag';
+    if (!_selectedHashtags.contains(cleanHashtag)) {
+      setState(() {
+        _selectedHashtags.add(cleanHashtag);
+      });
+    }
+  }
+
+  /// Remove a hashtag from selected list
+  void _removeHashtag(String hashtag) {
+    setState(() {
+      _selectedHashtags.remove(hashtag);
+    });
+  }
+
+  /// Add manually entered hashtag
+  void _addManualHashtag() {
+    final text = _hashtagInputController.text.trim();
+    if (text.isNotEmpty) {
+      _addHashtag(text);
+      _hashtagInputController.clear();
+    }
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -158,10 +246,21 @@ class _CreateItemPageState extends State<CreateItemPage> {
           startTime: start,
           endTime: end,
           location: '', // Can be added later
+          hashtags: _selectedHashtags,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
         await viewModel.createEvent(event);
+
+        // Submit hashtag feedback for model improvement (optional, non-blocking)
+        if (_selectedHashtags.isNotEmpty) {
+          final eventText = '${_nameController.text} ${_detailsController.text}'.trim();
+          _hashtagService.submitFeedback(
+            userId: currentUserId,
+            eventText: eventText,
+            selectedHashtags: _selectedHashtags,
+          ).catchError((_) {}); // Ignore errors
+        }
       } else {
         DateTime? deadline;
         if (_deadlineDate != null && _deadlineTime != null) {
@@ -319,7 +418,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildEventForm() {
     return Column(
       children: [
-        _buildTextField(_nameController, 'Event name'),
+        _buildEventNameField(),
         const SizedBox(height: 20),
         Row(
           children: [
@@ -355,10 +454,323 @@ class _CreateItemPageState extends State<CreateItemPage> {
           setState(() => _selectedRepeat = val!);
         }, ['Never', 'Daily', 'Weekly', 'Monthly']),
         const SizedBox(height: 20),
-        _buildDetailsField(_detailsController),
+        _buildEventDetailsField(),
+        const SizedBox(height: 20),
+        _buildHashtagSection(),
         const SizedBox(height: 20),
         _buildColorPicker(),
       ],
+    );
+  }
+
+  /// Event name field that triggers hashtag suggestions
+  Widget _buildEventNameField() {
+    return Container(
+      decoration: _fieldDecoration(),
+      child: TextField(
+        controller: _nameController,
+        onChanged: (_) => _fetchHashtagSuggestions(),
+        decoration: InputDecoration(
+          hintText: 'Event name',
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Event details field that triggers hashtag suggestions
+  Widget _buildEventDetailsField() {
+    return Container(
+      height: 150,
+      decoration: _fieldDecoration(),
+      child: Stack(
+        children: [
+          TextField(
+            controller: _detailsController,
+            onChanged: (_) => _fetchHashtagSuggestions(),
+            maxLines: null,
+            decoration: InputDecoration(
+              hintText: 'Details',
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(20),
+            ),
+          ),
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Icon(
+              Icons.drag_handle_rounded,
+              color: Colors.grey.shade300,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Complete hashtag section with manual input, AI suggestions, and selected tags
+  Widget _buildHashtagSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _fieldDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header
+          Row(
+            children: [
+              Icon(Icons.tag, color: Colors.grey.shade600, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Hashtags',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Manual hashtag input
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: TextField(
+                    controller: _hashtagInputController,
+                    decoration: InputDecoration(
+                      hintText: 'Add hashtag...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                    onSubmitted: (_) => _addManualHashtag(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _addManualHashtag,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2CB9B0),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // AI Suggested hashtags section
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome,
+                color: Color(0xFFE195FF),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'AI Suggestions',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (_isLoadingHashtags) ...[
+                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFE195FF),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // AI suggestions or placeholder
+          if (_hashtagError != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade400, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    _hashtagError!,
+                    style: TextStyle(color: Colors.red.shade600, fontSize: 12),
+                  ),
+                ],
+              ),
+            )
+          else if (_suggestedHashtags.isEmpty && !_isLoadingHashtags)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Enter event name or details to get AI hashtag suggestions',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _suggestedHashtags.map((suggestion) {
+                final isSelected = _selectedHashtags.contains(suggestion.hashtag);
+                return GestureDetector(
+                  onTap: () => _addHashtag(suggestion.hashtag),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFE195FF).withValues(alpha: 0.3)
+                          : const Color(0xFFE195FF).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFE195FF)
+                            : const Color(0xFFE195FF).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          suggestion.hashtag,
+                          style: TextStyle(
+                            color: isSelected
+                                ? const Color(0xFF9C27B0)
+                                : const Color(0xFFBA68C8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${(suggestion.confidence * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+          // Selected hashtags section
+          if (_selectedHashtags.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Color(0xFF63E695),
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Selected (${_selectedHashtags.length})',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedHashtags.map((hashtag) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF63E695).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFF63E695).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        hashtag,
+                        style: const TextStyle(
+                          color: Color(0xFF2E7D32),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () => _removeHashtag(hashtag),
+                        child: const Icon(
+                          Icons.close,
+                          color: Color(0xFF2E7D32),
+                          size: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

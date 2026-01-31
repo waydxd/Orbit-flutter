@@ -8,6 +8,7 @@ class EventModel extends BaseModel {
   final DateTime startTime;
   final DateTime endTime;
   final String location;
+  final List<String> hashtags;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,6 +20,7 @@ class EventModel extends BaseModel {
     required this.startTime,
     required this.endTime,
     required this.location,
+    this.hashtags = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -32,9 +34,18 @@ class EventModel extends BaseModel {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       location: json['location'] as String? ?? '',
+      hashtags: (json['hashtags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
+  }
+
+  /// Format DateTime for API (without milliseconds)
+  static String _formatDateTime(DateTime dt) {
+    return '${dt.toUtc().toIso8601String().split('.')[0]}Z';
   }
 
   @override
@@ -44,11 +55,12 @@ class EventModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
+      'start_time': _formatDateTime(startTime),
+      'end_time': _formatDateTime(endTime),
       'location': location,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'hashtags': hashtags,
+      'created_at': _formatDateTime(createdAt),
+      'updated_at': _formatDateTime(updatedAt),
     };
   }
 
@@ -61,6 +73,7 @@ class EventModel extends BaseModel {
     startTime,
     endTime,
     location,
+    hashtags,
     createdAt,
     updatedAt,
   ];
@@ -73,6 +86,7 @@ class EventModel extends BaseModel {
     DateTime? startTime,
     DateTime? endTime,
     String? location,
+    List<String>? hashtags,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -84,6 +98,7 @@ class EventModel extends BaseModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
+      hashtags: hashtags ?? this.hashtags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
