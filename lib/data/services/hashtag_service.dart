@@ -21,30 +21,41 @@ class HashtagService {
   late final Dio _dio;
 
   HashtagService() {
-    _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: AppConfig.networkTimeout,
-      receiveTimeout: AppConfig.networkTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: AppConfig.networkTimeout,
+        receiveTimeout: AppConfig.networkTimeout,
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
 
     // Add logging interceptor
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        Logger.infoWithTag('HashtagService', 'Request: ${options.method} ${options.uri}');
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        Logger.infoWithTag('HashtagService', 'Response: ${response.statusCode}');
-        return handler.next(response);
-      },
-      onError: (error, handler) {
-        Logger.errorWithTag('HashtagService', 'Request failed: ${error.message}');
-        return handler.next(error);
-      },
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          Logger.infoWithTag(
+            'HashtagService',
+            'Request: ${options.method} ${options.uri}',
+          );
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          Logger.infoWithTag(
+            'HashtagService',
+            'Response: ${response.statusCode}',
+          );
+          return handler.next(response);
+        },
+        onError: (error, handler) {
+          Logger.errorWithTag(
+            'HashtagService',
+            'Request failed: ${error.message}',
+          );
+          return handler.next(error);
+        },
+      ),
+    );
   }
 
   /// Get authorization headers with token
@@ -180,7 +191,10 @@ class HashtagService {
       }
       return false;
     } on DioException catch (e) {
-      Logger.errorWithTag('HashtagService', 'Health check failed: ${e.message}');
+      Logger.errorWithTag(
+        'HashtagService',
+        'Health check failed: ${e.message}',
+      );
       return false;
     } catch (e) {
       Logger.errorWithTag('HashtagService', 'Health check failed: $e');

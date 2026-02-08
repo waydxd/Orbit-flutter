@@ -71,7 +71,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
   void _fetchHashtagSuggestions() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 800), () async {
-      final eventText = '${_nameController.text} ${_detailsController.text}'.trim();
+      final eventText = '${_nameController.text} ${_detailsController.text}'
+          .trim();
       if (eventText.isEmpty) {
         setState(() {
           _suggestedHashtags = [];
@@ -101,7 +102,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
           });
           // Handle 401 - redirect to login
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Session expired. Please login again.')),
+            const SnackBar(
+              content: Text('Session expired. Please login again.'),
+            ),
           );
         }
       } catch (e) {
@@ -254,12 +257,15 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
         // Submit hashtag feedback for model improvement (optional, non-blocking)
         if (_selectedHashtags.isNotEmpty) {
-          final eventText = '${_nameController.text} ${_detailsController.text}'.trim();
-          _hashtagService.submitFeedback(
-            userId: currentUserId,
-            eventText: eventText,
-            selectedHashtags: _selectedHashtags,
-          ).catchError((_) {}); // Ignore errors
+          final eventText = '${_nameController.text} ${_detailsController.text}'
+              .trim();
+          _hashtagService
+              .submitFeedback(
+                userId: currentUserId,
+                eventText: eventText,
+                selectedHashtags: _selectedHashtags,
+              )
+              .catchError((_) {}); // Ignore errors
         }
       } else {
         DateTime? deadline;
@@ -579,11 +585,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                     color: const Color(0xFF2CB9B0),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 20),
                 ),
               ),
             ],
@@ -632,7 +634,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red.shade400, size: 16),
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red.shade400,
+                    size: 16,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     _hashtagError!,
@@ -658,7 +664,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
               spacing: 8,
               runSpacing: 8,
               children: _suggestedHashtags.map((suggestion) {
-                final isSelected = _selectedHashtags.contains(suggestion.hashtag);
+                final isSelected = _selectedHashtags.contains(
+                  suggestion.hashtag,
+                );
                 return GestureDetector(
                   onTap: () => _addHashtag(suggestion.hashtag),
                   child: Container(

@@ -124,7 +124,8 @@ class EventDetailPage extends StatelessWidget {
     final dateFormat = DateFormat('EEEE, MMMM d, yyyy');
     final timeFormat = DateFormat('HH:mm');
 
-    final isSameDay = event.startTime.year == event.endTime.year &&
+    final isSameDay =
+        event.startTime.year == event.endTime.year &&
         event.startTime.month == event.endTime.month &&
         event.startTime.day == event.endTime.day;
 
@@ -203,10 +204,7 @@ class EventDetailPage extends StatelessWidget {
           Expanded(
             child: Text(
               event.location,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF2D2D2D),
-              ),
+              style: const TextStyle(fontSize: 16, color: Color(0xFF2D2D2D)),
             ),
           ),
         ],

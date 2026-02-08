@@ -8,7 +8,8 @@ class HashtagPrediction {
   factory HashtagPrediction.fromJson(Map<String, dynamic> json) {
     return HashtagPrediction(
       suggested: List<String>.from(json['suggested'] ?? []),
-      top5: (json['top_5'] as List?)
+      top5:
+          (json['top_5'] as List?)
               ?.map((e) => HashtagScore.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -38,9 +39,6 @@ class HashtagScore {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'hashtag': hashtag,
-      'confidence': confidence,
-    };
+    return {'hashtag': hashtag, 'confidence': confidence};
   }
 }

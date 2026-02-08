@@ -34,7 +34,8 @@ class EventModel extends BaseModel {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       location: json['location'] as String? ?? '',
-      hashtags: (json['hashtags'] as List<dynamic>?)
+      hashtags:
+          (json['hashtags'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
