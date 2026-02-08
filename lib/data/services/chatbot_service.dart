@@ -37,9 +37,8 @@ class ChatbotService {
     ChatContext? context,
   }) async {
     try {
-      // Build request data
+      // Build request data - using 'message' to match backend PostMessageRequest schema
       final Map<String, dynamic> requestData = {
-        'user_id': userId,
         'message': message,
       };
 
@@ -110,7 +109,6 @@ class ChatbotService {
       );
 
       _wsChannel!.sink.add(jsonEncode({
-        'user_id': userId,
         'conversation_id': sessionId,
         'message': message,
         'context': context?.toJson(),
