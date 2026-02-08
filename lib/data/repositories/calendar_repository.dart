@@ -10,7 +10,7 @@ class CalendarRepository {
 
   /// Format DateTime for API (without milliseconds)
   String _formatDateTime(DateTime dt) {
-    return dt.toUtc().toIso8601String().split('.')[0] + 'Z';
+    return "${dt.toUtc().toIso8601String().split('.')[0]}Z";
   }
 
   Future<List<EventModel>> getEvents({

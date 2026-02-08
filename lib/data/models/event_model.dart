@@ -8,9 +8,9 @@ class EventModel extends BaseModel {
   final DateTime startTime;
   final DateTime endTime;
   final String location;
-  final List<String> hashtags;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<String> hashtags;
 
   const EventModel({
     required this.id,
@@ -20,9 +20,9 @@ class EventModel extends BaseModel {
     required this.startTime,
     required this.endTime,
     required this.location,
-    this.hashtags = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.hashtags = const [],
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
