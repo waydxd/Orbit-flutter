@@ -4,7 +4,6 @@ import '../../core/view_models/base_view_model.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../../../data/models/chat_message_model.dart';
 import '../../../data/services/local_storage_service.dart';
-import '../../../data/services/api_client.dart';
 
 class ChatViewModel extends BaseViewModel {
   final ChatRepository _chatRepository;
@@ -13,7 +12,7 @@ class ChatViewModel extends BaseViewModel {
   bool _isSending = false;
 
   ChatViewModel({required ChatRepository chatRepository})
-    : _chatRepository = chatRepository {
+      : _chatRepository = chatRepository {
     // Add initial welcome message
     _messages.add(
       ChatMessage(
@@ -64,7 +63,7 @@ class ChatViewModel extends BaseViewModel {
         if (!response.containsKey('reply')) {
           throw Exception('Invalid response from server. Please try again.');
         }
-        
+
         final reply = response['reply'] as String?;
         if (reply == null || reply.isEmpty) {
           throw Exception('Invalid response from server. Please try again.');
@@ -90,16 +89,17 @@ class ChatViewModel extends BaseViewModel {
       } catch (e) {
         // Remove the user message on failure
         _messages.remove(userMsg);
-        
+
         // Extract error message for display
-        String errorMessage = 'Sorry, I couldn\'t send that message. Please try again.';
+        String errorMessage =
+            'Sorry, I couldn\'t send that message. Please try again.';
         if (e is Exception) {
           final msg = e.toString().replaceFirst('Exception: ', '');
           if (msg.isNotEmpty) {
             errorMessage = msg;
           }
         }
-        
+
         // Add error message in chat
         final errorMsg = ChatMessage(
           id: const Uuid().v4(),
@@ -109,7 +109,7 @@ class ChatViewModel extends BaseViewModel {
         );
         _messages.add(errorMsg);
         notifyListeners();
-        
+
         // Don't rethrow - we've already handled the error in the UI
       } finally {
         _isSending = false;

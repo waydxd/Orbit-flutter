@@ -35,9 +35,8 @@ class _TaskListPageState extends State<TaskListPage> {
       backgroundColor: const Color(0xFFF3F5F9),
       body: Consumer<CalendarViewModel>(
         builder: (context, viewModel, child) {
-          final pendingTasks = viewModel.tasks
-              .where((t) => !t.completed)
-              .toList();
+          final pendingTasks =
+              viewModel.tasks.where((t) => !t.completed).toList();
 
           return Stack(
             children: [

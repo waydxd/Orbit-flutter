@@ -3,7 +3,7 @@ import 'base_model.dart';
 
 class ChatMessage extends BaseModel {
   static const _uuid = Uuid();
-  
+
   final String id;
   final String role; // 'user' or 'assistant'
   final String content;
@@ -31,11 +31,11 @@ class ChatMessage extends BaseModel {
 
   @override
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'role': role,
-    'content': content,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'role': role,
+        'content': content,
+        'created_at': createdAt.toIso8601String(),
+      };
 
   @override
   List<Object?> get props => [id, role, content, createdAt];

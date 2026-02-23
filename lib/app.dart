@@ -130,19 +130,20 @@ class SplashScreen extends StatelessWidget {
                 Text(
                   AppConfig.appName,
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    fontWeight: Constants.fontWeightBold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                        fontWeight: Constants.fontWeightBold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: Constants.spacingS),
                 Text(
                   'Intelligent Calendar & Planning',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(
-                      alpha: Constants.opacityHigh,
-                    ),
-                  ),
+                        color:
+                            Theme.of(context).colorScheme.onSurface.withValues(
+                                  alpha: Constants.opacityHigh,
+                                ),
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: Constants.spacingXXL),
