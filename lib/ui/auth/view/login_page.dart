@@ -23,8 +23,7 @@ class LoginPage extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: Constants.loginFormWidth,
-                  maxHeight:
-                      MediaQuery.of(context).size.height -
+                  maxHeight: MediaQuery.of(context).size.height -
                       MediaQuery.of(context).padding.top -
                       MediaQuery.of(context).padding.bottom -
                       Constants.spacingM * 2,

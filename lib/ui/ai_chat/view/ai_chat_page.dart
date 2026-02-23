@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/chat_view_model.dart';
 import '../../../data/models/chat_message_model.dart';
+import '../../../data/repositories/chat_repository.dart';
+import '../../../data/services/api_client.dart';
 
 class AiChatPage extends StatelessWidget {
   const AiChatPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Note: ChatViewModel is created here and will be disposed when the user
+    // navigates away from this page. This means chat history is intentionally
+    // cleared on page exit. If chat persistence is needed in the future,
+    // move ChatViewModel to the app-level MultiProvider.
     return ChangeNotifierProvider(
-      create: (_) => ChatViewModel(),
+      create: (_) => ChatViewModel(
+        chatRepository: ChatRepository(ApiClient()),
+      ),
       child: const _AiChatView(),
     );
   }
@@ -25,6 +33,7 @@ class _AiChatView extends StatefulWidget {
 class _AiChatViewState extends State<_AiChatView> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _shouldScrollToBottom = false;
 
   @override
   void dispose() {
@@ -35,12 +44,13 @@ class _AiChatViewState extends State<_AiChatView> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (_scrollController.hasClients && _shouldScrollToBottom) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+        _shouldScrollToBottom = false;
       }
     });
   }
@@ -49,15 +59,16 @@ class _AiChatViewState extends State<_AiChatView> {
     if (text.trim().isEmpty) return;
     viewModel.sendMessage(text);
     _textController.clear();
-    _scrollToBottom();
+    // Mark that we should scroll to bottom after the next rebuild
+    _shouldScrollToBottom = true;
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ChatViewModel>();
 
-    // Auto-scroll when messages change
-    if (viewModel.messages.isNotEmpty) {
+    // Scroll to bottom when needed
+    if (_shouldScrollToBottom) {
       _scrollToBottom();
     }
 
@@ -69,6 +80,33 @@ class _AiChatViewState extends State<_AiChatView> {
         child: Column(
           children: [
             _buildHeader(context),
+            // Display error message if present
+            if (viewModel.error != null)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        viewModel.error!,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -320,7 +358,14 @@ class _AiChatViewState extends State<_AiChatView> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.mic, color: Color(0xFF5E6272), size: 24),
+                  const Tooltip(
+                    message: 'Voice input coming soon',
+                    child: Icon(
+                      Icons.mic,
+                      color: Color(0xFFB0B3C0),
+                      size: 24,
+                    ),
+                  ),
                   const SizedBox(width: 16),
                 ],
               ),
