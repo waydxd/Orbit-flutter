@@ -64,10 +64,11 @@ class ChatViewModel extends BaseViewModel {
           throw Exception('Invalid response from server. Please try again.');
         }
 
-        final reply = response['reply'] as String?;
-        if (reply == null || reply.isEmpty) {
+        final replyValue = response['reply'];
+        if (replyValue is! String || replyValue.isEmpty) {
           throw Exception('Invalid response from server. Please try again.');
         }
+        final reply = replyValue;
 
         // Update conversation ID if it's new (only after successful response)
         if (response.containsKey('conversation_id')) {
