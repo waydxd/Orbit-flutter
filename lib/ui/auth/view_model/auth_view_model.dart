@@ -13,7 +13,7 @@ class AuthViewModel extends BaseViewModel {
   UserModel? _currentUser;
 
   AuthViewModel({AuthRepository? authRepository})
-    : _authRepository = authRepository ?? AuthRepository(ApiClient());
+      : _authRepository = authRepository ?? AuthRepository(ApiClient());
 
   /// Authentication state
   bool get isAuthenticated => _isAuthenticated;
@@ -174,7 +174,7 @@ class AuthViewModel extends BaseViewModel {
         try {
           isAuth =
               LocalStorageService.getPreference<bool>('is_authenticated') ??
-              false;
+                  false;
         } catch (e) {
           // If we can't read preferences, assume not authenticated
           _isAuthenticated = false;

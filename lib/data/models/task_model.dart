@@ -56,16 +56,16 @@ class TaskModel extends BaseModel {
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    title,
-    description,
-    dueDate,
-    completed,
-    priority,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        title,
+        description,
+        dueDate,
+        completed,
+        priority,
+        createdAt,
+        updatedAt,
+      ];
 
   TaskModel copyWith({
     String? id,
