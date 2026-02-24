@@ -8,6 +8,8 @@ import '../services/chat_exceptions.dart';
 import '../repositories/chat_repository.dart';
 import '../../utils/logger.dart';
 
+export '../models/chat_session.dart';
+
 /// Chat mode enum for Ask mode and Agent mode
 enum ChatMode {
   ask,   // Normal conversation mode
@@ -39,11 +41,13 @@ class PendingActionInfo {
   final String actionId;
   final String type;
   final String status;
+  final String? idempotencyKey;
 
   PendingActionInfo({
     required this.actionId,
     required this.type,
     required this.status,
+    this.idempotencyKey,
   });
 
   bool get isPending => status == 'pending';
@@ -175,9 +179,7 @@ class ChatAgentProvider extends ChangeNotifier {
     this.onAuthError,
     this.onActionConfirmed,
     this.onActionCancelled,
-  }) : _repository = ChatRepository(
-          apiService: ChatApiService(apiClient),
-        );
+  }) : _repository = ChatRepository(ChatApiService(apiClient));
 
   /// Factory constructor for dependency injection
   ChatAgentProvider.withRepository({
@@ -237,6 +239,7 @@ class ChatAgentProvider extends ChangeNotifier {
           actionId: firstPending.actionId,
           type: firstPending.type,
           status: firstPending.status,
+          idempotencyKey: firstPending.idempotencyKey,
         );
       }
 
@@ -349,7 +352,7 @@ class ChatAgentProvider extends ChangeNotifier {
               : m)
           .toList();
 
-      if (assistantReply != null && assistantReply.isNotEmpty) {
+      if (assistantReply.isNotEmpty) {
         // In agent mode, attach action info to the message if there's a proposed action
         if (_state.isAgentMode && result.hasProposedAction && result.actionId != null) {
           updatedMessages.add(AgentChatMessage.agentWithAction(
@@ -419,11 +422,11 @@ class ChatAgentProvider extends ChangeNotifier {
       return;
     }
 
-    await confirmMessageAction(action.actionId);
+    await confirmMessageAction(action.actionId, idempotencyKey: action.idempotencyKey);
   }
 
   /// Confirm an action by action ID (used in Agent mode for per-message actions)
-  Future<void> confirmMessageAction(String actionId) async {
+  Future<void> confirmMessageAction(String actionId, {String? idempotencyKey}) async {
     _updateState(_state.copyWith(
       isConfirmingAction: true,
       clearError: true,
@@ -432,6 +435,7 @@ class ChatAgentProvider extends ChangeNotifier {
     try {
       final result = await _repository.confirmAction(
         actionId: actionId,
+        idempotencyKey: idempotencyKey,
       );
 
       if (result.success) {

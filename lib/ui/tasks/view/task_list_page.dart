@@ -6,7 +6,7 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/task_model.dart';
 import 'create_item_page.dart';
-import '../../chat/view/ai_chat_page.dart';
+import '../../chat/view/chat_page.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});

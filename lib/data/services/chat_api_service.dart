@@ -99,12 +99,14 @@ class ConversationPendingAction {
   final String actionId;
   final String type;
   final String status; // 'pending', 'confirmed', 'cancelled', 'expired'
+  final String? idempotencyKey;
   final ChatError? error;
 
   ConversationPendingAction({
     required this.actionId,
     required this.type,
     required this.status,
+    this.idempotencyKey,
     this.error,
   });
 
@@ -113,6 +115,7 @@ class ConversationPendingAction {
       actionId: json['action_id'] ?? '',
       type: json['type'] ?? '',
       status: json['status'] ?? 'pending',
+      idempotencyKey: json['idempotency_key'],
       error: json['error'] != null
           ? ChatError.fromJson(json['error'] as Map<String, dynamic>)
           : null,
@@ -174,6 +177,7 @@ class ActionDetailResponse {
   final String status;
   final String? actionType;
   final Map<String, dynamic>? proposedAction;
+  final String? idempotencyKey;
   final DateTime? createdAt;
   final DateTime? expiresAt;
   final ChatError? error;
@@ -183,6 +187,7 @@ class ActionDetailResponse {
     required this.status,
     this.actionType,
     this.proposedAction,
+    this.idempotencyKey,
     this.createdAt,
     this.expiresAt,
     this.error,
@@ -194,6 +199,7 @@ class ActionDetailResponse {
       status: json['status'] ?? 'pending',
       actionType: json['action_type'],
       proposedAction: json['proposed_action'] as Map<String, dynamic>?,
+      idempotencyKey: json['idempotency_key'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
