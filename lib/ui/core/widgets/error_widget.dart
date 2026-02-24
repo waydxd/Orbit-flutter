@@ -27,9 +27,9 @@ class AppErrorWidget extends StatelessWidget {
             Text(
               'Oops! Something went wrong',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
