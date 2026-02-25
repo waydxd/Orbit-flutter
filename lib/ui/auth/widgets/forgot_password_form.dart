@@ -5,29 +5,30 @@ import '../../core/themes/app_colors.dart';
 import '../../../utils/validators.dart';
 import '../../../utils/constants.dart';
 
-class RegistrationForm extends StatefulWidget {
-  const RegistrationForm({super.key});
+class ForgotPasswordForm extends StatefulWidget {
+  const ForgotPasswordForm({super.key});
 
   @override
-  State<RegistrationForm> createState() => _RegistrationFormState();
+  State<ForgotPasswordForm> createState() => _ForgotPasswordFormState();
 }
 
-class _RegistrationFormState extends State<RegistrationForm> {
+class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _otpController = TextEditingController();
+  
+  bool _isOtpSent = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _isOtpSent = false;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _otpController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
@@ -36,34 +37,33 @@ class _RegistrationFormState extends State<RegistrationForm> {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       
       if (!_isOtpSent) {
-        final success = await authViewModel.sendRegistrationOTP(_emailController.text.trim());
+        final success = await authViewModel.requestPasswordReset(_emailController.text.trim());
         if (success && mounted) {
           setState(() {
             _isOtpSent = true;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Verification code sent to your email'),
+              content: Text('Password reset code sent to your email!'),
               backgroundColor: AppColors.success,
             ),
           );
         }
       } else {
-        final success = await authViewModel.register(
-          _emailController.text.trim(),
+        final success = await authViewModel.confirmPasswordReset(
+          _otpController.text.trim(),
           _passwordController.text,
           _confirmPasswordController.text,
-          _otpController.text.trim(),
         );
 
         if (success && mounted) {
-          // Navigation will be handled by the app's auth state listener
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Account created successfully!'),
+              content: Text('Password reset successfully! Please log in.'),
               backgroundColor: AppColors.success,
             ),
           );
+          Navigator.of(context).pop();
         }
       }
     }
@@ -78,23 +78,33 @@ class _RegistrationFormState extends State<RegistrationForm> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Align(
+              Align(
                 alignment: Alignment.topLeft,
-                child: Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: Constants.fontSizeL,
-                    fontWeight: Constants.fontWeightBold,
-                    fontFamily: 'Poppins',
-                    color: Colors.black87,
-                  ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Icon(Icons.arrow_back),
+                    ),
+                    const SizedBox(width: Constants.spacingS),
+                    const Text(
+                      'Forgot Password',
+                      style: TextStyle(
+                        fontSize: Constants.fontSizeL,
+                        fontWeight: Constants.fontWeightBold,
+                        fontFamily: 'Poppins',
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: Constants.spacingL),
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
+                textInputAction: _isOtpSent ? TextInputAction.next : TextInputAction.done,
+                onFieldSubmitted: _isOtpSent ? null : (_) => _submit(),
                 enabled: !_isOtpSent,
                 decoration: InputDecoration(
                   labelText: 'Email',
@@ -120,101 +130,15 @@ class _RegistrationFormState extends State<RegistrationForm> {
                   return null;
                 },
               ),
-              const SizedBox(height: Constants.spacingM),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                textInputAction: TextInputAction.next,
-                enabled: !_isOtpSent,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(Constants.radiusL),
-                    borderSide: BorderSide.none,
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(Constants.radiusL),
-                    borderSide: const BorderSide(color: AppColors.error),
-                  ),
-                  helperText: 'At least 8 characters',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (!Validators.isValidPassword(value)) {
-                    return 'Password must be at least 8 characters long';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: Constants.spacingM),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: _obscureConfirmPassword,
-                textInputAction: _isOtpSent ? TextInputAction.next : TextInputAction.done,
-                onFieldSubmitted: _isOtpSent ? null : (_) => _submit(),
-                enabled: !_isOtpSent,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(Constants.radiusL),
-                    borderSide: BorderSide.none,
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(Constants.radiusL),
-                    borderSide: const BorderSide(color: AppColors.error),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
-                  }
-                  if (value != _passwordController.text) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
-              ),
+              
               if (_isOtpSent) ...[
                 const SizedBox(height: Constants.spacingM),
                 TextFormField(
                   controller: _otpController,
                   keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Verification Code',
+                    labelText: 'Reset Code',
                     prefixIcon: const Icon(Icons.verified_user),
                     filled: true,
                     fillColor: Colors.white,
@@ -230,7 +154,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
                   validator: (value) {
                     if (!_isOtpSent) return null;
                     if (value == null || value.isEmpty) {
-                      return 'Please enter the verification code';
+                      return 'Please enter the reset code';
                     }
                     if (value.length != 6) {
                       return 'Code must be 6 digits';
@@ -238,7 +162,93 @@ class _RegistrationFormState extends State<RegistrationForm> {
                     return null;
                   },
                 ),
+                const SizedBox(height: Constants.spacingM),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Constants.radiusL),
+                      borderSide: BorderSide.none,
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Constants.radiusL),
+                      borderSide: const BorderSide(color: AppColors.error),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (!_isOtpSent) return null;
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your new password';
+                    }
+                    if (!Validators.isValidPassword(value)) {
+                      return 'Password must be at least 8 characters long';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: Constants.spacingM),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  decoration: InputDecoration(
+                    labelText: 'Confirm New Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Constants.radiusL),
+                      borderSide: BorderSide.none,
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Constants.radiusL),
+                      borderSide: const BorderSide(color: AppColors.error),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (!_isOtpSent) return null;
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your new password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
               ],
+              
               if (authViewModel.error != null) ...[
                 const SizedBox(height: Constants.spacingM),
                 Container(
@@ -297,7 +307,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
                           ),
                         )
                       : Text(
-                          _isOtpSent ? 'Verify & Create Account' : 'Send Verification Code',
+                          _isOtpSent ? 'Reset Password' : 'Send Reset Code',
                           style: const TextStyle(
                             fontSize: Constants.fontSizeM,
                             color: Colors.white,
@@ -306,33 +316,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                           ),
                         ),
                 ),
-              ),
-              const SizedBox(height: Constants.spacingM),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Already have an account? ',
-                    style: TextStyle(
-                      fontSize: Constants.fontSizeXS,
-                      fontWeight: Constants.fontWeightNormal,
-                      color: Color(0xFF787878),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text(
-                      'Sign in',
-                      style: TextStyle(
-                        fontSize: Constants.fontSizeXS,
-                        fontWeight: Constants.fontWeightSemiBold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),

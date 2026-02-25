@@ -75,9 +75,17 @@ class _AiChatViewState extends State<_AiChatView> {
     final hasInteracted = viewModel.messages.length > 1;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
           children: [
             _buildHeader(context),
             // Display error message if present
@@ -145,13 +153,14 @@ class _AiChatViewState extends State<_AiChatView> {
                 padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: LinearProgressIndicator(
                   backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B80F0)),
                   minHeight: 2,
                 ),
               ),
             _buildInputSection(viewModel),
           ],
         ),
+      ),
       ),
     );
   }
@@ -163,7 +172,7 @@ class _AiChatViewState extends State<_AiChatView> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           IconButton(
-            icon: const Icon(Icons.close, color: Color(0xFF6366F1), size: 28),
+            icon: const Icon(Icons.close, color: Color(0xFF8B80F0), size: 28),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -185,8 +194,8 @@ class _AiChatViewState extends State<_AiChatView> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6366F1).withValues(alpha: 0.15 / i),
-                    const Color(0xFF6366F1).withValues(alpha: 0),
+                    const Color(0xFF8B80F0).withValues(alpha: 0.15 / i),
+                    const Color(0xFF8B80F0).withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -203,12 +212,12 @@ class _AiChatViewState extends State<_AiChatView> {
                 colors: [
                   Color(0xFFE0E7FF),
                   Color(0xFFC7D2FE),
-                  Color(0xFF818CF8),
+                  Color(0xFF8B80F0),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                  color: const Color(0xFF8B80F0).withValues(alpha: 0.4),
                   blurRadius: 25,
                   spreadRadius: 2,
                 ),
@@ -228,8 +237,15 @@ class _AiChatViewState extends State<_AiChatView> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FE),
+        color: Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +254,7 @@ class _AiChatViewState extends State<_AiChatView> {
             children: [
               Icon(
                 Icons.auto_awesome_outlined,
-                color: Color(0xFF6366F1),
+                color: Color(0xFF8B80F0),
                 size: 20,
               ),
               SizedBox(width: 8),
@@ -278,7 +294,7 @@ class _AiChatViewState extends State<_AiChatView> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+            color: const Color(0xFF8B80F0).withValues(alpha: 0.4),
           ),
         ),
         child: Text(
@@ -301,7 +317,7 @@ class _AiChatViewState extends State<_AiChatView> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         margin: EdgeInsets.only(left: isUser ? 50 : 0, right: isUser ? 0 : 50),
         decoration: BoxDecoration(
-          color: isUser ? const Color(0xFF6366F1) : const Color(0xFF5E6272),
+          color: isUser ? const Color(0xFF8B80F0) : Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
@@ -310,17 +326,17 @@ class _AiChatViewState extends State<_AiChatView> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Text(
           message.content,
           textAlign: TextAlign.left,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: isUser ? Colors.white : const Color(0xFF111827),
             fontSize: 15,
             fontWeight: FontWeight.w500,
             height: 1.4,
@@ -358,15 +374,6 @@ class _AiChatViewState extends State<_AiChatView> {
                       ),
                     ),
                   ),
-                  const Tooltip(
-                    message: 'Voice input coming soon',
-                    child: Icon(
-                      Icons.mic,
-                      color: Color(0xFFB0B3C0),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
                 ],
               ),
             ),
@@ -379,7 +386,7 @@ class _AiChatViewState extends State<_AiChatView> {
               width: 54,
               height: 54,
               decoration: const BoxDecoration(
-                color: Color(0xFFDDE1FF),
+                color: Color(0xFF8B80F0),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

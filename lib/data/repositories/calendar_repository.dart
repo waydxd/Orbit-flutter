@@ -16,10 +16,10 @@ class CalendarRepository {
     try {
       final queryParams = {'user_id': userId};
       if (startTime != null) {
-        queryParams['start_time'] = startTime.toIso8601String();
+        queryParams['start_time'] = startTime.toUtc().toIso8601String();
       }
       if (endTime != null) {
-        queryParams['end_time'] = endTime.toIso8601String();
+        queryParams['end_time'] = endTime.toUtc().toIso8601String();
       }
 
       final response = await _apiClient.get(

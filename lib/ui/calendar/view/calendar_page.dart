@@ -225,7 +225,10 @@ class _CalendarPageState extends State<CalendarPage>
 
               // Floating Navigation Bar
               FloatingNavBar(
-                currentIndex: 0,
+                currentIndex: 1,
+                onHomeTap: () {
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
                 onCalendarTap: () {
                   // Already on calendar page
                   debugPrint('Calendar tapped');
@@ -254,6 +257,9 @@ class _CalendarPageState extends State<CalendarPage>
                     ),
                   );
                   debugPrint('Todo list tapped');
+                },
+                onDashboardTap: () {
+                  debugPrint('Dashboard tapped');
                 },
               ),
 
@@ -660,6 +666,8 @@ class _CalendarPageState extends State<CalendarPage>
               },
             ),
           ),
+          // Add padding at the bottom to prevent overflow with the floating nav bar
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -823,35 +831,43 @@ class _CalendarPageState extends State<CalendarPage>
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              time,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                time,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
