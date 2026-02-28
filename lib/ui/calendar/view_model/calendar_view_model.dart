@@ -15,8 +15,8 @@ class CalendarViewModel extends BaseViewModel {
   List<TaskModel> get tasks => _tasks;
 
   CalendarViewModel({CalendarRepository? calendarRepository})
-    : _calendarRepository =
-          calendarRepository ?? CalendarRepository(ApiClient());
+      : _calendarRepository =
+            calendarRepository ?? CalendarRepository(ApiClient());
 
   Future<void> fetchEvents({
     required String userId,

@@ -19,8 +19,8 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
-  flutter: 3.38.5
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: ">=3.35.7"
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -49,7 +49,7 @@ dependencies:
   http: ^1.2.2
 
   # UI & Design
-  google_fonts: ^6.2.1
+  google_fonts: ^8.0.0
   flutter_svg: ^2.0.10+1
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
@@ -152,7 +152,7 @@ flutter_launcher_icons:
   image_path_ios_dark_transparent: "assets/images/icon-foreground-1024x1024.png"
   image_path_ios_tinted_grayscale: "assets/images/icon-monochrome-1024x1024.png"
   adaptive_icon_background: "assets/images/icon-background-1024x1024.png" # only available for Android 8.0 devices and above
-  adaptive_icon_foreground: "assets/images/icon-foreground-1024x1024.png" # only available for Android 8.0 devices and above
+  adaptive_icon_foreground: "assets/images/icon-monochrome-1024x1024.png" # only available for Android 8.0 devices and above
   adaptive_icon_foreground_inset: 16 # only available for Android 8.0 devices and above
   adaptive_icon_monochrome: "assets/images/icon-monochrome-1024x1024.png" # only available for Android 13 devices and above
   min_sdk_android: 21 # android min sdk min:16, default 21

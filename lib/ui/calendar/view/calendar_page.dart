@@ -288,10 +288,8 @@ class _CalendarPageState extends State<CalendarPage>
                         IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.white),
                           onPressed: () {
-                            final userId = context
-                                .read<AuthViewModel>()
-                                .currentUser
-                                ?.id;
+                            final userId =
+                                context.read<AuthViewModel>().currentUser?.id;
                             if (userId != null) {
                               viewModel.fetchAll(userId: userId);
                             }
@@ -717,9 +715,8 @@ class _CalendarPageState extends State<CalendarPage>
 
   Widget _buildDayTimetable(CalendarViewModel viewModel, DateTime date) {
     // Filter events for this specific date
-    final dayEvents = viewModel.events
-        .where((e) => isSameDay(e.startTime, date))
-        .toList();
+    final dayEvents =
+        viewModel.events.where((e) => isSameDay(e.startTime, date)).toList();
 
     // Sort events by start time
     dayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
