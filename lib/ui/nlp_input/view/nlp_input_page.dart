@@ -117,7 +117,7 @@ class _NlpInputPageState extends State<NlpInputPage> {
             controller: _textController,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText: 'eg, "Meeting with John tomorrow at 3pm" or "Buy groceries by Friday"',
+              hintText: 'e.g. "Meeting with John tomorrow at 3pm" or "Buy groceries by Friday"',
               hintStyle: TextStyle(color: Colors.grey.shade400),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(20),
