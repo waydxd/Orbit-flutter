@@ -577,6 +577,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 ),
                 child: ListView.builder(
                   padding: EdgeInsets.zero,
+                  shrinkWrap: true,
                   itemCount: options.length,
                   itemBuilder: (BuildContext context, int index) {
                     final String option = options.elementAt(index);

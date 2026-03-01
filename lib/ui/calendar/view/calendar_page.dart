@@ -9,6 +9,7 @@ import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import 'event_detail_page.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -743,11 +744,21 @@ class _CalendarPageState extends State<CalendarPage>
                   left: leftMargin,
                   right: 0,
                   height: duration * _hourHeight - 20,
-                  child: _buildTaskCard(
-                    event.title,
-                    event.location,
-                    '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
-                    _getEventColor(event.title),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EventDetailPage(event: event),
+                        ),
+                      );
+                    },
+                    child: _buildTaskCard(
+                      event.title,
+                      event.location,
+                      '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                      _getEventColor(event.title),
+                    ),
                   ),
                 );
               }),

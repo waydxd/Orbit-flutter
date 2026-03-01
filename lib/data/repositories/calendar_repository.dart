@@ -135,4 +135,20 @@ class CalendarRepository {
       rethrow;
     }
   }
+
+  Future<void> deleteEvent(String eventId) async {
+    try {
+      final response = await _apiClient.delete('/calendar/events/$eventId');
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'DELETE /calendar/events/$eventId status: ${response.statusCode}',
+      );
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete event: ${response.statusCode}');
+      }
+    } catch (e) {
+      Logger.errorWithTag('CalendarRepository', 'Failed to delete event: $e');
+      rethrow;
+    }
+  }
 }

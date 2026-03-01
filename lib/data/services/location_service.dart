@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class LocationService {
-  // TODO: Replace with your actual Google Maps API Key
-  static const String _apiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
+  // Google Maps API Key
+  static const String _apiKey = 'AIzaSyDY_Fu5bhGPf2ZHXZF3pCxOHxnbv9ymnVA';
 
   static Future<List<String>> getPlaceSuggestions(String query) async {
     if (query.isEmpty) return [];
