@@ -34,7 +34,7 @@ class ChatMessage extends BaseModel {
         'id': id,
         'role': role,
         'content': content,
-        'created_at': createdAt.toIso8601String(),
+        'created_at': createdAt.toUtc().toIso8601String(),
       };
 
   @override

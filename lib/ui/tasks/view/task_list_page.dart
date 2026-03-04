@@ -73,7 +73,10 @@ class _TaskListPageState extends State<TaskListPage> {
                 ),
               ),
               FloatingNavBar(
-                currentIndex: 1,
+                currentIndex: 2,
+                onHomeTap: () {
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
                 onCalendarTap: () {
                   Navigator.pop(context);
                 },
@@ -95,6 +98,9 @@ class _TaskListPageState extends State<TaskListPage> {
                 },
                 onTodoListTap: () {
                   // Already here
+                },
+                onDashboardTap: () {
+                  debugPrint('Dashboard tapped');
                 },
               ),
             ],
