@@ -168,7 +168,7 @@ BATCH_SIZE = 8  # Change to 4 or 2
 3. Test locally:
    ```bash
    cd /path/to/nlp-server
-   python test_model.py
+   python test_one-shot_classification.py
    ```
 
 4. If tests pass, start the server:

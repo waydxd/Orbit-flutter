@@ -2,8 +2,8 @@
 Test the fine-tuned T5 event/task parser models
 
 Usage:
-  python test_model.py         # Test event parser
-  python test_model.py task    # Test task parser
+  python test_one-shot_classification.py         # Test event parser
+  python test_one-shot_classification.py task    # Test task parser
 """
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -36,7 +36,7 @@ def pipe_to_dict(pipe_str: str) -> dict:
     return result
 
 
-EVENT_MODEL_PATH = "./models/event-parser"
+EVENT_MODEL_PATH = "../models/event-parser"
 TASK_MODEL_PATH = "./models/task-parser"
 
 EVENT_TEST_EXAMPLES = [

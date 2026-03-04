@@ -72,7 +72,7 @@ python train_event_parser.py
 ## Test the Model
 
 ```bash
-python test_model.py
+python test_one-shot_classification.py
 ```
 
 You should see parsed JSON outputs for test examples like:

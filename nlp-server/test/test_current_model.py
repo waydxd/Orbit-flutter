@@ -4,7 +4,7 @@ Test the current deployed model to see what it learned
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-MODEL_PATH = "./models/event-parser"
+MODEL_PATH = "../models/event-parser"
 
 print("Loading model...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=False)

@@ -4,7 +4,7 @@ Direct test of the event parser model to see raw output
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-MODEL_PATH = "./models/event-parser"
+MODEL_PATH = "../models/event-parser"
 
 print("Loading model...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=False)

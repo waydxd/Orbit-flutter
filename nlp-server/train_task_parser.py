@@ -183,7 +183,7 @@ def main():
     
     print(f"\nModel saved to: {OUTPUT_DIR}")
     print("\nNext steps:")
-    print("  1. Test the model: python test_model.py task")
+    print("  1. Test the model: python test_one-shot_classification.py task")
     print("  2. Start the server: python server.py")
     print("  3. Or if in Colab, download the model:")
     print("     !zip -r task-parser-model.zip ./models/task-parser")

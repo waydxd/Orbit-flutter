@@ -2,7 +2,7 @@
 Test script for date_resolver.py
 Tests all relative date/time patterns to ensure correct resolution.
 
-Author: Orbit NLP Team
+
 Date: 2026-01-29
 """
 

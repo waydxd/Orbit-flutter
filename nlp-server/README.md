@@ -74,7 +74,7 @@ python train_event_parser.py
 ### 3. Test the Model
 
 ```bash
-python test_model.py
+python test_one-shot_classification.py
 ```
 
 ### 4. Start the Server
