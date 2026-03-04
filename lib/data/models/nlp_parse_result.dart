@@ -24,6 +24,9 @@ class NlpParseResult extends Equatable {
   /// Location (primarily for events)
   final String? location;
 
+  /// Recurrence pattern for events: "Daily", "Weekly", "Monthly", or null
+  final String? recurrence;
+
   /// Priority level for tasks: "low", "medium", "high"
   final String priority;
 
@@ -41,6 +44,7 @@ class NlpParseResult extends Equatable {
     this.endTime,
     this.dueDate,
     this.location,
+    this.recurrence,
     this.priority = 'medium',
     this.confidence = 0.0,
     required this.originalText,
@@ -67,6 +71,7 @@ class NlpParseResult extends Equatable {
           ? DateTime.parse(json['due_date'] as String)
           : null,
       location: json['location'] as String?,
+      recurrence: json['recurrence'] as String?,
       priority: json['priority'] as String? ?? 'medium',
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
       originalText: json['original_text'] as String,
@@ -82,6 +87,7 @@ class NlpParseResult extends Equatable {
       'end_time': endTime?.toIso8601String(),
       'due_date': dueDate?.toIso8601String(),
       'location': location,
+      'recurrence': recurrence,
       'priority': priority,
       'confidence': confidence,
       'original_text': originalText,
@@ -96,6 +102,7 @@ class NlpParseResult extends Equatable {
     DateTime? endTime,
     DateTime? dueDate,
     String? location,
+    String? recurrence,
     String? priority,
     double? confidence,
     String? originalText,
@@ -108,6 +115,7 @@ class NlpParseResult extends Equatable {
       endTime: endTime ?? this.endTime,
       dueDate: dueDate ?? this.dueDate,
       location: location ?? this.location,
+      recurrence: recurrence ?? this.recurrence,
       priority: priority ?? this.priority,
       confidence: confidence ?? this.confidence,
       originalText: originalText ?? this.originalText,
@@ -123,6 +131,7 @@ class NlpParseResult extends Equatable {
         endTime,
         dueDate,
         location,
+        recurrence,
         priority,
         confidence,
         originalText,

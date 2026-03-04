@@ -5,14 +5,16 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
+import '../../../data/models/nlp_parse_result.dart';
 
 class CreateItemPage extends StatefulWidget {
   final bool initialIsEvent;
-  
+  final NlpParseResult? parsedResult;
 
   const CreateItemPage({
     super.key,
     this.initialIsEvent = true,
+    this.parsedResult,
   });
 
   @override
@@ -31,6 +33,75 @@ class _CreateItemPageState extends State<CreateItemPage> {
   void initState() {
     super.initState();
     isEvent = widget.initialIsEvent;
+    _prefillFromParsedResult();
+  }
+
+  /// Map the raw recurrence string from the server to one of the Repeat
+  /// dropdown values: 'Never', 'Daily', 'Weekly', 'Monthly'.
+  String _normalizeRecurrence(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('daily') || lower.contains('every day')) return 'Daily';
+    if (lower.contains('weekly') || lower.contains('every week')) return 'Weekly';
+    if (lower.contains('monthly') || lower.contains('every month')) return 'Monthly';
+    // Capitalise and check against known values
+    final capitalised = raw.trim().isEmpty
+        ? 'Never'
+        : '${raw.trim()[0].toUpperCase()}${raw.trim().substring(1).toLowerCase()}';
+    const known = {'Daily', 'Weekly', 'Monthly'};
+    return known.contains(capitalised) ? capitalised : 'Never';
+  }
+
+  /// Pre-fill form fields from NLP parsed result
+  void _prefillFromParsedResult() {
+    final result = widget.parsedResult;
+    if (result == null) return;
+
+    // Pre-fill title
+    _nameController.text = result.title;
+
+    if (result.isEvent && result.startTime != null) {
+      // Pre-fill event fields
+      _startDate = DateTime(
+        result.startTime!.year,
+        result.startTime!.month,
+        result.startTime!.day,
+      );
+      _startTime = TimeOfDay.fromDateTime(result.startTime!);
+
+      if (result.endTime != null) {
+        _endDate = DateTime(
+          result.endTime!.year,
+          result.endTime!.month,
+          result.endTime!.day,
+        );
+        _endTime = TimeOfDay.fromDateTime(result.endTime!);
+      }
+
+      // Pre-fill Repeat dropdown from recurrence field
+      if (result.recurrence != null && result.recurrence!.isNotEmpty) {
+        _selectedRepeat = _normalizeRecurrence(result.recurrence!);
+      }
+    } else if (result.isTask && result.dueDate != null) {
+      // Pre-fill task fields
+      _deadlineDate = DateTime(
+        result.dueDate!.year,
+        result.dueDate!.month,
+        result.dueDate!.day,
+      );
+      _deadlineTime = TimeOfDay.fromDateTime(result.dueDate!);
+      _selectedPriority = result.priority;
+    }
+
+    // Pre-fill description
+    if (result.description != null && result.description!.isNotEmpty) {
+      _detailsController.text = result.description!;
+    }
+
+    // For events: pre-fill location if available
+    // Note: CreateItemPage may need a location field to be added to the UI
+    // if (result.isEvent && result.location != null && result.location!.isNotEmpty) {
+    //   _locationController.text = result.location!;
+    // }
   }
 
   DateTime _startDate = DateTime.now();

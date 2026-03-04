@@ -31,4 +31,10 @@ class AppConfig {
   static const String huggingFaceApiKey = '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'; // Set via environment or secure storage
   static const String hfClassificationModel = 'facebook/bart-large-mnli';
   static const String hfNerModel = 'dslim/bert-base-NER';
+
+  // NLP Server Configuration (local T5 parsing)
+  static const String nlpServerBaseUrl = 'http://localhost:5001';
+  // For Android emulator: 'http://10.0.2.2:5001'
+  // For iOS simulator: 'http://localhost:5001'
+  // For physical device: use computer's IP address
 }

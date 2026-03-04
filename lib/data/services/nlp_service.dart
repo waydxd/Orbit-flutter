@@ -5,14 +5,28 @@ import '../../utils/logger.dart';
 /// Service for natural language processing using Hugging Face API
 /// Classifies text as task or event and extracts relevant entities
 class NlpService {
-  late final Dio _dio;
+  late final Dio _hfDio;  // For Hugging Face classification
+  late final Dio _localDio;  // For local NLP server parsing
   final String _apiKey;
 
   NlpService({String? apiKey}) : _apiKey = apiKey ?? AppConfig.huggingFaceApiKey {
-    _dio = Dio(
+    // Hugging Face API client
+    _hfDio = Dio(
       BaseOptions(
         baseUrl: AppConfig.huggingFaceBaseUrl,
         connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+    
+    // Local NLP server client
+    _localDio = Dio(
+      BaseOptions(
+        baseUrl: AppConfig.nlpServerBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +47,7 @@ class NlpService {
     try {
       Logger.debugWithTag('NLP', 'Classifying text: "$text"');
       
-      final response = await _dio.post(
+      final response = await _hfDio.post(
         url,
         data: {
           'inputs': text,
@@ -151,8 +165,99 @@ class NlpService {
   }
 
 
+  /// Parse event details using local T5 model
+  /// Returns structured event data from natural language input
+  Future<Map<String, dynamic>> parseEvent(String text) async {
+    try {
+      Logger.debugWithTag('NLP', 'Parsing event: "$text"');
+      
+      final response = await _localDio.post(
+        '/parse/event',
+        data: {'text': text},
+      );
+      
+      Logger.debugWithTag('NLP', 'Event parsed: ${response.data}');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      Logger.errorWithTag('NLP', 'Event parsing failed: ${e.message}');
+      
+      if (e.response?.statusCode == 503) {
+        throw NlpServiceException(
+          'Event parsing model not loaded on server',
+          isRetryable: false,
+        );
+      }
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw NlpServiceException(
+          'Connection timeout. Please ensure the NLP server is running on ${AppConfig.nlpServerBaseUrl}',
+          isRetryable: true,
+        );
+      }
+      
+      if (e.type == DioExceptionType.connectionError) {
+        throw NlpServiceException(
+          'Cannot connect to NLP server at ${AppConfig.nlpServerBaseUrl}. Please start the server.',
+          isRetryable: true,
+        );
+      }
+      
+      throw NlpServiceException('Failed to parse event: ${e.message}');
+    } catch (e) {
+      Logger.errorWithTag('NLP', 'Event parsing error: $e');
+      throw NlpServiceException('Event parsing error: $e');
+    }
+  }
+
+  /// Parse task details using local T5 model
+  /// Returns structured task data from natural language input
+  Future<Map<String, dynamic>> parseTask(String text) async {
+    try {
+      Logger.debugWithTag('NLP', 'Parsing task: "$text"');
+      
+      final response = await _localDio.post(
+        '/parse/task',
+        data: {'text': text},
+      );
+      
+      Logger.debugWithTag('NLP', 'Task parsed: ${response.data}');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      Logger.errorWithTag('NLP', 'Task parsing failed: ${e.message}');
+      
+      if (e.response?.statusCode == 503) {
+        throw NlpServiceException(
+          'Task parsing model not loaded on server',
+          isRetryable: false,
+        );
+      }
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw NlpServiceException(
+          'Connection timeout. Please ensure the NLP server is running on ${AppConfig.nlpServerBaseUrl}',
+          isRetryable: true,
+        );
+      }
+      
+      if (e.type == DioExceptionType.connectionError) {
+        throw NlpServiceException(
+          'Cannot connect to NLP server at ${AppConfig.nlpServerBaseUrl}. Please start the server.',
+          isRetryable: true,
+        );
+      }
+      
+      throw NlpServiceException('Failed to parse task: ${e.message}');
+    } catch (e) {
+      Logger.errorWithTag('NLP', 'Task parsing error: $e');
+      throw NlpServiceException('Task parsing error: $e');
+    }
+  }
+
   void dispose() {
-    _dio.close();
+    _hfDio.close();
+    _localDio.close();
   }
 }
 

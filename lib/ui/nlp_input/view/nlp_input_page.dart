@@ -158,12 +158,13 @@ class _NlpInputPageState extends State<NlpInputPage> {
       final result = _provider.result!;
       final isEvent = result.type == 'event';
 
-      // Navigate to create item page with classification result
+      // Navigate to create item page with full parsed result
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => CreateItemPage(
             initialIsEvent: isEvent,
+            parsedResult: result,  // Pass the full result
           ),
         ),
       );
