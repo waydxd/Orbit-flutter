@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import '../../../data/models/event_model.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
+<<<<<<< Updated upstream
+=======
+import '../../tasks/view/create_item_page.dart';
+>>>>>>> Stashed changes
 
 class EventDetailPage extends StatelessWidget {
   final EventModel event;
@@ -109,7 +113,11 @@ class EventDetailPage extends StatelessWidget {
                     // Floating Action Button
                     Positioned(
                       bottom: -28,
+<<<<<<< Updated upstream
                       left: 24,
+=======
+                      right: 24, // Changed from left: 24 to right: 24
+>>>>>>> Stashed changes
                       child: Container(
                         width: 56,
                         height: 56,
@@ -128,10 +136,27 @@ class EventDetailPage extends StatelessWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             customBorder: const CircleBorder(),
+<<<<<<< Updated upstream
                             onTap: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Edit coming soon')),
                               );
+=======
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreateItemPage(
+                                    initialIsEvent: true,
+                                    editEvent: event,
+                                  ),
+                                ),
+                              );
+                              // We could pop this page to return to calendar if edited
+                              if (result == true && context.mounted) {
+                                Navigator.pop(context);
+                              }
+>>>>>>> Stashed changes
                             },
                             child: const Icon(
                               Icons.edit,

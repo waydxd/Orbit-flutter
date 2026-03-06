@@ -5,9 +5,18 @@ import '../../calendar/widgets/floating_nav_bar.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../calendar/view/calendar_page.dart';
+<<<<<<< Updated upstream
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
+=======
+import '../../dashboard/view/dashboard_page.dart';
+import '../../tasks/view/task_list_page.dart';
+import '../../tasks/view/create_item_page.dart';
+import '../../ai_chat/view/ai_chat_page.dart';
+import '../../../data/models/task_model.dart';
+import '../../../data/models/event_model.dart';
+>>>>>>> Stashed changes
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -50,10 +59,18 @@ class _HomePageState extends State<HomePage> {
             colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
           ),
         ),
+<<<<<<< Updated upstream
         child: SafeArea(
           child: Stack(
             children: [
               Consumer<CalendarViewModel>(
+=======
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            SafeArea(
+              child: Consumer<CalendarViewModel>(
+>>>>>>> Stashed changes
                 builder: (context, viewModel, child) {
                   if (viewModel.isLoading) {
                     return const Center(child: CircularProgressIndicator());
@@ -81,10 +98,18 @@ class _HomePageState extends State<HomePage> {
                   
                   // Combine and sort
                   final List<dynamic> combinedUpcoming = [...upcomingTasks, ...upcomingEvents];
+<<<<<<< Updated upstream
                   // For simplicity, we just use the tasks if there are any, or a mix.
                   // Since they don't have a common base class with a date field easily accessible without type checking,
                   // let's just use tasks for the "coming tasks/events" cards to keep it simple and type-safe.
                   upcomingTasks.sort((a, b) => (a.dueDate ?? DateTime(2099)).compareTo(b.dueDate ?? DateTime(2099)));
+=======
+                  combinedUpcoming.sort((a, b) {
+                    final dateA = a is TaskModel ? (a.dueDate ?? DateTime(2099)) : (a as EventModel).startTime;
+                    final dateB = b is TaskModel ? (b.dueDate ?? DateTime(2099)) : (b as EventModel).startTime;
+                    return dateA.compareTo(dateB);
+                  });
+>>>>>>> Stashed changes
 
                   return ListView(
                     padding: const EdgeInsets.only(bottom: 120), // Space for floating nav bar
@@ -97,6 +122,7 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 10),
                       SizedBox(
                         height: 160,
+<<<<<<< Updated upstream
                         child: upcomingTasks.isEmpty 
                           ? _buildEmptyStateCard('No upcoming tasks!') 
                           : PageView.builder(
@@ -105,6 +131,16 @@ class _HomePageState extends State<HomePage> {
                               itemBuilder: (context, index) {
                                 final task = upcomingTasks[index];
                                 return _buildUpcomingCard(task);
+=======
+                        child: combinedUpcoming.isEmpty 
+                          ? _buildEmptyStateCard('No upcoming items!') 
+                          : PageView.builder(
+                              controller: _pageController,
+                              itemCount: combinedUpcoming.length > 5 ? 5 : combinedUpcoming.length,
+                              itemBuilder: (context, index) {
+                                final item = combinedUpcoming[index];
+                                return _buildUpcomingCard(item);
+>>>>>>> Stashed changes
                               },
                             ),
                       ),
@@ -132,8 +168,14 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
+<<<<<<< Updated upstream
               
               // Floating Navigation Bar
+=======
+            ),
+              
+            // Floating Navigation Bar
+>>>>>>> Stashed changes
               FloatingNavBar(
                 currentIndex: 0,
                 onHomeTap: () {
@@ -175,13 +217,25 @@ class _HomePageState extends State<HomePage> {
                   debugPrint('Todo list tapped');
                 },
                 onDashboardTap: () {
+<<<<<<< Updated upstream
+=======
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardPage(),
+                    ),
+                  );
+>>>>>>> Stashed changes
                   debugPrint('Dashboard tapped');
                 },
               ),
             ],
           ),
         ),
+<<<<<<< Updated upstream
       ),
+=======
+>>>>>>> Stashed changes
     );
   }
 
@@ -253,6 +307,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildUpcomingCard(dynamic item) {
+<<<<<<< Updated upstream
+=======
+    final bool isTask = item is TaskModel;
+    final String typeLabel = isTask ? 'Task' : 'Event';
+    final DateTime? date = isTask ? item.dueDate : (item as EventModel).startTime;
+    final Color typeColor = isTask ? AppColors.primary : const Color(0xFF8B80F0);
+
+>>>>>>> Stashed changes
     return Container(
       margin: const EdgeInsets.only(right: 15, bottom: 10),
       padding: const EdgeInsets.all(20),
@@ -275,6 +337,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
+<<<<<<< Updated upstream
                   color: AppColors.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -282,15 +345,30 @@ class _HomePageState extends State<HomePage> {
                   'Task',
                   style: TextStyle(
                     color: AppColors.primary,
+=======
+                  color: typeColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  typeLabel,
+                  style: TextStyle(
+                    color: typeColor,
+>>>>>>> Stashed changes
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
               ),
               const Spacer(),
+<<<<<<< Updated upstream
               if (item.dueDate != null)
                 Text(
                   DateFormat('MMM d, h:mm a').format(item.dueDate!),
+=======
+              if (date != null)
+                Text(
+                  DateFormat('MMM d, h:mm a').format(date),
+>>>>>>> Stashed changes
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
