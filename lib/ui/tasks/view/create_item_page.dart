@@ -235,11 +235,10 @@ class _CreateItemPageState extends State<CreateItemPage> {
       _detailsController.text = result.description!;
     }
 
-    // For events: pre-fill location if available
-    // Note: CreateItemPage may need a location field to be added to the UI
-    // if (result.isEvent && result.location != null && result.location!.isNotEmpty) {
-    //   _locationController.text = result.location!;
-    // }
+    // Pre-fill location when the model returns a non-empty location
+    if (result.location != null && result.location!.isNotEmpty) {
+      _locationController.text = result.location!;
+    }
   }
 
   DateTime _startDate = DateTime.now();
@@ -695,9 +694,13 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Widget _buildLocationField() {
+    final initialLocation = _locationController.text;
     return Container(
       decoration: _fieldDecoration(),
       child: Autocomplete<String>(
+        initialValue: initialLocation.isNotEmpty
+            ? TextEditingValue(text: initialLocation)
+            : null,
         optionsBuilder: (TextEditingValue textEditingValue) async {
           if (textEditingValue.text.isEmpty) {
             return const Iterable<String>.empty();

@@ -21,7 +21,7 @@ import json
 import os
 import re
 from datetime import datetime, timedelta
-from utils.date_resolver import resolve_relative_dates, has_recurrence_pattern
+from utils.date_resolver import resolve_relative_dates, has_recurrence_pattern, get_next_weekday
 
 app = FastAPI(title="Orbit NLP Parser", version="1.0.0")
 
@@ -78,9 +78,21 @@ def parse_duration_to_minutes(duration_str: str) -> int:
     if 'hour' in duration_str or 'hr' in duration_str:
         try:
             numbers = re.findall(r'\d+\.?\d*', duration_str)
-            if numbers:
-                hours = float(numbers[0])
-                return int(hours * 60)
+            if not numbers:
+                return 60
+
+            # Support both "2 hours" and "1 hour 30 minutes" style strings.
+            hours = float(numbers[0])
+            extra_minutes = 0
+
+            # If minutes are also mentioned, treat the second number as minutes.
+            if ('min' in duration_str or 'minute' in duration_str) and len(numbers) > 1:
+                try:
+                    extra_minutes = int(float(numbers[1]))
+                except Exception:
+                    extra_minutes = 0
+
+            return int(hours * 60 + extra_minutes)
         except:
             return 60
     elif 'min' in duration_str:
@@ -124,6 +136,88 @@ def _parse_time_flexible(time_str: str) -> tuple:
         return (h, 0)
 
     return None
+
+
+def extract_duration_from_text(text: str) -> str:
+    """
+    Best-effort extraction of a duration string from raw input text.
+
+    Returns a normalised duration string that parse_duration_to_minutes()
+    can understand, e.g. "2 hours", "90 minutes", "1 hour 30 minutes".
+    Returns empty string if nothing is found.
+    """
+    if not text:
+        return ""
+
+    # 1) Explicit "for X hours/minutes" wording
+    m = re.search(
+        r'\bfor\s+(\d+)\s*(hour|hours|hr|hrs)\s*(\d+)?\s*(minute|minutes|min|mins)?',
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        hours = int(m.group(1))
+        minute_part = m.group(3)
+        minutes = int(minute_part) if minute_part else 0
+
+        if hours > 0 and minutes > 0:
+            return f"{hours} hour{'s' if hours != 1 else ''} {minutes} minutes"
+        elif hours > 0:
+            return f"{hours} hour{'s' if hours != 1 else ''}"
+        elif minutes > 0:
+            return f"{minutes} minutes"
+
+    # 2) Pure minutes: "for 90 minutes", "for 30 min"
+    m = re.search(
+        r'\bfor\s+(\d+)\s*(minute|minutes|min|mins)\b',
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        minutes = int(m.group(1))
+        return f"{minutes} minutes"
+
+    # 3) Time ranges: "2pm-4pm", "14:00-15:30"
+    # AM/PM form
+    m = re.search(
+        r'(\d{1,2}(?::\d{2})?\s*(?:am|pm))\s*-\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))',
+        text,
+        re.IGNORECASE,
+    )
+    if not m:
+        # 24h form: "14:00-15:30"
+        m = re.search(
+            r'(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})',
+            text,
+        )
+
+    if m:
+        start_raw = m.group(1)
+        end_raw = m.group(2)
+
+        start_hm = _parse_time_flexible(start_raw)
+        end_hm = _parse_time_flexible(end_raw)
+
+        if start_hm and end_hm:
+            start_minutes = start_hm[0] * 60 + start_hm[1]
+            end_minutes = end_hm[0] * 60 + end_hm[1]
+
+            # Handle overnight ranges like "11pm-1am"
+            if end_minutes < start_minutes:
+                end_minutes += 24 * 60
+
+            duration_minutes = end_minutes - start_minutes
+            hours = duration_minutes // 60
+            minutes = duration_minutes % 60
+
+            if hours > 0 and minutes > 0:
+                return f"{hours} hour{'s' if hours != 1 else ''} {minutes} minutes"
+            elif hours > 0:
+                return f"{hours} hour{'s' if hours != 1 else ''}"
+            elif minutes > 0:
+                return f"{minutes} minutes"
+
+    return ""
 
 
 def convert_event_to_flutter(parsed_data: dict) -> EventOutput:
@@ -256,6 +350,209 @@ def convert_task_to_flutter(parsed_data: dict) -> TaskOutput:
         due_date=due_date.isoformat(),
         priority=parsed_data.get('priority', 'medium'),
         description=parsed_data.get('notes') or ''
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule-based task parser  (no model required)
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Deadline-introducer phrases to strip from the title
+_DEADLINE_PHRASES = re.compile(
+    r'\b(by|before|due|until|at|no\s+later\s+than|deadline[:\s])\b',
+    re.IGNORECASE,
+)
+
+# Time-of-day words that imply "today" (no explicit date) — map to today's date
+_TODAY_TIMEOFDAY = re.compile(
+    r'\b(tonight|today|this\s+morning|this\s+afternoon|this\s+evening|this\s+night)\b',
+    re.IGNORECASE,
+)
+
+# Bare weekday names that were NOT resolved (still present as English words)
+# → strip from title after date resolution
+_BARE_WEEKDAY = re.compile(
+    r'\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
+    re.IGNORECASE,
+)
+
+# Residual words left after stripping date/time phrases
+_RESIDUAL_WORDS = re.compile(
+    r'\b(this|in|the)\b',
+    re.IGNORECASE,
+)
+
+# Time-only expressions after the date has been resolved
+_TIME_EXPR = re.compile(
+    r'\b\d{1,2}:\d{2}\s*(?:AM|PM)|\b\d{1,2}\s*(?:am|pm)\b',
+    re.IGNORECASE,
+)
+
+# Date in DD/MM/YYYY form (produced by resolve_relative_dates)
+_DATE_EXPR = re.compile(r'\b(\d{2}/\d{2}/\d{4})\b')
+
+# Priority keywords  →  normalised value
+_PRIORITY_MAP = {
+    'urgent': 'urgent',
+    'asap': 'urgent',
+    'high': 'high',
+    'important': 'high',
+    'medium': 'medium',
+    'normal': 'medium',
+    'low': 'low',
+    'whenever': 'low',
+}
+_PRIORITY_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(k) for k in _PRIORITY_MAP) + r')\s*(priority)?\b',
+    re.IGNORECASE,
+)
+
+# Noise words that appear after the task verb and should not be in the title
+_NOISE_RE = re.compile(
+    r'\b(priority|task|todo|to-do|reminder|remind me to)\b',
+    re.IGNORECASE,
+)
+
+
+def parse_task_rule_based(text: str) -> TaskOutput:
+    """
+    Extract title + due_date + priority from natural language without a model.
+
+    Strategy
+    --------
+    1. Detect and extract priority keywords (high / medium / low / urgent).
+    2. Run resolve_relative_dates() to turn "tomorrow", "next Friday", "3pm"
+       into concrete DD/MM/YYYY and time strings.
+    3. Extract the resolved date and time using regex.
+    4. Strip deadline phrases, resolved date, resolved time, and priority tokens
+       from the original text to get the clean task title.
+    5. Build TaskOutput.
+
+    Examples
+    --------
+      "Submit report by tomorrow 5pm high priority"
+        → title="Submit report", due_date=<tomorrow>T17:00, priority="high"
+
+      "Call dentist next Monday"
+        → title="Call dentist", due_date=<next Monday>T23:59, priority="medium"
+
+      "Finish homework tonight"
+        → title="Finish homework", due_date=<today>T23:59, priority="medium"
+    """
+    original = text.strip()
+
+    # ── 1. Priority ────────────────────────────────────────────────────────────
+    priority = 'medium'
+    m = _PRIORITY_RE.search(original)
+    if m:
+        priority = _PRIORITY_MAP[m.group(1).lower()]
+
+    # ── 2. Pre-detect "today"-class and bare-weekday words BEFORE resolving ───
+    # "tonight", "today", "this morning/afternoon/evening" don't produce a date
+    # literal via resolve_relative_dates (only times), so we capture them here.
+    # Bare weekdays ("before Monday", "by Friday") are also not resolved unless
+    # prefixed with next/this/last, so we catch them separately.
+    today_match = _TODAY_TIMEOFDAY.search(original)
+    weekday_match = _BARE_WEEKDAY.search(original)
+
+    # ── 3. Resolve dates / times in the text ──────────────────────────────────
+    resolved = resolve_relative_dates(original)
+
+    # ── 4. Extract resolved date + time ───────────────────────────────────────
+    date_match = _DATE_EXPR.search(resolved)
+    time_match = _TIME_EXPR.search(resolved)
+
+    resolved_date = date_match.group(1) if date_match else None
+    resolved_time = time_match.group(0).strip() if time_match else None
+
+    # Build due_date datetime
+    _today_midnight = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        if resolved_date:
+            # Explicit date found (e.g. "tomorrow", "next Monday", "in 3 days")
+            parts = resolved_date.split('/')
+            day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+            hm = _parse_time_flexible(resolved_time) if resolved_time else None
+            if hm:
+                due_date = datetime(year, month, day, hm[0], hm[1])
+            else:
+                due_date = datetime(year, month, day, 23, 59)
+
+        elif today_match:
+            # "tonight" / "this evening" etc. → today with explicit time or 23:59
+            hm = _parse_time_flexible(resolved_time) if resolved_time else None
+            if hm:
+                due_date = _today_midnight.replace(hour=hm[0], minute=hm[1])
+            else:
+                due_date = _today_midnight.replace(hour=23, minute=59)
+
+        elif weekday_match:
+            # Bare weekday without qualifier: "before Monday", "by Friday"
+            # → next occurrence of that weekday at 23:59
+            weekday_name = weekday_match.group(1)
+            target = get_next_weekday(_today_midnight, weekday_name)
+            hm = _parse_time_flexible(resolved_time) if resolved_time else None
+            if hm:
+                due_date = target.replace(hour=hm[0], minute=hm[1])
+            else:
+                due_date = target.replace(hour=23, minute=59)
+
+        else:
+            # No date information at all → tomorrow at 23:59
+            due_date = (_today_midnight + timedelta(days=1)).replace(hour=23, minute=59)
+
+    except Exception as e:
+        print(f"[rule-based task] date parse error: {e}")
+        due_date = (_today_midnight + timedelta(days=1)).replace(hour=23, minute=59)
+
+    # ── 5. Clean title ────────────────────────────────────────────────────────
+    # Work on the resolved text so we can strip the date/time literals too,
+    # but keep the *original* casing for words that are not date/time/priority.
+    title_text = resolved
+
+    # Remove resolved date literal
+    if date_match:
+        title_text = title_text.replace(date_match.group(1), '')
+
+    # Remove resolved time literal
+    if time_match:
+        title_text = re.sub(re.escape(time_match.group(0)), '', title_text, count=1, flags=re.IGNORECASE)
+
+    # Remove deadline-introducer phrase that comes just before the date/time
+    title_text = _DEADLINE_PHRASES.sub('', title_text)
+
+    # Remove priority tokens
+    title_text = _PRIORITY_RE.sub('', title_text)
+
+    # Remove noise words
+    title_text = _NOISE_RE.sub('', title_text)
+
+    # Remove today-class words ("tonight", "this evening", etc.)
+    title_text = _TODAY_TIMEOFDAY.sub('', title_text)
+
+    # Remove bare weekday names that weren't resolved (e.g. "by Friday" → "by" removed,
+    # but "Friday" itself remains when there's no "next/this/last" qualifier)
+    title_text = _BARE_WEEKDAY.sub('', title_text)
+
+    # Remove common residual linking words that become dangling after all the above strips
+    title_text = _RESIDUAL_WORDS.sub('', title_text)
+
+    # Collapse multiple spaces / trailing punctuation
+    title_text = re.sub(r'\s+', ' ', title_text).strip(' .,;:-')
+
+    # Capitalise first letter
+    title = title_text[:1].upper() + title_text[1:] if title_text else original
+
+    if not title:
+        title = original
+
+    print(f"[rule-based task] '{original}' → title='{title}' due={due_date.isoformat()} priority={priority}")
+
+    return TaskOutput(
+        title=title,
+        due_date=due_date.isoformat(),
+        priority=priority,
+        description='',
     )
 
 
@@ -425,9 +722,17 @@ def generate_output(model, tokenizer, text: str, prefix: str) -> dict:
     
     This fixes the conflict where date preprocessing was breaking recurrence detection.
     """
-    # Path 1: Send ORIGINAL text to model (NO preprocessing)
-    # This allows the model to see "every Wednesday" instead of "every 05/03/2026"
-    input_text = f"{prefix}: {text}"
+    # Path 1: Send ORIGINAL text to model (NO date preprocessing)
+    # This allows the model to see "every Wednesday" instead of "every 05/03/2026".
+    # However, we still want the model to see explicit time ranges normalised
+    # into durations (e.g. "2pm-4pm" → "2pm for 2 hours"), just like in training.
+    text_for_model = text
+    duration_hint = extract_duration_from_text(text_for_model)
+    # If we can infer a duration from the raw text (e.g. "2pm-4pm"), we keep
+    # the original wording for the model and add the duration as a separate
+    # field later. The model is currently not strongly trained on emitting a
+    # duration field, so this is mainly for server-side robustness.
+    input_text = f"{prefix}: {text_for_model}"
     inputs = tokenizer(input_text, return_tensors="pt", max_length=128, truncation=True)
     
     outputs = model.generate(
@@ -453,6 +758,12 @@ def generate_output(model, tokenizer, text: str, prefix: str) -> dict:
         # Fallback: treat the whole string as an "action" title to avoid hard failures.
         text_clean = (generated_text or "").strip()
         model_result = {"action": text_clean or "Untitled Event"}
+
+    # If the model did not emit a duration, but we can infer one from the
+    # original text (time ranges or "for X hours"), attach it here so that
+    # end_time can be computed correctly.
+    if not model_result.get('duration') and duration_hint:
+        model_result['duration'] = duration_hint
     
     # Path 2: Preprocess dates separately (smart handling for recurring events)
     # If the model missed the recurrence field, derive it from the raw text.
@@ -560,11 +871,11 @@ def parse_event(input_data: ParseInput):
 def parse_task(input_data: ParseInput):
     """
     Parse natural language task description into structured data.
-    
-    The model outputs the original dataset format, then we convert
-    to Flutter-compatible format.
-    
-    Example input: "Submit report by Friday 5pm high priority"
+
+    Uses a rule-based parser (no model required): date/time resolution +
+    priority keywords + title cleaning.
+
+    Example input:  "Submit report by Friday 5pm high priority"
     Example output: {
         "title": "Submit report",
         "due_date": "2026-01-31T17:00:00",
@@ -572,19 +883,8 @@ def parse_task(input_data: ParseInput):
         "description": ""
     }
     """
-    if task_model is None or task_tokenizer is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Task model not loaded. Please train the model first."
-        )
-    
     try:
-        # Generate output in original format
-        parsed_data = generate_output(task_model, task_tokenizer, input_data.text, "parse task")
-        
-        # Convert to Flutter format
-        return convert_task_to_flutter(parsed_data)
-        
+        return parse_task_rule_based(input_data.text)
     except Exception as e:
         raise HTTPException(
             status_code=500,
