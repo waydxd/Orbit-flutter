@@ -1,14 +1,14 @@
 """
-FastAPI server for event/task parsing using fine-tuned T5 models
+FastAPI server for event/task parsing.
 
-The model outputs the ORIGINAL dataset format, then this server
-converts it to Flutter-compatible format.
+- Events: fine-tuned FLAN-T5-small model (pipe-delimited output → JSON)
+- Tasks:  rule-based parser (regex + date resolver, no model required)
 
 Usage:
   python server.py
 
 Then test with:
-  curl -X POST http://localhost:5000/parse/event \
+  curl -X POST http://localhost:5001/parse/event \
     -H "Content-Type: application/json" \
     -d '{"text": "Meeting with John tomorrow at 3pm for 1 hour"}'
 """

@@ -1,6 +1,6 @@
-# NLP Event/Task Parser Server
+# Orbit NLP Server
 
-Fine-tuned T5-small models for parsing natural language descriptions into structured JSON.
+FastAPI server that parses natural language descriptions of events and tasks into structured JSON for the Orbit Flutter app.
 
 ## Architecture
 
@@ -9,157 +9,125 @@ User Input: "Meeting with John tomorrow at 3pm"
                     |
                     v
         facebook/bart-large-mnli
-           (classification: task vs event)
+         (zero-shot: task vs event)
                     |
         +-----------+-----------+
         |                       |
         v                       v
-T5-small (event-parser)   T5-small (task-parser)
+Fine-tuned FLAN-T5-small   Rule-based parser
+   (event-parser)           (task-parser)
         |                       |
         v                       v
 {                           {
   "title": "Meeting",         "title": "...",
   "start_time": "...",        "due_date": "...",
   "end_time": "...",          "priority": "...",
-  "location": "",             "description": "..."
-  "description": "With: John" }
+  "location": "...",          "description": ""
+  "recurrence": "..."       }
 }
 ```
 
-## Quick Start
-
-### 1. Prepare Data
-
-```bash
-# Event data (already done if you have augmented.jsonl)
-python utils/data_preprocessing.py
-
-# Task data (when you have task_augmented.jsonl)
-python utils/data_preprocessing.py task
-```
-
-### 2. Train the Model
-
-**Option A: Local Training (CPU - slower)**
-```bash
-pip install -r requirements.txt
-python train_event_parser.py
-```
-*Time: ~10-20 minutes*
-
-**Option B: Google Colab (GPU - faster, recommended)**
-
-1. Upload these files to Colab:
-   - `train_event_parser.py`
-   - `data/event_training_data.jsonl`
-
-2. In Colab, run:
-   ```python
-   !pip install transformers datasets torch accelerate sentencepiece
-   !python train_event_parser.py
-   ```
-
-3. Download the model:
-   ```python
-   !zip -r event-parser-model.zip ./models/event-parser
-   from google.colab import files
-   files.download('event-parser-model.zip')
-   ```
-
-4. On your Mac:
-   ```bash
-   unzip event-parser-model.zip -d nlp-server/models/
-   ```
-
-### 3. Test the Model
-
-```bash
-python test_one-shot_classification.py
-```
-
-### 4. Start the Server
-
-```bash
-python server.py
-```
-
-Server runs on `http://localhost:5000`
-
-### 5. Test the Server
-
-```bash
-# Test event parsing
-curl -X POST http://localhost:5000/parse/event \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Meeting with John tomorrow at 3pm for 1 hour"}'
-
-# Test task parsing (when task model is trained)
-curl -X POST http://localhost:5000/parse/task \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Submit report by Friday 5pm high priority"}'
-```
-
-## Model Details
-
-- **Base Model**: T5-small (60M parameters)
-- **Task**: Sequence-to-sequence (text to JSON)
-- **Training Data**: 2,584 event examples
-- **Input Format**: `"parse event: <natural language>"` or `"parse task: <natural language>"`
-- **Output Format**: JSON string
+The **task parser** uses regex and date resolution (no model required). The **event parser** uses a fine-tuned FLAN-T5-small model.
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Service info |
-| `/health` | GET | Health check |
-| `/parse/event` | POST | Parse event text → JSON |
-| `/parse/task` | POST | Parse task text → JSON |
+| Endpoint       | Method | Description                    |
+|----------------|--------|--------------------------------|
+| `/`            | GET    | Service info                   |
+| `/health`      | GET    | Health check                   |
+| `/parse/event` | POST   | Parse event text → JSON        |
+| `/parse/task`  | POST   | Parse task text → JSON         |
+
+## Running with Docker (Recommended)
+
+```bash
+cd nlp-server
+
+# Build and start
+docker compose up --build
+
+# Run in background
+docker compose up -d --build
+```
+
+The server starts at `http://localhost:5001`. The `./models` directory is mounted into the container at runtime, so the model files are never baked into the image.
+
+## Running Locally
+
+```bash
+cd nlp-server
+pip install -r requirements.txt
+python3 server.py
+```
+
+## Model Setup
+
+The event parser model is **not included** in the repository (~293 MB). Place it at:
+
+```
+models/
+└── event-parser/
+    ├── config.json
+    ├── tokenizer_config.json
+    ├── tokenizer.json
+    ├── spiece.model
+    └── model.safetensors   (or pytorch_model.bin)
+```
+
+To train a new model, open `train_event_parser_v2.ipynb` in Google Colab, run all cells, and download the resulting zip. Then:
+
+```bash
+unzip ~/Downloads/event-parser.zip -d nlp-server/models/
+```
+
+## Testing the Server
+
+```bash
+# Event parsing
+curl -X POST http://localhost:5001/parse/event \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Team meeting next Monday at 10am for 1 hour"}'
+
+# Task parsing (no model required)
+curl -X POST http://localhost:5001/parse/task \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Submit report by Friday 5pm high priority"}'
+
+# Tricky task cases
+curl -X POST http://localhost:5001/parse/task \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Buy clothes before Monday"}'
+
+curl -X POST http://localhost:5001/parse/task \
+  -H "Content-Type: application/json" \
+  -d '{"text": "by next Friday morning"}'
+
+curl -X POST http://localhost:5001/parse/task \
+  -H "Content-Type: application/json" \
+  -d '{"text": "in 2 days"}'
+```
 
 ## Flutter Integration
 
-Once the server is running:
+The Flutter app points to the server via `lib/config/app_config.dart`:
 
-1. Update Flutter `lib/config/app_config.dart`:
-   ```dart
-   static const String nlpServerBaseUrl = 'http://localhost:5000';
-   static const bool useLocalNlpServer = true;
-   ```
+```dart
+static const String nlpServerBaseUrl = 'http://localhost:5001';
+```
 
-2. For iOS simulator: use `http://localhost:5000`
-3. For Android emulator: use `http://10.0.2.2:5000`
-
-## Training Your Own Task Parser
-
-1. Create `data/task_augmented.jsonl` with format:
-   ```json
-   {"task_text": "Submit report by Friday", "output": {"action": "Submit report", "date": "31/01/2026", "time": "5:00 PM", "priority": "high", "notes": null}}
-   ```
-
-2. Generate training data:
-   ```bash
-   python utils/data_preprocessing.py task
-   ```
-
-3. Train:
-   ```bash
-   python train_task_parser.py
-   ```
+- iOS Simulator: `http://localhost:5001`
+- Android Emulator: `http://10.0.2.2:5001`
 
 ## Troubleshooting
 
-**Model not found error:**
-- Make sure you've trained the model first
-- Check that `./models/event-parser/` exists and contains model files
+**Event model not found:**
+- Verify `./models/event-parser/` exists and contains model files
+- Check: `ls models/event-parser/`
 
-**Out of memory during training:**
-- Reduce `BATCH_SIZE` in training script (try 4 or 2)
-- Or use Colab with GPU
+**Port already in use:**
+- Check: `lsof -i :5001`
+- Kill existing process: `kill <PID>`
 
-**Server won't start:**
-- Check if port 5000 is available: `lsof -i :5000`
-- Try a different port in `server.py`
-
-**Invalid JSON output:**
-- The model may need more training epochs
-- Try increasing `num_beams` in generation for better quality
+**Out of memory:**
+- The model requires ~1 GB RAM to load
+- Reduce batch size if retraining: set `BATCH_SIZE = 4` or `2`

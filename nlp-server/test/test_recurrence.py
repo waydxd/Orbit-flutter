@@ -72,7 +72,6 @@ def test_recurrence_detection():
         
         if not health.get('event_model_loaded'):
             print("❌ Event model not loaded! Please train and deploy the model first.")
-            print("   See: MODEL_DEPLOYMENT_GUIDE.md")
             return
             
     except requests.exceptions.ConnectionError:

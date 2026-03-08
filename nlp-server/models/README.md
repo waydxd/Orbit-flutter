@@ -1,56 +1,48 @@
 # Model Directory
 
-This directory stores your fine-tuned T5 models for event and task parsing.
+This directory stores the fine-tuned FLAN-T5-small model for event parsing.
+
+> **Note:** The task parser is rule-based and does not require a model file.
 
 ## Required Structure
 
 ```
 models/
-├── event-parser/
-│   ├── config.json
-│   ├── tokenizer_config.json
-│   ├── tokenizer.json
-│   ├── special_tokens_map.json
-│   ├── spiece.model
-│   └── pytorch_model.bin
-│
-└── task-parser/
+└── event-parser/
     ├── config.json
     ├── tokenizer_config.json
     ├── tokenizer.json
-    ├── special_tokens_map.json
     ├── spiece.model
-    └── pytorch_model.bin
+    └── model.safetensors   (or pytorch_model.bin)
 ```
 
-## How to Get Models
+## How to Get the Model
 
-Models are **not included in the repository** because they're too large (~245 MB each).
+Model files are **not included** in the repository (~293 MB).
 
-**You need to:**
-1. Train models in Google Colab using `train_event_parser.ipynb` or `train_task_parser.py`
-2. Download the trained models
-3. Place them in this directory
+1. Train in Google Colab using `train_event_parser_v2.ipynb`
+2. Download the resulting zip from Colab
+3. Extract here:
 
-**See:** `../MODEL_DEPLOYMENT_GUIDE.md` for complete instructions.
+```bash
+cd nlp-server
+unzip ~/Downloads/event-parser.zip -d models/
+```
 
 ## Quick Start
 
 ```bash
-# After training in Colab, download and extract here:
-cd nlp-server
-unzip ~/Downloads/event-parser.zip -d models/
+# Verify structure
+ls models/event-parser/
 
-# Verify structure:
-ls -R models/
-
-# Start server:
+# Start server locally
 python3 server.py
+
+# Or with Docker
+docker compose up --build
 ```
 
 ## Status
 
-- [ ] Event parser model (`event-parser/`)
-- [ ] Task parser model (`task-parser/`)
-
-Once both models are deployed, the NLP server will be fully functional!
+- [x] Event parser model (`event-parser/`)
+- [x] Task parser (rule-based, no model needed)
