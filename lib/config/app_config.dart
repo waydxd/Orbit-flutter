@@ -28,9 +28,9 @@ class AppConfig {
 
   // Hugging Face API Configuration
   static const String huggingFaceBaseUrl = 'https://router.huggingface.co';
-  static const String huggingFaceApiKey = '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'; // Set via environment or secure storage
+  static const String huggingFaceApiKey = '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';
   static const String hfClassificationModel = 'facebook/bart-large-mnli';
-  static const String hfNerModel = 'dslim/bert-base-NER';
+
 
   // NLP Server Configuration (local T5 parsing)
   static const String nlpServerBaseUrl = 'http://localhost:5001';
