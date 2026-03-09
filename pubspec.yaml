@@ -78,6 +78,7 @@ dependencies:
   path_provider: ^2.1.4
   equatable: ^2.0.5
   json_annotation: ^4.9.0
+  flutter_background_service: ^5.1.0
 
 dev_dependencies:
   flutter_test:

@@ -18,7 +18,7 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
   final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isOtpSent = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -35,9 +35,10 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      
+
       if (!_isOtpSent) {
-        final success = await authViewModel.requestPasswordReset(_emailController.text.trim());
+        final success = await authViewModel
+            .requestPasswordReset(_emailController.text.trim());
         if (success && mounted) {
           setState(() {
             _isOtpSent = true;
@@ -103,7 +104,8 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                textInputAction: _isOtpSent ? TextInputAction.next : TextInputAction.done,
+                textInputAction:
+                    _isOtpSent ? TextInputAction.next : TextInputAction.done,
                 onFieldSubmitted: _isOtpSent ? null : (_) => _submit(),
                 enabled: !_isOtpSent,
                 decoration: InputDecoration(
@@ -130,7 +132,6 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
                   return null;
                 },
               ),
-              
               if (_isOtpSent) ...[
                 const SizedBox(height: Constants.spacingM),
                 TextFormField(
@@ -248,7 +249,6 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
                   },
                 ),
               ],
-              
               if (authViewModel.error != null) ...[
                 const SizedBox(height: Constants.spacingM),
                 Container(

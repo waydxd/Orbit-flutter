@@ -32,7 +32,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
       if (locations.isNotEmpty) {
         if (mounted) {
           setState(() {
-            _locationCoords = LatLng(locations.first.latitude, locations.first.longitude);
+            _locationCoords =
+                LatLng(locations.first.latitude, locations.first.longitude);
             _isLoadingMap = false;
           });
         }
@@ -105,47 +106,49 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                         : Container(
                             color: AppColors.grey100,
                             child: const Center(
-                              child: Icon(Icons.location_off, size: 48, color: AppColors.grey400),
+                              child: Icon(Icons.location_off,
+                                  size: 48, color: AppColors.grey400),
                             ),
                           ),
               ),
             ),
-            
-            // Events List
-          Consumer<CalendarViewModel>(
-            builder: (context, viewModel, child) {
-              final eventsAtLocation = viewModel.events
-                  .where((e) => e.location == widget.locationName)
-                  .toList()
-                ..sort((a, b) => b.startTime.compareTo(a.startTime)); // Newest first
 
-              if (eventsAtLocation.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Text(
-                      'No events found here.',
-                      style: TextStyle(color: AppColors.textSecondary),
+            // Events List
+            Consumer<CalendarViewModel>(
+              builder: (context, viewModel, child) {
+                final eventsAtLocation = viewModel.events
+                    .where((e) => e.location == widget.locationName)
+                    .toList()
+                  ..sort((a, b) =>
+                      b.startTime.compareTo(a.startTime)); // Newest first
+
+                if (eventsAtLocation.isEmpty) {
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Text(
+                        'No events found here.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final event = eventsAtLocation[index];
+                        return _buildEventCard(event);
+                      },
+                      childCount: eventsAtLocation.length,
                     ),
                   ),
                 );
-              }
-
-              return SliverPadding(
-                padding: const EdgeInsets.all(16.0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final event = eventsAtLocation[index];
-                      return _buildEventCard(event);
-                    },
-                    childCount: eventsAtLocation.length,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -215,7 +218,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
+                      const Icon(Icons.access_time,
+                          size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         '${DateFormat('h:mm a').format(event.startTime)} - ${DateFormat('h:mm a').format(event.endTime)}',

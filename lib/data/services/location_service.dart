@@ -8,11 +8,10 @@ class LocationService {
   static Future<List<String>> getPlaceSuggestions(String query) async {
     if (query.isEmpty) return [];
 
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-      '?input=$query'
-      '&key=$_apiKey'
-    );
+    final url =
+        Uri.parse('https://maps.googleapis.com/maps/api/place/autocomplete/json'
+            '?input=$query'
+            '&key=$_apiKey');
 
     try {
       final response = await http.get(url);

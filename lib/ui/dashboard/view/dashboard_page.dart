@@ -36,16 +36,32 @@ class _DashboardPageState extends State<DashboardPage> {
     final desc = event.description.toLowerCase();
     final combined = '$title $desc';
 
-    if (combined.contains('work') || combined.contains('meeting') || combined.contains('sync') || combined.contains('office') || combined.contains('interview')) {
+    if (combined.contains('work') ||
+        combined.contains('meeting') ||
+        combined.contains('sync') ||
+        combined.contains('office') ||
+        combined.contains('interview')) {
       return 'Work';
     }
-    if (combined.contains('study') || combined.contains('class') || combined.contains('lecture') || combined.contains('exam') || combined.contains('assignment')) {
+    if (combined.contains('study') ||
+        combined.contains('class') ||
+        combined.contains('lecture') ||
+        combined.contains('exam') ||
+        combined.contains('assignment')) {
       return 'Study';
     }
-    if (combined.contains('gym') || combined.contains('exercise') || combined.contains('workout') || combined.contains('run') || combined.contains('sport')) {
+    if (combined.contains('gym') ||
+        combined.contains('exercise') ||
+        combined.contains('workout') ||
+        combined.contains('run') ||
+        combined.contains('sport')) {
       return 'Exercise';
     }
-    if (combined.contains('personal') || combined.contains('dinner') || combined.contains('lunch') || combined.contains('friend') || combined.contains('family')) {
+    if (combined.contains('personal') ||
+        combined.contains('dinner') ||
+        combined.contains('lunch') ||
+        combined.contains('friend') ||
+        combined.contains('family')) {
       return 'Personal';
     }
     return 'Other';
@@ -55,14 +71,17 @@ class _DashboardPageState extends State<DashboardPage> {
     final Map<DateTime, Map<String, int>> dayCategoryDurations = {};
 
     for (final event in events) {
-      final dateKey = DateTime(event.startTime.year, event.startTime.month, event.startTime.day);
+      final dateKey = DateTime(
+          event.startTime.year, event.startTime.month, event.startTime.day);
       final category = _inferCategory(event);
-      final durationMinutes = event.endTime.difference(event.startTime).inMinutes;
+      final durationMinutes =
+          event.endTime.difference(event.startTime).inMinutes;
 
       if (durationMinutes <= 0) continue;
 
       dayCategoryDurations.putIfAbsent(dateKey, () => {});
-      dayCategoryDurations[dateKey]![category] = (dayCategoryDurations[dateKey]![category] ?? 0) + durationMinutes;
+      dayCategoryDurations[dateKey]![category] =
+          (dayCategoryDurations[dateKey]![category] ?? 0) + durationMinutes;
     }
 
     return dayCategoryDurations.entries.map((e) {
@@ -144,7 +163,7 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Consumer<CalendarViewModel>(
                 builder: (context, viewModel, child) {
                   final records = _generateRecordsFromEvents(viewModel.events);
-                  
+
                   return SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 120),
                     child: Column(
@@ -169,50 +188,50 @@ class _DashboardPageState extends State<DashboardPage> {
                 },
               ),
             ),
-          
-          // Navigation Bar
-          FloatingNavBar(
-            currentIndex: 3, // Dashboard is index 3
-            onHomeTap: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            onCalendarTap: () {
-              // Depending on where we came from, but generally we can push or pop.
-              // Let's pop if we came from calendar, otherwise push.
-              // For simplicity, we can just pop until first, then push Calendar. 
-              // Wait, Home is usually first. Calendar is separate.
-              // Let's match TaskListPage:
-              Navigator.pop(context);
-            },
-            onCreateTaskTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CreateItemPage(),
-                ),
-              );
-            },
-            onCreateTaskLongPress: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AiChatPage()),
-              );
-              debugPrint('AI Chat long press');
-            },
-            onTodoListTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TaskListPage(),
-                ),
-              );
-            },
-            onDashboardTap: () {
-              // Already on dashboard page
-            },
-          ),
-        ],
-      ),
+
+            // Navigation Bar
+            FloatingNavBar(
+              currentIndex: 3, // Dashboard is index 3
+              onHomeTap: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+              onCalendarTap: () {
+                // Depending on where we came from, but generally we can push or pop.
+                // Let's pop if we came from calendar, otherwise push.
+                // For simplicity, we can just pop until first, then push Calendar.
+                // Wait, Home is usually first. Calendar is separate.
+                // Let's match TaskListPage:
+                Navigator.pop(context);
+              },
+              onCreateTaskTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateItemPage(),
+                  ),
+                );
+              },
+              onCreateTaskLongPress: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AiChatPage()),
+                );
+                debugPrint('AI Chat long press');
+              },
+              onTodoListTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TaskListPage(),
+                  ),
+                );
+              },
+              onDashboardTap: () {
+                // Already on dashboard page
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -68,7 +68,8 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _currentPosition = const LatLng(22.3193, 114.1694); // Default to Hong Kong
+          _currentPosition =
+              const LatLng(22.3193, 114.1694); // Default to Hong Kong
         });
       }
     }
@@ -97,7 +98,8 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const LocationListPage()),
+                MaterialPageRoute(
+                    builder: (context) => const LocationListPage()),
               );
             },
             child: Padding(
@@ -133,7 +135,7 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
               ),
             ),
           ),
-          
+
           // Map
           ClipRRect(
             borderRadius: const BorderRadius.only(
@@ -143,47 +145,51 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
             child: SizedBox(
               height: 200,
               width: double.infinity,
-              child: _isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : _currentPosition != null 
-                    ? GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const LocationListPage()),
-                          );
-                        },
-                        child: GoogleMap(
-                          initialCameraPosition: CameraPosition(
-                            target: _currentPosition!,
-                            zoom: 11.0,
-                          ),
-                          myLocationEnabled: true,
-                          myLocationButtonEnabled: false,
-                          zoomControlsEnabled: false,
-                          mapToolbarEnabled: false,
-                          compassEnabled: false,
-                          scrollGesturesEnabled: false,
-                          onMapCreated: (controller) {
-                            _mapController = controller;
-                          },
-                          onTap: (_) {
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _currentPosition != null
+                      ? GestureDetector(
+                          onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const LocationListPage()),
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LocationListPage()),
                             );
                           },
+                          child: GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: _currentPosition!,
+                              zoom: 11.0,
+                            ),
+                            myLocationEnabled: true,
+                            myLocationButtonEnabled: false,
+                            zoomControlsEnabled: false,
+                            mapToolbarEnabled: false,
+                            compassEnabled: false,
+                            scrollGesturesEnabled: false,
+                            onMapCreated: (controller) {
+                              _mapController = controller;
+                            },
+                            onTap: (_) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const LocationListPage()),
+                              );
+                            },
+                          ),
+                        )
+                      : Container(
+                          color: AppColors.grey100,
+                          child: const Center(
+                            child: Text(
+                              'Location not available',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ),
                         ),
-                      )
-                  : Container(
-                      color: AppColors.grey100,
-                      child: const Center(
-                        child: Text(
-                          'Location not available',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                    ),
             ),
           ),
         ],

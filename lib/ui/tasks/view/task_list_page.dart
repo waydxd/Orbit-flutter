@@ -6,6 +6,7 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/task_model.dart';
 import 'create_item_page.dart';
+import '../../dashboard/view/dashboard_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 
 class TaskListPage extends StatefulWidget {
@@ -39,6 +40,7 @@ class _TaskListPageState extends State<TaskListPage> {
               viewModel.tasks.where((t) => !t.completed).toList();
 
           return Stack(
+            fit: StackFit.expand,
             children: [
               SafeArea(
                 child: Column(
@@ -100,6 +102,12 @@ class _TaskListPageState extends State<TaskListPage> {
                   // Already here
                 },
                 onDashboardTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardPage(),
+                    ),
+                  );
                   debugPrint('Dashboard tapped');
                 },
               ),

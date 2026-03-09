@@ -55,7 +55,9 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                  child: Text('Cancel',
+                      style:
+                          TextStyle(color: Colors.grey.shade600, fontSize: 16)),
                 ),
                 CupertinoSlidingSegmentedControl<int>(
                   groupValue: _selectedTab,
@@ -82,7 +84,11 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
                     widget.onDateTimeChanged(_selectedDate);
                     Navigator.pop(context);
                   },
-                  child: const Text('Done', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: const Text('Done',
+                      style: TextStyle(
+                          color: Color(0xFF6366F1),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
                 ),
               ],
             ),
@@ -93,7 +99,8 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
                     key: const ValueKey('date_picker'),
                     mode: CupertinoDatePickerMode.date,
                     initialDateTime: _selectedDate,
-                    minimumDate: DateTime.now().subtract(const Duration(days: 1)),
+                    minimumDate:
+                        DateTime.now().subtract(const Duration(days: 1)),
                     onDateTimeChanged: (DateTime newDate) {
                       setState(() {
                         _selectedDate = DateTime(
@@ -130,7 +137,14 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
 }
 
 class CreateItemPage extends StatefulWidget {
-  const CreateItemPage({super.key});
+  final bool initialIsEvent;
+  final EventModel? editEvent;
+
+  const CreateItemPage({
+    super.key,
+    this.initialIsEvent = true,
+    this.editEvent,
+  });
 
   @override
   State<CreateItemPage> createState() => _CreateItemPageState();
@@ -144,6 +158,27 @@ class _CreateItemPageState extends State<CreateItemPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    isEvent = widget.editEvent != null ? true : widget.initialIsEvent;
+
+    if (widget.editEvent != null) {
+      _prefillFromEditEvent();
+    }
+  }
+
+  void _prefillFromEditEvent() {
+    final event = widget.editEvent!;
+    _nameController.text = event.title;
+    _detailsController.text = event.description;
+    _locationController.text = event.location;
+    _startDate = event.startTime;
+    _startTime = TimeOfDay.fromDateTime(event.startTime);
+    _endDate = event.endTime;
+    _endTime = TimeOfDay.fromDateTime(event.endTime);
+  }
 
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
@@ -196,55 +231,50 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Future<void> _selectStartDateTime() async {
-    DateTime initial = DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute);
-    await _showDateTimePicker(
-      context,
-      initialDate: initial,
-      onDateTimeChanged: (DateTime newDateTime) {
-        setState(() {
-          _startDate = newDateTime;
-          _startTime = TimeOfDay.fromDateTime(newDateTime);
-          
-          DateTime currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
-          if (currentEnd.isBefore(newDateTime)) {
-            final newEnd = newDateTime.add(const Duration(hours: 1));
-            _endDate = newEnd;
-            _endTime = TimeOfDay.fromDateTime(newEnd);
-          }
-        });
-      }
-    );
+    DateTime initial = DateTime(_startDate.year, _startDate.month,
+        _startDate.day, _startTime.hour, _startTime.minute);
+    await _showDateTimePicker(context, initialDate: initial,
+        onDateTimeChanged: (DateTime newDateTime) {
+      setState(() {
+        _startDate = newDateTime;
+        _startTime = TimeOfDay.fromDateTime(newDateTime);
+
+        DateTime currentEnd = DateTime(_endDate.year, _endDate.month,
+            _endDate.day, _endTime.hour, _endTime.minute);
+        if (currentEnd.isBefore(newDateTime)) {
+          final newEnd = newDateTime.add(const Duration(hours: 1));
+          _endDate = newEnd;
+          _endTime = TimeOfDay.fromDateTime(newEnd);
+        }
+      });
+    });
   }
 
   Future<void> _selectEndDateTime() async {
-    DateTime initial = DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute);
-    await _showDateTimePicker(
-      context,
-      initialDate: initial,
-      onDateTimeChanged: (DateTime newDateTime) {
-        setState(() {
-          _endDate = newDateTime;
-          _endTime = TimeOfDay.fromDateTime(newDateTime);
-        });
-      }
-    );
+    DateTime initial = DateTime(_endDate.year, _endDate.month, _endDate.day,
+        _endTime.hour, _endTime.minute);
+    await _showDateTimePicker(context, initialDate: initial,
+        onDateTimeChanged: (DateTime newDateTime) {
+      setState(() {
+        _endDate = newDateTime;
+        _endTime = TimeOfDay.fromDateTime(newDateTime);
+      });
+    });
   }
 
   Future<void> _selectDeadlineDateTime() async {
-    DateTime initial = _deadlineDate != null 
-        ? DateTime(_deadlineDate!.year, _deadlineDate!.month, _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute)
+    DateTime initial = _deadlineDate != null
+        ? DateTime(_deadlineDate!.year, _deadlineDate!.month,
+            _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute)
         : DateTime.now();
-        
-    await _showDateTimePicker(
-      context,
-      initialDate: initial,
-      onDateTimeChanged: (DateTime newDateTime) {
-        setState(() {
-          _deadlineDate = newDateTime;
-          _deadlineTime = TimeOfDay.fromDateTime(newDateTime);
-        });
-      }
-    );
+
+    await _showDateTimePicker(context, initialDate: initial,
+        onDateTimeChanged: (DateTime newDateTime) {
+      setState(() {
+        _deadlineDate = newDateTime;
+        _deadlineTime = TimeOfDay.fromDateTime(newDateTime);
+      });
+    });
   }
 
   void _handleCreate() async {
@@ -285,18 +315,30 @@ class _CreateItemPageState extends State<CreateItemPage> {
           _endTime.minute,
         );
 
-        final event = EventModel(
-          id: uuid.v4(),
-          userId: currentUserId,
-          title: _nameController.text,
-          description: _detailsController.text,
-          startTime: start,
-          endTime: end,
-          location: _locationController.text,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await viewModel.createEvent(event);
+        if (widget.editEvent != null) {
+          final event = widget.editEvent!.copyWith(
+            title: _nameController.text,
+            description: _detailsController.text,
+            startTime: start,
+            endTime: end,
+            location: _locationController.text,
+            updatedAt: DateTime.now(),
+          );
+          await viewModel.updateEvent(event);
+        } else {
+          final event = EventModel(
+            id: uuid.v4(),
+            userId: currentUserId,
+            title: _nameController.text,
+            description: _detailsController.text,
+            startTime: start,
+            endTime: end,
+            location: _locationController.text,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          await viewModel.createEvent(event);
+        }
       } else {
         DateTime? deadline;
         if (_deadlineDate != null && _deadlineTime != null) {
@@ -328,11 +370,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
       }
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${isEvent ? 'Event' : 'Task'} created successfully!',
+              '${isEvent ? 'Event' : 'Task'} ${widget.editEvent != null ? 'updated' : 'created'} successfully!',
             ),
           ),
         );
@@ -341,7 +383,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create ${isEvent ? 'event' : 'task'}: $e'),
+            content: Text(
+                'Failed to ${widget.editEvent != null ? 'update' : 'create'} ${isEvent ? 'event' : 'task'}: $e'),
           ),
         );
       }
@@ -367,8 +410,20 @@ class _CreateItemPageState extends State<CreateItemPage> {
             children: [
               _buildHeader(),
               const SizedBox(height: 20),
-              _buildToggle(),
-              const SizedBox(height: 30),
+              if (widget.editEvent == null) ...[
+                _buildToggle(),
+                const SizedBox(height: 30),
+              ] else ...[
+                const Text(
+                  'Edit Event',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -462,7 +517,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
               child: GestureDetector(
                 onTap: _selectStartDateTime,
                 child: _buildTimeField(
-                  DateFormat('MMM d, h:mm a').format(DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute)),
+                  DateFormat('MMM d, h:mm a').format(DateTime(
+                      _startDate.year,
+                      _startDate.month,
+                      _startDate.day,
+                      _startTime.hour,
+                      _startTime.minute)),
                   Icons.flag_outlined,
                   title: 'Start',
                 ),
@@ -473,7 +533,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
               child: GestureDetector(
                 onTap: _selectEndDateTime,
                 child: _buildTimeField(
-                  DateFormat('MMM d, h:mm a').format(DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute)),
+                  DateFormat('MMM d, h:mm a').format(DateTime(
+                      _endDate.year,
+                      _endDate.month,
+                      _endDate.day,
+                      _endTime.hour,
+                      _endTime.minute)),
                   Icons.play_arrow_outlined,
                   title: 'End',
                 ),
@@ -504,7 +569,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
           onTap: _selectDeadlineDateTime,
           child: _buildTimeField(
             _deadlineDate != null
-                ? DateFormat('MMM d, h:mm a').format(DateTime(_deadlineDate!.year, _deadlineDate!.month, _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute))
+                ? DateFormat('MMM d, h:mm a').format(DateTime(
+                    _deadlineDate!.year,
+                    _deadlineDate!.month,
+                    _deadlineDate!.day,
+                    _deadlineTime!.hour,
+                    _deadlineTime!.minute))
                 : 'Deadline',
             Icons.access_time_rounded,
             title: 'Deadline',
@@ -538,7 +608,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
           if (textEditingValue.text.isEmpty) {
             return const Iterable<String>.empty();
           }
-          return await LocationService.getPlaceSuggestions(textEditingValue.text);
+          return await LocationService.getPlaceSuggestions(
+              textEditingValue.text);
         },
         onSelected: (String selection) {
           _locationController.text = selection;
@@ -555,7 +626,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
             decoration: InputDecoration(
               hintText: 'Location (Optional)',
               hintStyle: TextStyle(color: Colors.grey.shade400),
-              prefixIcon: Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
+              prefixIcon:
+                  Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -572,7 +644,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
               borderRadius: BorderRadius.circular(16),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: 200, 
+                  maxHeight: 200,
                   maxWidth: MediaQuery.of(context).size.width - 48,
                 ),
                 child: ListView.builder(
@@ -582,7 +654,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
                   itemBuilder: (BuildContext context, int index) {
                     final String option = options.elementAt(index);
                     return ListTile(
-                      leading: const Icon(Icons.location_on, color: Colors.grey),
+                      leading:
+                          const Icon(Icons.location_on, color: Colors.grey),
                       title: Text(option),
                       onTap: () {
                         onSelected(option);
@@ -616,7 +689,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
-  Widget _buildTimeField(String value, IconData icon, {String? title, bool isTask = false}) {
+  Widget _buildTimeField(String value, IconData icon,
+      {String? title, bool isTask = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: _fieldDecoration(),
@@ -638,13 +712,19 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 if (title != null) ...[
                   Text(
                     title,
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 2),
                 ],
                 Text(
                   value,
-                  style: const TextStyle(color: Color(0xFF1F2937), fontSize: 13, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -801,9 +881,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
             child: Center(
               child: viewModel.isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      'Create',
-                      style: TextStyle(
+                  : Text(
+                      widget.editEvent != null ? 'Update' : 'Create',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

@@ -128,11 +128,6 @@ class AuthViewModel extends BaseViewModel {
       return false;
     }
 
-    if (otp.isEmpty || otp.length != 6) {
-      setError('Please enter a valid 6-digit OTP');
-      return false;
-    }
-
     return await executeAsync<bool>(() async {
           try {
             final result = await _authRepository.register(email, password, otp);
@@ -189,7 +184,8 @@ class AuthViewModel extends BaseViewModel {
           } catch (e) {
             String errorMessage = 'Failed to request password reset.';
             if (e is Exception) {
-              errorMessage = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
             } else {
               errorMessage = e.toString();
             }
@@ -201,7 +197,8 @@ class AuthViewModel extends BaseViewModel {
   }
 
   /// Confirm Password Reset
-  Future<bool> confirmPasswordReset(String token, String newPassword, String confirmPassword) async {
+  Future<bool> confirmPasswordReset(
+      String token, String newPassword, String confirmPassword) async {
     if (token.isEmpty || token.length != 6) {
       setError('Please enter a valid 6-digit reset code');
       return false;
@@ -219,11 +216,13 @@ class AuthViewModel extends BaseViewModel {
 
     return await executeAsync<bool>(() async {
           try {
-            return await _authRepository.confirmPasswordReset(token, newPassword);
+            return await _authRepository.confirmPasswordReset(
+                token, newPassword);
           } catch (e) {
             String errorMessage = 'Failed to reset password.';
             if (e is Exception) {
-              errorMessage = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
             } else {
               errorMessage = e.toString();
             }

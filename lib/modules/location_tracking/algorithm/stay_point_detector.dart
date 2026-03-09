@@ -14,7 +14,8 @@ class StayPointDetector {
 
   /// Processes a list of GPS fixes and returns a tuple:
   /// (List of detected StayPoints, Keys of fixes that should be removed/processed)
-  (List<StayPoint>, List<dynamic>) detect(List<GpsFix> fixes, List<dynamic> keys) {
+  (List<StayPoint>, List<dynamic>) detect(
+      List<GpsFix> fixes, List<dynamic> keys) {
     if (fixes.isEmpty) return (<StayPoint>[], <dynamic>[]);
 
     List<StayPoint> stayPoints = [];
@@ -23,7 +24,7 @@ class StayPointDetector {
     int i = 0;
     while (i < fixes.length) {
       int j = i + 1;
-      
+
       while (j < fixes.length) {
         double distance = Geolocator.distanceBetween(
           fixes[i].latitude,
@@ -63,7 +64,7 @@ class StayPointDetector {
           departureTime: fixes[j - 1].timestamp,
           dwellDurationMinutes: duration.inMinutes,
         );
-        
+
         stayPoints.add(stayPoint);
 
         // Mark these fixes as processed so we can delete them
@@ -79,7 +80,7 @@ class StayPointDetector {
         // future points might keep the user in the same location and satisfy
         // the time requirement.
         if (j == fixes.length) {
-          break; 
+          break;
         } else {
           // If `j < fixes.length`, the user has moved away before `minDwellTimeMinutes`.
           // This means `fixes[i]` is not part of a stay point.

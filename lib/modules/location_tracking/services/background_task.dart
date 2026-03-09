@@ -47,7 +47,8 @@ void onStart(ServiceInstance service) async {
       if (!serviceEnabled) return;
 
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         return;
       }
 
@@ -82,7 +83,7 @@ void onStart(ServiceInstance service) async {
 Future<void> _processStayPoints(StayPointDetector detector) async {
   // We need both the keys and values to delete them later
   final box = Hive.box<GpsFix>(LocationStorage.gpsBoxName);
-  
+
   if (box.isEmpty) return;
 
   // Sorting keys by timestamp to maintain chronological order
@@ -96,8 +97,9 @@ Future<void> _processStayPoints(StayPointDetector detector) async {
 
   for (var sp in stayPoints) {
     await LocationStorage.saveStayPoint(sp);
-    print("Detected Stay Point: \${sp.centroidLat}, \${sp.centroidLon} for \${sp.dwellDurationMinutes} mins");
-    
+    print(
+        "Detected Stay Point: \${sp.centroidLat}, \${sp.centroidLon} for \${sp.dwellDurationMinutes} mins");
+
     // Sync to backend
     await LocationApiService.syncStayPoint(sp);
   }

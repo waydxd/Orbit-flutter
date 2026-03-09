@@ -1,6 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../modules/location_tracking/storage/location_storage.dart';
 
 /// Local storage service for managing Hive boxes and secure storage
 class LocalStorageService {
@@ -23,6 +24,9 @@ class LocalStorageService {
     // Hive.registerAdapter(UserAdapter());
     // Hive.registerAdapter(EventAdapter());
     // Hive.registerAdapter(TaskAdapter());
+
+    // Initialize Location Storage
+    await LocationStorage.init();
   }
 
   /// Open a Hive box

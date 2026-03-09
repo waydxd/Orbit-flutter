@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
 import '../widgets/floating_nav_bar.dart';
+import '../../dashboard/view/dashboard_page.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
@@ -260,6 +261,12 @@ class _CalendarPageState extends State<CalendarPage>
                   debugPrint('Todo list tapped');
                 },
                 onDashboardTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardPage(),
+                    ),
+                  );
                   debugPrint('Dashboard tapped');
                 },
               ),

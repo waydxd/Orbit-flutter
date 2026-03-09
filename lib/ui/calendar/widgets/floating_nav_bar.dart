@@ -57,7 +57,7 @@ class FloatingNavBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Calendar Button (Mid-Left)
                 Expanded(
                   child: Center(

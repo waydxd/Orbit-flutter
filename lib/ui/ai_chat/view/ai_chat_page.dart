@@ -86,81 +86,83 @@ class _AiChatViewState extends State<_AiChatView> {
         ),
         child: SafeArea(
           child: Column(
-          children: [
-            _buildHeader(context),
-            // Display error message if present
-            if (viewModel.error != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline,
-                        color: Colors.red.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        viewModel.error!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 14,
+            children: [
+              _buildHeader(context),
+              // Display error message if present
+              if (viewModel.error != null)
+                Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline,
+                          color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          viewModel.error!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                itemCount: viewModel.messages.isEmpty
-                    ? 1
-                    : viewModel.messages.length + 1, // +1 for header items
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    // Header items (Avatar + Suggestions)
-                    if (hasInteracted) {
-                      return const SizedBox(height: 20);
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  itemCount: viewModel.messages.isEmpty
+                      ? 1
+                      : viewModel.messages.length + 1, // +1 for header items
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // Header items (Avatar + Suggestions)
+                      if (hasInteracted) {
+                        return const SizedBox(height: 20);
+                      }
+                      return Column(
+                        children: [
+                          const SizedBox(height: 10),
+                          _buildAvatar(),
+                          const SizedBox(height: 30),
+                          _buildSuggestionsCard(viewModel),
+                          const SizedBox(height: 40),
+                        ],
+                      );
                     }
-                    return Column(
-                      children: [
-                        const SizedBox(height: 10),
-                        _buildAvatar(),
-                        const SizedBox(height: 30),
-                        _buildSuggestionsCard(viewModel),
-                        const SizedBox(height: 40),
-                      ],
-                    );
-                  }
 
-                  final message = viewModel.messages[index - 1];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: _buildChatBubble(message),
-                  );
-                },
-              ),
-            ),
-            if (viewModel.isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: LinearProgressIndicator(
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B80F0)),
-                  minHeight: 2,
+                    final message = viewModel.messages[index - 1];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _buildChatBubble(message),
+                    );
+                  },
                 ),
               ),
-            _buildInputSection(viewModel),
-          ],
+              if (viewModel.isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF8B80F0)),
+                    minHeight: 2,
+                  ),
+                ),
+              _buildInputSection(viewModel),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -317,7 +319,9 @@ class _AiChatViewState extends State<_AiChatView> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         margin: EdgeInsets.only(left: isUser ? 50 : 0, right: isUser ? 0 : 50),
         decoration: BoxDecoration(
-          color: isUser ? const Color(0xFF8B80F0) : Colors.white.withValues(alpha: 0.9),
+          color: isUser
+              ? const Color(0xFF8B80F0)
+              : Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),

@@ -36,62 +36,67 @@ class HeatmapCalendarWidget extends StatelessWidget {
 
     // Convert list to map for quick lookup
     final Map<DateTime, DailyHeatmapRecord> recordMap = {
-      for (var r in records)
-        DateTime(r.date.year, r.date.month, r.date.day): r
+      for (var r in records) DateTime(r.date.year, r.date.month, r.date.day): r
     };
 
     return Column(
       children: [
         const SizedBox(height: 8),
-        
-          // Calendar Container
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+
+        // Calendar Container
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TableCalendar(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: focusedDate,
+            calendarFormat: CalendarFormat.month,
+            onPageChanged: onPageChanged,
+            headerStyle: const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              titleTextStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              leftChevronIcon:
+                  Icon(Icons.chevron_left, color: AppColors.textPrimary),
+              rightChevronIcon:
+                  Icon(Icons.chevron_right, color: AppColors.textPrimary),
             ),
-            child: TableCalendar(
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: focusedDate,
-              calendarFormat: CalendarFormat.month,
-              onPageChanged: onPageChanged,
-              headerStyle: const HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-                titleTextStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-                leftChevronIcon: Icon(Icons.chevron_left, color: AppColors.textPrimary),
-                rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.textPrimary),
-              ),
-              daysOfWeekStyle: const DaysOfWeekStyle(
-                weekdayStyle: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-                weekendStyle: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-              ),
-              calendarBuilders: CalendarBuilders(
-                defaultBuilder: (context, day, focusedDay) {
-                  return _buildCell(context, day, recordMap, maxMinutes);
-                },
-                todayBuilder: (context, day, focusedDay) {
-                  return _buildCell(context, day, recordMap, maxMinutes, isToday: true);
-                },
-                outsideBuilder: (context, day, focusedDay) {
-                  return _buildCell(context, day, recordMap, maxMinutes, isOutside: true);
-                },
-              ),
+            daysOfWeekStyle: const DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                  color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              weekendStyle: TextStyle(
+                  color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+            ),
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, day, focusedDay) {
+                return _buildCell(context, day, recordMap, maxMinutes);
+              },
+              todayBuilder: (context, day, focusedDay) {
+                return _buildCell(context, day, recordMap, maxMinutes,
+                    isToday: true);
+              },
+              outsideBuilder: (context, day, focusedDay) {
+                return _buildCell(context, day, recordMap, maxMinutes,
+                    isOutside: true);
+              },
             ),
           ),
+        ),
       ],
     );
   }
@@ -106,19 +111,20 @@ class HeatmapCalendarWidget extends StatelessWidget {
   }) {
     final dateKey = DateTime(day.year, day.month, day.day);
     final record = recordMap[dateKey];
-    
+
     Color cellColor = Colors.white; // Clean white for empty days
-    
+
     double intensity = 0.0;
-    
+
     if (record != null && record.totalDuration > 0 && maxMinutes > 0) {
       final dominantCategory = record.dominantCategory;
-      final baseColor = categoryColors[dominantCategory] ?? categoryColors['Other']!;
-      
+      final baseColor =
+          categoryColors[dominantCategory] ?? categoryColors['Other']!;
+
       intensity = record.totalDuration / maxMinutes;
       // Clamp intensity between 0 and 1 just in case
       intensity = intensity.clamp(0.0, 1.0);
-      
+
       cellColor = baseColor.withOpacity(0.2 + 0.8 * intensity);
     }
 
@@ -142,20 +148,25 @@ class HeatmapCalendarWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: cellColor,
           borderRadius: BorderRadius.circular(8.0),
-          border: isToday ? Border.all(color: AppColors.primary, width: 2) : null,
-          boxShadow: record != null && record.totalDuration > 0 ? [
-            BoxShadow(
-              color: cellColor.withValues(alpha: 0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
-          ] : null,
+          border:
+              isToday ? Border.all(color: AppColors.primary, width: 2) : null,
+          boxShadow: record != null && record.totalDuration > 0
+              ? [
+                  BoxShadow(
+                    color: cellColor.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
         ),
         alignment: Alignment.center,
         child: Text(
           '${day.day}',
           style: TextStyle(
-                color: isOutside ? AppColors.grey400 : (intensity > 0.5 ? Colors.white : AppColors.textPrimary),
+            color: isOutside
+                ? AppColors.grey400
+                : (intensity > 0.5 ? Colors.white : AppColors.textPrimary),
             fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
             fontSize: 14,
           ),
@@ -164,7 +175,8 @@ class HeatmapCalendarWidget extends StatelessWidget {
     );
   }
 
-  void _showBreakdownBottomSheet(BuildContext context, DateTime day, DailyHeatmapRecord record) {
+  void _showBreakdownBottomSheet(
+      BuildContext context, DateTime day, DailyHeatmapRecord record) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -179,17 +191,19 @@ class HeatmapCalendarWidget extends StatelessWidget {
             children: [
               Text(
                 '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')} Breakdown',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               ...record.categoryDurations.entries.map((entry) {
-                final color = categoryColors[entry.key] ?? categoryColors['Other']!;
+                final color =
+                    categoryColors[entry.key] ?? categoryColors['Other']!;
                 final hours = entry.value ~/ 60;
                 final minutes = entry.value % 60;
-                final durationStr = hours > 0 
+                final durationStr = hours > 0
                     ? '${hours}h ${minutes > 0 ? '${minutes}m' : ''}'
                     : '${minutes}m';
-                    
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Row(
@@ -205,12 +219,14 @@ class HeatmapCalendarWidget extends StatelessWidget {
                       const SizedBox(width: 12),
                       Text(
                         entry.key,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500),
                       ),
                       const Spacer(),
                       Text(
                         durationStr,
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -224,7 +240,8 @@ class HeatmapCalendarWidget extends StatelessWidget {
     );
   }
 
-  void _showPercentageCard(BuildContext context, DateTime day, DailyHeatmapRecord record) {
+  void _showPercentageCard(
+      BuildContext context, DateTime day, DailyHeatmapRecord record) {
     final totalDuration = record.totalDuration;
     if (totalDuration == 0) return;
 
@@ -232,7 +249,8 @@ class HeatmapCalendarWidget extends StatelessWidget {
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(20.0),
@@ -241,9 +259,11 @@ class HeatmapCalendarWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...record.categoryDurations.entries.map((entry) {
-                  final color = categoryColors[entry.key] ?? categoryColors['Other']!;
-                  final percentage = (entry.value / totalDuration * 100).toStringAsFixed(1);
-                  
+                  final color =
+                      categoryColors[entry.key] ?? categoryColors['Other']!;
+                  final percentage =
+                      (entry.value / totalDuration * 100).toStringAsFixed(1);
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6.0),
                     child: Row(
@@ -259,12 +279,18 @@ class HeatmapCalendarWidget extends StatelessWidget {
                         const SizedBox(width: 12),
                         Text(
                           entry.key,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary),
                         ),
                         const Spacer(),
                         Text(
                           '$percentage%',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textSecondary),
                         ),
                       ],
                     ),

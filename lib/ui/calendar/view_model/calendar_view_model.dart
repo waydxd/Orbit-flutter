@@ -80,7 +80,7 @@ class CalendarViewModel extends BaseViewModel {
       await fetchAll(userId: event.userId); // Refresh data after creation
       return true;
     });
-    
+
     if (result == null && error != null) {
       throw Exception(error);
     }
@@ -90,6 +90,18 @@ class CalendarViewModel extends BaseViewModel {
     final result = await executeAsync(() async {
       await _calendarRepository.createTask(task);
       await fetchAll(userId: task.userId); // Refresh data after creation
+      return true;
+    });
+
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
+  }
+
+  Future<void> updateEvent(EventModel event) async {
+    final result = await executeAsync(() async {
+      await _calendarRepository.updateEvent(event);
+      await fetchAll(userId: event.userId); // Refresh data after update
       return true;
     });
 

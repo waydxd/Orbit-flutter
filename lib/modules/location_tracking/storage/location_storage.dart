@@ -18,7 +18,8 @@ class LocationStorage {
   }
 
   static Box<GpsFix> get _gpsBox => Hive.box<GpsFix>(gpsBoxName);
-  static Box<StayPoint> get _stayPointBox => Hive.box<StayPoint>(stayPointBoxName);
+  static Box<StayPoint> get _stayPointBox =>
+      Hive.box<StayPoint>(stayPointBoxName);
 
   static Future<void> saveGpsFix(GpsFix fix) async {
     await _gpsBox.add(fix);

@@ -4,10 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/event_model.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
-<<<<<<< Updated upstream
-=======
 import '../../tasks/view/create_item_page.dart';
->>>>>>> Stashed changes
 
 class EventDetailPage extends StatelessWidget {
   final EventModel event;
@@ -113,11 +110,8 @@ class EventDetailPage extends StatelessWidget {
                     // Floating Action Button
                     Positioned(
                       bottom: -28,
-<<<<<<< Updated upstream
-                      left: 24,
-=======
                       right: 24, // Changed from left: 24 to right: 24
->>>>>>> Stashed changes
+                      right: 24,
                       child: Container(
                         width: 56,
                         height: 56,
@@ -136,12 +130,6 @@ class EventDetailPage extends StatelessWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             customBorder: const CircleBorder(),
-<<<<<<< Updated upstream
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Edit coming soon')),
-                              );
-=======
                             onTap: () async {
                               final result = await Navigator.push(
                                 context,
@@ -156,7 +144,6 @@ class EventDetailPage extends StatelessWidget {
                               if (result == true && context.mounted) {
                                 Navigator.pop(context);
                               }
->>>>>>> Stashed changes
                             },
                             child: const Icon(
                               Icons.edit,
@@ -169,13 +156,11 @@ class EventDetailPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 48),
-
                 _buildListItem(
                   icon: Icons.access_time_rounded,
                   title: _formatDate(event.startTime),
                   subtitle: _formatTimeRange(event.startTime, event.endTime),
                 ),
-                
                 if (event.location.isNotEmpty) ...[
                   const SizedBox(height: 32),
                   _buildListItem(
@@ -184,7 +169,6 @@ class EventDetailPage extends StatelessWidget {
                     subtitle: event.location,
                   ),
                 ],
-
                 if (event.description.isNotEmpty) ...[
                   const SizedBox(height: 32),
                   _buildListItem(
@@ -193,12 +177,11 @@ class EventDetailPage extends StatelessWidget {
                     subtitle: event.description,
                   ),
                 ],
-                
                 const SizedBox(height: 40),
               ],
             ),
           ),
-          
+
           // Bottom Actions
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -291,7 +274,9 @@ class EventDetailPage extends StatelessWidget {
 
   String _formatTimeRange(DateTime start, DateTime end) {
     final timeFormatter = DateFormat('HH:mm');
-    if (start.year == end.year && start.month == end.month && start.day == end.day) {
+    if (start.year == end.year &&
+        start.month == end.month &&
+        start.day == end.day) {
       return '${timeFormatter.format(start)} - ${timeFormatter.format(end)}';
     } else {
       final dateFormatter = DateFormat('d MMM');
@@ -320,7 +305,8 @@ class EventDetailPage extends StatelessWidget {
 
     if (confirm == true && context.mounted) {
       try {
-        final viewModel = Provider.of<CalendarViewModel>(context, listen: false);
+        final viewModel =
+            Provider.of<CalendarViewModel>(context, listen: false);
         await viewModel.deleteEvent(event.id);
         if (context.mounted) {
           Navigator.pop(context);

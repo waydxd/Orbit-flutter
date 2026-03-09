@@ -17,54 +17,36 @@ class _RegistrationFormState extends State<RegistrationForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _otpController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _isOtpSent = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      
-      if (!_isOtpSent) {
-        final success = await authViewModel.sendRegistrationOTP(_emailController.text.trim());
-        if (success && mounted) {
-          setState(() {
-            _isOtpSent = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Verification code sent to your email'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        }
-      } else {
-        final success = await authViewModel.register(
-          _emailController.text.trim(),
-          _passwordController.text,
-          _confirmPasswordController.text,
-          _otpController.text.trim(),
-        );
 
-        if (success && mounted) {
-          // Navigation will be handled by the app's auth state listener
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account created successfully!'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        }
+      final success = await authViewModel.register(
+        _emailController.text.trim(),
+        _passwordController.text,
+        _confirmPasswordController.text,
+        '', // Pass empty OTP
+      );
+
+      if (success && mounted) {
+        // Navigation will be handled by the app's auth state listener
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
       }
     }
   }
@@ -95,7 +77,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                enabled: !_isOtpSent,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   prefixIcon: const Icon(Icons.email),
@@ -125,7 +106,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.next,
-                enabled: !_isOtpSent,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock),
@@ -167,9 +147,8 @@ class _RegistrationFormState extends State<RegistrationForm> {
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
-                textInputAction: _isOtpSent ? TextInputAction.next : TextInputAction.done,
-                onFieldSubmitted: _isOtpSent ? null : (_) => _submit(),
-                enabled: !_isOtpSent,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
                 decoration: InputDecoration(
                   labelText: 'Confirm Password',
                   prefixIcon: const Icon(Icons.lock_outline),
@@ -206,39 +185,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                   return null;
                 },
               ),
-              if (_isOtpSent) ...[
-                const SizedBox(height: Constants.spacingM),
-                TextFormField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    labelText: 'Verification Code',
-                    prefixIcon: const Icon(Icons.verified_user),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(Constants.radiusL),
-                      borderSide: BorderSide.none,
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(Constants.radiusL),
-                      borderSide: const BorderSide(color: AppColors.error),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (!_isOtpSent) return null;
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the verification code';
-                    }
-                    if (value.length != 6) {
-                      return 'Code must be 6 digits';
-                    }
-                    return null;
-                  },
-                ),
-              ],
               if (authViewModel.error != null) ...[
                 const SizedBox(height: Constants.spacingM),
                 Container(
@@ -296,9 +242,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
                             ),
                           ),
                         )
-                      : Text(
-                          _isOtpSent ? 'Verify & Create Account' : 'Send Verification Code',
-                          style: const TextStyle(
+                      : const Text(
+                          'Create Account',
+                          style: TextStyle(
                             fontSize: Constants.fontSizeM,
                             color: Colors.white,
                             fontWeight: Constants.fontWeightSemiBold,

@@ -136,6 +136,29 @@ class CalendarRepository {
     }
   }
 
+  Future<EventModel> updateEvent(EventModel event) async {
+    try {
+      final response = await _apiClient.put(
+        '/calendar/events/${event.id}',
+        data: event.toJson(),
+      );
+
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'PUT /calendar/events/${event.id} status: ${response.statusCode}',
+      );
+
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
+        return EventModel.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw Exception('Failed to update event: ${response.statusCode}');
+    } catch (e) {
+      Logger.errorWithTag('CalendarRepository', 'Failed to update event: $e');
+      rethrow;
+    }
+  }
+
   Future<void> deleteEvent(String eventId) async {
     try {
       final response = await _apiClient.delete('/calendar/events/$eventId');

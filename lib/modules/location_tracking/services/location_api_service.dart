@@ -9,7 +9,8 @@ class LocationApiService {
     try {
       // Get current user ID from secure storage or preferences if available
       // Assuming user_id is stored in secure storage
-      final userId = await LocalStorageService.getSecure('user_id') ?? 'unknown_user';
+      final userId =
+          await LocalStorageService.getSecure('user_id') ?? 'unknown_user';
 
       final data = {
         'user_id': userId,
