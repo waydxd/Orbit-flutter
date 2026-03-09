@@ -104,7 +104,6 @@ class CalendarViewModel extends BaseViewModel {
       await fetchAll(userId: event.userId); // Refresh data after update
       return true;
     });
-
     if (result == null && error != null) {
       throw Exception(error);
     }

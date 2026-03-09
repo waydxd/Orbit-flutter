@@ -31,14 +31,12 @@ class _RegistrationFormState extends State<RegistrationForm> {
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-
       final success = await authViewModel.register(
         _emailController.text.trim(),
         _passwordController.text,
         _confirmPasswordController.text,
         '', // Pass empty OTP
       );
-
       if (success && mounted) {
         // Navigation will be handled by the app's auth state listener
         ScaffoldMessenger.of(context).showSnackBar(

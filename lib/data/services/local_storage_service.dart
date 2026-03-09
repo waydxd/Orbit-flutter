@@ -24,7 +24,6 @@ class LocalStorageService {
     // Hive.registerAdapter(UserAdapter());
     // Hive.registerAdapter(EventAdapter());
     // Hive.registerAdapter(TaskAdapter());
-
     // Initialize Location Storage
     await LocationStorage.init();
   }

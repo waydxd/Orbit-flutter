@@ -141,9 +141,9 @@ class CreateItemPage extends StatefulWidget {
   final EventModel? editEvent;
 
   const CreateItemPage({
-    super.key,
     this.initialIsEvent = true,
     this.editEvent,
+    super.key,
   });
 
   @override
@@ -233,33 +233,39 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Future<void> _selectStartDateTime() async {
     final initial = DateTime(_startDate.year, _startDate.month, _startDate.day,
         _startTime.hour, _startTime.minute);
-    await _showDateTimePicker(context, initialDate: initial,
-        onDateTimeChanged: (DateTime newDateTime) {
-      setState(() {
-        _startDate = newDateTime;
-        _startTime = TimeOfDay.fromDateTime(newDateTime);
+    await _showDateTimePicker(
+      context,
+      initialDate: initial,
+      onDateTimeChanged: (DateTime newDateTime) {
+        setState(() {
+          _startDate = newDateTime;
+          _startTime = TimeOfDay.fromDateTime(newDateTime);
 
-        final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day,
-            _endTime.hour, _endTime.minute);
-        if (currentEnd.isBefore(newDateTime)) {
-          final newEnd = newDateTime.add(const Duration(hours: 1));
-          _endDate = newEnd;
-          _endTime = TimeOfDay.fromDateTime(newEnd);
-        }
-      });
-    });
+          final currentEnd = DateTime(_endDate.year, _endDate.month,
+              _endDate.day, _endTime.hour, _endTime.minute);
+          if (currentEnd.isBefore(newDateTime)) {
+            final newEnd = newDateTime.add(const Duration(hours: 1));
+            _endDate = newEnd;
+            _endTime = TimeOfDay.fromDateTime(newEnd);
+          }
+        });
+      },
+    );
   }
 
   Future<void> _selectEndDateTime() async {
     final initial = DateTime(_endDate.year, _endDate.month, _endDate.day,
         _endTime.hour, _endTime.minute);
-    await _showDateTimePicker(context, initialDate: initial,
-        onDateTimeChanged: (DateTime newDateTime) {
-      setState(() {
-        _endDate = newDateTime;
-        _endTime = TimeOfDay.fromDateTime(newDateTime);
-      });
-    });
+    await _showDateTimePicker(
+      context,
+      initialDate: initial,
+      onDateTimeChanged: (DateTime newDateTime) {
+        setState(() {
+          _endDate = newDateTime;
+          _endTime = TimeOfDay.fromDateTime(newDateTime);
+        });
+      },
+    );
   }
 
   Future<void> _selectDeadlineDateTime() async {
@@ -268,13 +274,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
             _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute)
         : DateTime.now();
 
-    await _showDateTimePicker(context, initialDate: initial,
-        onDateTimeChanged: (DateTime newDateTime) {
-      setState(() {
-        _deadlineDate = newDateTime;
-        _deadlineTime = TimeOfDay.fromDateTime(newDateTime);
-      });
-    });
+    await _showDateTimePicker(
+      context,
+      initialDate: initial,
+      onDateTimeChanged: (DateTime newDateTime) {
+        setState(() {
+          _deadlineDate = newDateTime;
+          _deadlineTime = TimeOfDay.fromDateTime(newDateTime);
+        });
+      },
+    );
   }
 
   void _handleCreate() async {
