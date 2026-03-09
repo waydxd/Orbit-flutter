@@ -10,10 +10,10 @@ class HeatmapCalendarWidget extends StatelessWidget {
   final ValueChanged<DateTime> onPageChanged;
 
   const HeatmapCalendarWidget({
-    super.key,
     required this.records,
     required this.focusedDate,
     required this.onPageChanged,
+    super.key,
   });
 
   static const Map<String, Color> categoryColors = {
@@ -27,8 +27,8 @@ class HeatmapCalendarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculate max minutes in the current records to normalize intensity
-    int maxMinutes = 0;
-    for (var record in records) {
+    var maxMinutes = 0;
+    for (final record in records) {
       if (record.totalDuration > maxMinutes) {
         maxMinutes = record.totalDuration;
       }
@@ -125,11 +125,11 @@ class HeatmapCalendarWidget extends StatelessWidget {
       // Clamp intensity between 0 and 1 just in case
       intensity = intensity.clamp(0.0, 1.0);
 
-      cellColor = baseColor.withOpacity(0.2 + 0.8 * intensity);
+      cellColor = baseColor.withValues(alpha: 0.2 + 0.8 * intensity);
     }
 
     if (isOutside) {
-      cellColor = cellColor.withOpacity(0.3);
+      cellColor = cellColor.withValues(alpha: 0.3);
     }
 
     return GestureDetector(

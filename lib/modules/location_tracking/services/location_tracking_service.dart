@@ -13,7 +13,7 @@ class LocationTrackingService {
   LocationTrackingService._internal();
 
   Future<void> initialize(BuildContext context) async {
-    bool hasPermissions = await _requestPermissions(context);
+    final hasPermissions = await _requestPermissions(context);
     if (hasPermissions) {
       await _initBackgroundService();
     }
@@ -26,6 +26,7 @@ class LocationTrackingService {
     // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      if (!context.mounted) return false;
       _showErrorDialog(context,
           'Location services are disabled. Please enable them in settings.');
       return false;
@@ -35,6 +36,7 @@ class LocationTrackingService {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
+        if (!context.mounted) return false;
         _showErrorDialog(context,
             'Location permissions are denied. The app needs location access to track your habits.');
         return false;
@@ -42,6 +44,7 @@ class LocationTrackingService {
     }
 
     if (permission == LocationPermission.deniedForever) {
+      if (!context.mounted) return false;
       _showErrorDialog(context,
           'Location permissions are permanently denied, we cannot request permissions. Please open app settings to enable them.',
           isPermanent: true);
@@ -51,8 +54,9 @@ class LocationTrackingService {
     // Request "Always" permission for background tracking
     if (permission == LocationPermission.whileInUse) {
       // In iOS and Android 11+, we need to request "Always" separately after "While in use"
-      var alwaysPermission = await Permission.locationAlways.request();
+      final alwaysPermission = await Permission.locationAlways.request();
       if (alwaysPermission.isDenied || alwaysPermission.isPermanentlyDenied) {
+        if (!context.mounted) return false;
         _showErrorDialog(context,
             'Background location access is required for stay-point detection. Please select "Allow all the time" in settings.',
             isPermanent: true);

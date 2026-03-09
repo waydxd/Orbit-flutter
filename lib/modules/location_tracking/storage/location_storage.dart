@@ -1,8 +1,10 @@
+// ignore_for_file: avoid_classes_with_only_static_members
+
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/gps_fix.dart';
 import '../models/stay_point.dart';
 
-class LocationStorage {
+abstract final class LocationStorage {
   static const String gpsBoxName = 'gps_fixes';
   static const String stayPointBoxName = 'stay_points';
 

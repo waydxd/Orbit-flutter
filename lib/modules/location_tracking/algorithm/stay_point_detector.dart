@@ -18,15 +18,15 @@ class StayPointDetector {
       List<GpsFix> fixes, List<dynamic> keys) {
     if (fixes.isEmpty) return (<StayPoint>[], <dynamic>[]);
 
-    List<StayPoint> stayPoints = [];
-    List<dynamic> processedKeys = [];
+    final List<StayPoint> stayPoints = [];
+    final List<dynamic> processedKeys = [];
 
     int i = 0;
     while (i < fixes.length) {
       int j = i + 1;
 
       while (j < fixes.length) {
-        double distance = Geolocator.distanceBetween(
+        final distance = Geolocator.distanceBetween(
           fixes[i].latitude,
           fixes[i].longitude,
           fixes[j].latitude,
@@ -52,9 +52,9 @@ class StayPointDetector {
           sumLat += fixes[k].latitude;
           sumLon += fixes[k].longitude;
         }
-        int count = j - i;
-        double centroidLat = sumLat / count;
-        double centroidLon = sumLon / count;
+        final count = j - i;
+        final centroidLat = sumLat / count;
+        final centroidLon = sumLon / count;
 
         final stayPoint = StayPoint(
           id: const Uuid().v4(),

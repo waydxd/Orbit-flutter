@@ -1,7 +1,10 @@
+// ignore_for_file: avoid_classes_with_only_static_members
+
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-class LocationService {
+abstract final class LocationService {
   // Google Maps API Key
   static const String _apiKey = 'AIzaSyDY_Fu5bhGPf2ZHXZF3pCxOHxnbv9ymnVA';
 
@@ -24,7 +27,7 @@ class LocationService {
         }
       }
     } catch (e) {
-      print('Error fetching place suggestions: $e');
+      debugPrint('Error fetching place suggestions: $e');
     }
     return [];
   }

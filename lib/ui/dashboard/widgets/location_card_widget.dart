@@ -12,7 +12,6 @@ class LocationCardWidget extends StatefulWidget {
 }
 
 class _LocationCardWidgetState extends State<LocationCardWidget> {
-  GoogleMapController? _mapController;
   LatLng? _currentPosition;
   bool _isLoading = true;
 
@@ -57,7 +56,7 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
     }
 
     try {
-      Position position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition();
       if (mounted) {
         setState(() {
           _currentPosition = LatLng(position.latitude, position.longitude);
@@ -168,9 +167,6 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
                             mapToolbarEnabled: false,
                             compassEnabled: false,
                             scrollGesturesEnabled: false,
-                            onMapCreated: (controller) {
-                              _mapController = controller;
-                            },
                             onTap: (_) {
                               Navigator.push(
                                 context,

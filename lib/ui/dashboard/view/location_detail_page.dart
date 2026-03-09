@@ -10,7 +10,7 @@ import '../../../data/models/event_model.dart';
 class LocationDetailPage extends StatefulWidget {
   final String locationName;
 
-  const LocationDetailPage({super.key, required this.locationName});
+  const LocationDetailPage({required this.locationName, super.key});
 
   @override
   State<LocationDetailPage> createState() => _LocationDetailPageState();
@@ -28,7 +28,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
 
   Future<void> _geocodeLocation() async {
     try {
-      List<Location> locations = await locationFromAddress(widget.locationName);
+      final locations = await locationFromAddress(widget.locationName);
       if (locations.isNotEmpty) {
         if (mounted) {
           setState(() {
@@ -123,7 +123,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                       b.startTime.compareTo(a.startTime)); // Newest first
 
                 if (eventsAtLocation.isEmpty) {
-                  return SliverFillRemaining(
+                  return const SliverFillRemaining(
                     child: Center(
                       child: Text(
                         'No events found here.',

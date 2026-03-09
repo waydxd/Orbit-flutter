@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import '../../calendar/view/calendar_page.dart';
 import '../../calendar/widgets/floating_nav_bar.dart';
-import '../../home/view/home_page.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';

@@ -10,8 +10,8 @@ class EventDetailPage extends StatelessWidget {
   final EventModel event;
 
   const EventDetailPage({
-    super.key,
     required this.event,
+    super.key,
   });
 
   @override
@@ -110,7 +110,6 @@ class EventDetailPage extends StatelessWidget {
                     // Floating Action Button
                     Positioned(
                       bottom: -28,
-                      right: 24, // Changed from left: 24 to right: 24
                       right: 24,
                       child: Container(
                         width: 56,

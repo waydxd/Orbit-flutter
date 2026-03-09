@@ -216,7 +216,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Future<void> _showDateTimePicker(
     BuildContext context, {
     required DateTime initialDate,
-    required Function(DateTime) onDateTimeChanged,
+    required ValueChanged<DateTime> onDateTimeChanged,
   }) async {
     await showModalBottomSheet(
       context: context,
@@ -231,16 +231,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Future<void> _selectStartDateTime() async {
-    DateTime initial = DateTime(_startDate.year, _startDate.month,
-        _startDate.day, _startTime.hour, _startTime.minute);
+    final initial = DateTime(_startDate.year, _startDate.month, _startDate.day,
+        _startTime.hour, _startTime.minute);
     await _showDateTimePicker(context, initialDate: initial,
         onDateTimeChanged: (DateTime newDateTime) {
       setState(() {
         _startDate = newDateTime;
         _startTime = TimeOfDay.fromDateTime(newDateTime);
 
-        DateTime currentEnd = DateTime(_endDate.year, _endDate.month,
-            _endDate.day, _endTime.hour, _endTime.minute);
+        final currentEnd = DateTime(_endDate.year, _endDate.month, _endDate.day,
+            _endTime.hour, _endTime.minute);
         if (currentEnd.isBefore(newDateTime)) {
           final newEnd = newDateTime.add(const Duration(hours: 1));
           _endDate = newEnd;
@@ -251,7 +251,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Future<void> _selectEndDateTime() async {
-    DateTime initial = DateTime(_endDate.year, _endDate.month, _endDate.day,
+    final initial = DateTime(_endDate.year, _endDate.month, _endDate.day,
         _endTime.hour, _endTime.minute);
     await _showDateTimePicker(context, initialDate: initial,
         onDateTimeChanged: (DateTime newDateTime) {
@@ -263,7 +263,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Future<void> _selectDeadlineDateTime() async {
-    DateTime initial = _deadlineDate != null
+    final initial = _deadlineDate != null
         ? DateTime(_deadlineDate!.year, _deadlineDate!.month,
             _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute)
         : DateTime.now();
@@ -689,8 +689,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
-  Widget _buildTimeField(String value, IconData icon,
-      {String? title, bool isTask = false}) {
+  Widget _buildTimeField(String value, IconData icon, {String? title}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: _fieldDecoration(),

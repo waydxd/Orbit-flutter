@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -36,17 +37,17 @@ void onStart(ServiceInstance service) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         service.setForegroundNotificationInfo(
-          title: "Orbit Location Service",
-          content: "Tracking location for smart calendar...",
+          title: 'Orbit Location Service',
+          content: 'Tracking location for smart calendar...',
         );
       }
     }
 
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) return;
 
-      LocationPermission permission = await Geolocator.checkPermission();
+      final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         return;
@@ -75,7 +76,7 @@ void onStart(ServiceInstance service) async {
       // Process stay points
       _processStayPoints(detector);
     } catch (e) {
-      print("Error in background location task: $e");
+      debugPrint('Error in background location task: $e');
     }
   });
 }
@@ -87,18 +88,19 @@ Future<void> _processStayPoints(StayPointDetector detector) async {
   if (box.isEmpty) return;
 
   // Sorting keys by timestamp to maintain chronological order
-  var entries = box.toMap().entries.toList();
+  final entries = box.toMap().entries.toList();
   entries.sort((a, b) => a.value.timestamp.compareTo(b.value.timestamp));
 
-  List<GpsFix> fixes = entries.map((e) => e.value).toList();
-  List<dynamic> keys = entries.map((e) => e.key).toList();
+  final fixes = entries.map((e) => e.value).toList();
+  final keys = entries.map((e) => e.key).toList();
 
   final (stayPoints, processedKeys) = detector.detect(fixes, keys);
 
-  for (var sp in stayPoints) {
+  for (final sp in stayPoints) {
     await LocationStorage.saveStayPoint(sp);
-    print(
-        "Detected Stay Point: \${sp.centroidLat}, \${sp.centroidLon} for \${sp.dwellDurationMinutes} mins");
+    debugPrint(
+      'Detected Stay Point: ${sp.centroidLat}, ${sp.centroidLon} for ${sp.dwellDurationMinutes} mins',
+    );
 
     // Sync to backend
     await LocationApiService.syncStayPoint(sp);
