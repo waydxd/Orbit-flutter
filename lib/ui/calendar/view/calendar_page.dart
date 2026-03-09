@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
 import '../widgets/floating_nav_bar.dart';
+import '../../dashboard/view/dashboard_page.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import 'event_detail_page.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -225,7 +227,10 @@ class _CalendarPageState extends State<CalendarPage>
 
               // Floating Navigation Bar
               FloatingNavBar(
-                currentIndex: 0,
+                currentIndex: 1,
+                onHomeTap: () {
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
                 onCalendarTap: () {
                   // Already on calendar page
                   debugPrint('Calendar tapped');
@@ -254,6 +259,15 @@ class _CalendarPageState extends State<CalendarPage>
                     ),
                   );
                   debugPrint('Todo list tapped');
+                },
+                onDashboardTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardPage(),
+                    ),
+                  );
+                  debugPrint('Dashboard tapped');
                 },
               ),
 
@@ -660,6 +674,8 @@ class _CalendarPageState extends State<CalendarPage>
               },
             ),
           ),
+          // Add padding at the bottom to prevent overflow with the floating nav bar
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -735,11 +751,21 @@ class _CalendarPageState extends State<CalendarPage>
                   left: leftMargin,
                   right: 0,
                   height: duration * _hourHeight - 20,
-                  child: _buildTaskCard(
-                    event.title,
-                    event.location,
-                    '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
-                    _getEventColor(event.title),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EventDetailPage(event: event),
+                        ),
+                      );
+                    },
+                    child: _buildTaskCard(
+                      event.title,
+                      event.location,
+                      '${DateFormat('HH:mm').format(event.startTime)} - ${DateFormat('HH:mm').format(event.endTime)}',
+                      _getEventColor(event.title),
+                    ),
                   ),
                 );
               }),
@@ -823,35 +849,43 @@ class _CalendarPageState extends State<CalendarPage>
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              time,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                time,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

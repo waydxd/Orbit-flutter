@@ -16,10 +16,10 @@ class CalendarRepository {
     try {
       final queryParams = {'user_id': userId};
       if (startTime != null) {
-        queryParams['start_time'] = startTime.toIso8601String();
+        queryParams['start_time'] = startTime.toUtc().toIso8601String();
       }
       if (endTime != null) {
-        queryParams['end_time'] = endTime.toIso8601String();
+        queryParams['end_time'] = endTime.toUtc().toIso8601String();
       }
 
       final response = await _apiClient.get(
@@ -132,6 +132,45 @@ class CalendarRepository {
       throw Exception('Failed to create task: ${response.statusCode}');
     } catch (e) {
       Logger.errorWithTag('CalendarRepository', 'Failed to create task: $e');
+      rethrow;
+    }
+  }
+
+  Future<EventModel> updateEvent(EventModel event) async {
+    try {
+      final response = await _apiClient.put(
+        '/calendar/events/${event.id}',
+        data: event.toJson(),
+      );
+
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'PUT /calendar/events/${event.id} status: ${response.statusCode}',
+      );
+
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
+        return EventModel.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw Exception('Failed to update event: ${response.statusCode}');
+    } catch (e) {
+      Logger.errorWithTag('CalendarRepository', 'Failed to update event: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    try {
+      final response = await _apiClient.delete('/calendar/events/$eventId');
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'DELETE /calendar/events/$eventId status: ${response.statusCode}',
+      );
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete event: ${response.statusCode}');
+      }
+    } catch (e) {
+      Logger.errorWithTag('CalendarRepository', 'Failed to delete event: $e');
       rethrow;
     }
   }

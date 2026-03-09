@@ -76,11 +76,41 @@ class AuthViewModel extends BaseViewModel {
         false;
   }
 
+  /// Send registration OTP
+  Future<bool> sendRegistrationOTP(String email) async {
+    // Validate inputs
+    if (!Validators.isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            return await _authRepository.sendRegistrationOTP(email);
+          } catch (e) {
+            String errorMessage = 'Failed to send OTP. Please try again.';
+            if (e is Exception) {
+              final message = e.toString();
+              errorMessage = message.replaceFirst(
+                RegExp(r'^Exception:\s*'),
+                '',
+              );
+            } else {
+              errorMessage = e.toString();
+            }
+            setError(errorMessage);
+            return false;
+          }
+        }) ??
+        false;
+  }
+
   /// Register new user
   Future<bool> register(
     String email,
     String password,
     String confirmPassword,
+    String otp,
   ) async {
     // Validate inputs
     if (!Validators.isValidEmail(email)) {
@@ -100,7 +130,7 @@ class AuthViewModel extends BaseViewModel {
 
     return await executeAsync<bool>(() async {
           try {
-            final result = await _authRepository.register(email, password);
+            final result = await _authRepository.register(email, password, otp);
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
 
@@ -134,6 +164,68 @@ class AuthViewModel extends BaseViewModel {
               errorMessage = e.toString();
             }
 
+            setError(errorMessage);
+            return false;
+          }
+        }) ??
+        false;
+  }
+
+  /// Request Password Reset
+  Future<bool> requestPasswordReset(String email) async {
+    if (!Validators.isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            return await _authRepository.requestPasswordReset(email);
+          } catch (e) {
+            String errorMessage = 'Failed to request password reset.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
+            setError(errorMessage);
+            return false;
+          }
+        }) ??
+        false;
+  }
+
+  /// Confirm Password Reset
+  Future<bool> confirmPasswordReset(
+      String token, String newPassword, String confirmPassword) async {
+    if (token.isEmpty || token.length != 6) {
+      setError('Please enter a valid 6-digit reset code');
+      return false;
+    }
+
+    if (!Validators.isValidPassword(newPassword)) {
+      setError('Password must be at least 8 characters long');
+      return false;
+    }
+
+    if (newPassword != confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            return await _authRepository.confirmPasswordReset(
+                token, newPassword);
+          } catch (e) {
+            String errorMessage = 'Failed to reset password.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
             setError(errorMessage);
             return false;
           }
