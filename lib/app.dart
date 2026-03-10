@@ -8,7 +8,7 @@ import 'ui/calendar/view_model/calendar_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
 
-import 'ui/calendar/view/calendar_page.dart';
+import 'ui/home/view/home_page.dart';
 
 /// Main application widget
 class OrbitApp extends StatelessWidget {
@@ -153,19 +153,20 @@ class _SplashScreenState extends State<SplashScreen> {
                 Text(
                   AppConfig.appName,
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    fontWeight: Constants.fontWeightBold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                        fontWeight: Constants.fontWeightBold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: Constants.spacingS),
                 Text(
                   'Intelligent Calendar & Planning',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(
-                      alpha: Constants.opacityHigh,
-                    ),
-                  ),
+                        color:
+                            Theme.of(context).colorScheme.onSurface.withValues(
+                                  alpha: Constants.opacityHigh,
+                                ),
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: Constants.spacingXXL),
@@ -179,12 +180,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-/// Placeholder home screen - Replaced with CalendarPage
+/// Placeholder home screen - Replaced with HomePage
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const CalendarPage();
+    return const HomePage();
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../widgets/registration_form.dart';
+import '../widgets/forgot_password_form.dart';
 import '../../../utils/constants.dart';
 
-class RegistrationPage extends StatelessWidget {
-  const RegistrationPage({super.key});
+class ForgotPasswordPage extends StatelessWidget {
+  const ForgotPasswordPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +50,7 @@ class RegistrationPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const RegistrationForm(),
+                  child: const ForgotPasswordForm(),
                 ),
               ),
             ),

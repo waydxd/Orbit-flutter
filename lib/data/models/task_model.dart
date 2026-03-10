@@ -46,26 +46,26 @@ class TaskModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'due_date': dueDate?.toIso8601String(),
+      'due_date': dueDate?.toUtc().toIso8601String(),
       'completed': completed,
       'priority': priority,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
     };
   }
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    title,
-    description,
-    dueDate,
-    completed,
-    priority,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        title,
+        description,
+        dueDate,
+        completed,
+        priority,
+        createdAt,
+        updatedAt,
+      ];
 
   TaskModel copyWith({
     String? id,
