@@ -108,7 +108,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 }
 
-
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 

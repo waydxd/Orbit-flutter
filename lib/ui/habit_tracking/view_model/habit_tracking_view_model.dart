@@ -32,7 +32,8 @@ class HabitTrackingViewModel extends BaseViewModel {
   }
 
   /// Accept a habit suggestion (creates a recurring event on the backend)
-  Future<AcceptSuggestionResponse?> acceptSuggestion(String suggestionId) async {
+  Future<AcceptSuggestionResponse?> acceptSuggestion(
+      String suggestionId) async {
     final response = await executeAsync(() async {
       return await _repository.acceptHabitSuggestion(suggestionId);
     });
@@ -61,4 +62,3 @@ class HabitTrackingViewModel extends BaseViewModel {
     return false;
   }
 }
-

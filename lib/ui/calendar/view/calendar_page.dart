@@ -786,10 +786,10 @@ class _CalendarPageState extends State<CalendarPage>
                   height: cardHeight.clamp(60.0, double.infinity),
                   child: HabitSuggestionTimetableCard(
                     suggestion: suggestion,
-                    onAccept: () => _handleAcceptSuggestion(
-                        viewModel, suggestion.id),
-                    onDismiss: () => _handleDismissSuggestion(
-                        viewModel, suggestion.id),
+                    onAccept: () =>
+                        _handleAcceptSuggestion(viewModel, suggestion.id),
+                    onDismiss: () =>
+                        _handleDismissSuggestion(viewModel, suggestion.id),
                   ),
                 );
               }),

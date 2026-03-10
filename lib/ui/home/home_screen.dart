@@ -30,16 +30,25 @@ class CalendarEvent {
       final period = time.period == DayPeriod.am ? 'AM' : 'PM';
       return '$hour:$minute $period';
     }
+
     return '${formatTime(startTime)} - ${formatTime(endTime)}';
   }
 
   DateTime get startDateTime => DateTime(
-    date.year, date.month, date.day, startTime.hour, startTime.minute,
-  );
+        date.year,
+        date.month,
+        date.day,
+        startTime.hour,
+        startTime.minute,
+      );
 
   DateTime get endDateTime => DateTime(
-    date.year, date.month, date.day, endTime.hour, endTime.minute,
-  );
+        date.year,
+        date.month,
+        date.day,
+        endTime.hour,
+        endTime.minute,
+      );
 }
 
 /// Main home screen with calendar and habit tracking integration
@@ -160,7 +169,10 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             calendarStyle: CalendarStyle(
               todayDecoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
               selectedDecoration: BoxDecoration(
@@ -176,7 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
               formatButtonVisible: true,
               titleCentered: true,
               formatButtonDecoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).colorScheme.primary),
+                border:
+                    Border.all(color: Theme.of(context).colorScheme.primary),
                 borderRadius: BorderRadius.circular(Constants.radiusM),
               ),
             ),
@@ -240,7 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   Widget _buildEmptyState() {
     return Card(
       child: Padding(
@@ -302,7 +314,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Events you create are tracked. Add the same event 3+ times to get habit suggestions!',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -378,8 +393,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -428,8 +453,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Date: ${_formatDate(_selectedDay ?? DateTime.now())}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                   ),
                   const SizedBox(height: Constants.spacingM),
                   TextField(
@@ -576,9 +601,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: Constants.spacingM),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: Constants.spacingM),
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                       ),
                       child: const Text('Save Event'),
                     ),
@@ -588,9 +615,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text(
                       'Tip: Create the same event 3+ times for habit suggestions',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
                     ),
                   ),
                   const SizedBox(height: Constants.spacingS),

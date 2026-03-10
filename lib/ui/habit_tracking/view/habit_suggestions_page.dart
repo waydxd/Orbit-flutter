@@ -84,8 +84,7 @@ class _HabitSuggestionsPageState extends State<HabitSuggestionsPage> {
     );
   }
 
-  Widget _buildErrorState(
-      BuildContext context, CalendarViewModel viewModel) {
+  Widget _buildErrorState(BuildContext context, CalendarViewModel viewModel) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(Constants.spacingL),
@@ -113,8 +112,7 @@ class _HabitSuggestionsPageState extends State<HabitSuggestionsPage> {
             const SizedBox(height: Constants.spacingL),
             ElevatedButton.icon(
               onPressed: () {
-                final userId =
-                    context.read<AuthViewModel>().currentUser?.id;
+                final userId = context.read<AuthViewModel>().currentUser?.id;
                 if (userId != null) {
                   viewModel.fetchAll(userId: userId);
                 }

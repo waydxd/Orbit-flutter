@@ -107,4 +107,3 @@ class HabitSuggestionsIconButton extends StatelessWidget {
     );
   }
 }
-

@@ -215,4 +215,3 @@ class _DashedBorderPainter extends CustomPainter {
       dashSpace != oldDelegate.dashSpace ||
       radius != oldDelegate.radius;
 }
-
