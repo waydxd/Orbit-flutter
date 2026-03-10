@@ -133,9 +133,6 @@ class _LoginFormState extends State<LoginForm> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
                   }
-                  if (!Validators.isValidPassword(value)) {
-                    return 'Password must be at least 8 characters long';
-                  }
                   return null;
                 },
               ),
