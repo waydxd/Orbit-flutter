@@ -39,11 +39,6 @@ class TaskModel extends BaseModel {
     );
   }
 
-  /// Format DateTime for API (without milliseconds)
-  static String _formatDateTime(DateTime dt) {
-    return '${dt.toUtc().toIso8601String().split('.')[0]}Z';
-  }
-
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -51,26 +46,26 @@ class TaskModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'due_date': dueDate != null ? _formatDateTime(dueDate!) : null,
+      'due_date': dueDate?.toUtc().toIso8601String(),
       'completed': completed,
       'priority': priority,
-      'created_at': _formatDateTime(createdAt),
-      'updated_at': _formatDateTime(updatedAt),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
     };
   }
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    title,
-    description,
-    dueDate,
-    completed,
-    priority,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        title,
+        description,
+        dueDate,
+        completed,
+        priority,
+        createdAt,
+        updatedAt,
+      ];
 
   TaskModel copyWith({
     String? id,

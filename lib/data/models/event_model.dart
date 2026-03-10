@@ -10,7 +10,6 @@ class EventModel extends BaseModel {
   final String location;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<String> hashtags;
 
   const EventModel({
     required this.id,
@@ -22,7 +21,6 @@ class EventModel extends BaseModel {
     required this.location,
     required this.createdAt,
     required this.updatedAt,
-    this.hashtags = const [],
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -31,22 +29,12 @@ class EventModel extends BaseModel {
       userId: json['user_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String? ?? '',
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
+      startTime: DateTime.parse(json['start_time'] as String).toLocal(),
+      endTime: DateTime.parse(json['end_time'] as String).toLocal(),
       location: json['location'] as String? ?? '',
-      hashtags:
-          (json['hashtags'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
-  }
-
-  /// Format DateTime for API (without milliseconds)
-  static String _formatDateTime(DateTime dt) {
-    return '${dt.toUtc().toIso8601String().split('.')[0]}Z';
   }
 
   @override
@@ -56,28 +44,26 @@ class EventModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'start_time': _formatDateTime(startTime),
-      'end_time': _formatDateTime(endTime),
+      'start_time': startTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
       'location': location,
-      'hashtags': hashtags,
-      'created_at': _formatDateTime(createdAt),
-      'updated_at': _formatDateTime(updatedAt),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
     };
   }
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    title,
-    description,
-    startTime,
-    endTime,
-    location,
-    hashtags,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        title,
+        description,
+        startTime,
+        endTime,
+        location,
+        createdAt,
+        updatedAt,
+      ];
 
   EventModel copyWith({
     String? id,
@@ -87,7 +73,6 @@ class EventModel extends BaseModel {
     DateTime? startTime,
     DateTime? endTime,
     String? location,
-    List<String>? hashtags,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -99,7 +84,6 @@ class EventModel extends BaseModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
-      hashtags: hashtags ?? this.hashtags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -1,210 +1,225 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../data/models/event_model.dart';
+import '../view_model/calendar_view_model.dart';
+import '../../core/themes/app_colors.dart';
+import '../../tasks/view/create_item_page.dart';
 
 class EventDetailPage extends StatelessWidget {
   final EventModel event;
 
-  const EventDetailPage({required this.event, super.key});
+  const EventDetailPage({
+    required this.event,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F5F9),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF0F9FF), Color(0xFFEBEBFF)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildTitle(),
-                      const SizedBox(height: 24),
-                      _buildTimeSection(),
-                      const SizedBox(height: 24),
-                      if (event.location.isNotEmpty) ...[
-                        _buildLocationSection(),
-                        const SizedBox(height: 24),
-                      ],
-                      if (event.hashtags.isNotEmpty) ...[
-                        _buildHashtagsSection(),
-                        const SizedBox(height: 24),
-                      ],
-                      if (event.description.isNotEmpty) ...[
-                        _buildDescriptionSection(),
-                        const SizedBox(height: 24),
-                      ],
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      backgroundColor: Colors.white,
+      body: Column(
         children: [
-          IconButton(
-            icon: const Icon(
-              Icons.chevron_left,
-              color: Color(0xFF6366F1),
-              size: 32,
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: Color(0xFF6366F1),
-              size: 24,
-            ),
-            onPressed: () {
-              // TODO: Navigate to edit page
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
-              color: Color(0xFFFF6B6B),
-              size: 24,
-            ),
-            onPressed: () {
-              // TODO: Delete event
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitle() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            event.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D2D2D),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeSection() {
-    final dateFormat = DateFormat('EEEE, MMMM d, yyyy');
-    final timeFormat = DateFormat('HH:mm');
-
-    final isSameDay =
-        event.startTime.year == event.endTime.year &&
-        event.startTime.month == event.endTime.month &&
-        event.startTime.day == event.endTime.day;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2CB9B0).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.access_time,
-                  color: Color(0xFF2CB9B0),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Text(
-                      dateFormat.format(event.startTime),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D2D2D),
+                    Column(
+                      children: [
+                        // Illustration Area
+                        Container(
+                          height: 240,
+                          width: double.infinity,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                          ),
+                          child: Stack(
+                            children: [
+                              // Abstract shapes to simulate illustration background
+                              Positioned(
+                                bottom: 0,
+                                left: -50,
+                                child: Container(
+                                  width: 300,
+                                  height: 150,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: -50,
+                                right: -20,
+                                child: Container(
+                                  width: 250,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              // Demo Icon in center
+                              const Center(
+                                child: Icon(
+                                  Icons.event_note_rounded,
+                                  size: 100,
+                                  color: Colors.white30,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Title Area
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(88, 16, 24, 16),
+                          color: AppColors.primaryDark,
+                          child: Text(
+                            event.title,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Top Actions
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 8,
+                      left: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isSameDay
-                          ? '${timeFormat.format(event.startTime)} - ${timeFormat.format(event.endTime)}'
-                          : '${timeFormat.format(event.startTime)} - ${dateFormat.format(event.endTime)} ${timeFormat.format(event.endTime)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 8,
+                      right: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.more_horiz, color: Colors.white),
+                        onPressed: () => _showMoreOptions(context),
+                      ),
+                    ),
+                    // Floating Action Button
+                    Positioned(
+                      bottom: -28,
+                      right: 24,
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.secondary,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.secondary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreateItemPage(
+                                    initialIsEvent: true,
+                                    editEvent: event,
+                                  ),
+                                ),
+                              );
+                              // We could pop this page to return to calendar if edited
+                              if (result == true && context.mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                            child: const Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 48),
+                _buildListItem(
+                  icon: Icons.access_time_rounded,
+                  title: _formatDate(event.startTime),
+                  subtitle: _formatTimeRange(event.startTime, event.endTime),
+                ),
+                if (event.location.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  _buildListItem(
+                    icon: Icons.location_on_rounded,
+                    title: 'Location',
+                    subtitle: event.location,
+                  ),
+                ],
+                if (event.description.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  _buildListItem(
+                    icon: Icons.flag_rounded,
+                    title: 'Description',
+                    subtitle: event.description,
+                  ),
+                ],
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildLocationSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
+          // Bottom Actions
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(color: Colors.grey.shade200),
+              ),
             ),
-            child: const Icon(
-              Icons.location_on_outlined,
-              color: Color(0xFF6366F1),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              event.location,
-              style: const TextStyle(fontSize: 16, color: Color(0xFF2D2D2D)),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _handleDelete(context),
+                    child: const Text(
+                      'DELETE',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'DONE',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -212,110 +227,39 @@ class EventDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHashtagsSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
+  Widget _buildListItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE195FF).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.tag,
-                  color: Color(0xFFE195FF),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Text(
-                'Hashtags',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D2D2D),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: event.hashtags.map((hashtag) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE195FF).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFE195FF).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  hashtag.startsWith('#') ? hashtag : '#$hashtag',
+          Icon(icon, color: Colors.grey.shade500, size: 28),
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
                   style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF9C27B0),
+                    fontSize: 16,
+                    color: Color(0xFF374151),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDescriptionSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF63E695).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.notes,
-                  color: Color(0xFF63E695),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Text(
-                'Description',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D2D2D),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            event.description,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              height: 1.5,
+              ],
             ),
           ),
         ],
@@ -323,17 +267,80 @@ class EventDetailPage extends StatelessWidget {
     );
   }
 
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.03),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
+  String _formatDate(DateTime date) {
+    return DateFormat('EEEE, d MMM').format(date);
+  }
+
+  String _formatTimeRange(DateTime start, DateTime end) {
+    final timeFormatter = DateFormat('HH:mm');
+    if (start.year == end.year &&
+        start.month == end.month &&
+        start.day == end.day) {
+      return '${timeFormatter.format(start)} - ${timeFormatter.format(end)}';
+    } else {
+      final dateFormatter = DateFormat('d MMM');
+      return '${timeFormatter.format(start)} - ${dateFormatter.format(end)} ${timeFormatter.format(end)}';
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Event'),
+        content: const Text('Are you sure you want to delete this event?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      try {
+        final viewModel =
+            Provider.of<CalendarViewModel>(context, listen: false);
+        await viewModel.deleteEvent(event.id);
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete event: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  void _showMoreOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context); // Close bottom sheet
+                _handleDelete(context); // Trigger delete confirmation
+              },
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

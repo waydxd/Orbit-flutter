@@ -6,6 +6,7 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/task_model.dart';
 import 'create_item_page.dart';
+import '../../dashboard/view/dashboard_page.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 
 class TaskListPage extends StatefulWidget {
@@ -35,11 +36,11 @@ class _TaskListPageState extends State<TaskListPage> {
       backgroundColor: const Color(0xFFF3F5F9),
       body: Consumer<CalendarViewModel>(
         builder: (context, viewModel, child) {
-          final pendingTasks = viewModel.tasks
-              .where((t) => !t.completed)
-              .toList();
+          final pendingTasks =
+              viewModel.tasks.where((t) => !t.completed).toList();
 
           return Stack(
+            fit: StackFit.expand,
             children: [
               SafeArea(
                 child: Column(
@@ -74,7 +75,10 @@ class _TaskListPageState extends State<TaskListPage> {
                 ),
               ),
               FloatingNavBar(
-                currentIndex: 1,
+                currentIndex: 2,
+                onHomeTap: () {
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
                 onCalendarTap: () {
                   Navigator.pop(context);
                 },
@@ -96,6 +100,15 @@ class _TaskListPageState extends State<TaskListPage> {
                 },
                 onTodoListTap: () {
                   // Already here
+                },
+                onDashboardTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardPage(),
+                    ),
+                  );
+                  debugPrint('Dashboard tapped');
                 },
               ),
             ],
