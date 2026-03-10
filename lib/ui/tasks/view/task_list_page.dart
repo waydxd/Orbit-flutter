@@ -74,43 +74,7 @@ class _TaskListPageState extends State<TaskListPage> {
                   ],
                 ),
               ),
-              FloatingNavBar(
-                currentIndex: 2,
-                onHomeTap: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                onCalendarTap: () {
-                  Navigator.pop(context);
-                },
-                onCreateTaskTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateItemPage(),
-                    ),
-                  );
-                  debugPrint('Create task tapped');
-                },
-                onCreateTaskLongPress: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AiChatPage()),
-                  );
-                  debugPrint('AI Chat long press');
-                },
-                onTodoListTap: () {
-                  // Already here
-                },
-                onDashboardTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DashboardPage(),
-                    ),
-                  );
-                  debugPrint('Dashboard tapped');
-                },
-              ),
+              // FloatingNavBar is now provided by the shared HomeShellPage.
             ],
           );
         },

@@ -7,7 +7,7 @@ import 'ui/calendar/view_model/calendar_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
 
-import 'ui/home/view/home_page.dart';
+import 'ui/home/view/home_shell_page.dart';
 
 /// Main application widget
 class OrbitApp extends StatelessWidget {
@@ -163,6 +163,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HomePage();
+    return const HomeShellPage();
   }
 }

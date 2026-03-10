@@ -154,58 +154,6 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
-
-            // Floating Navigation Bar
-            FloatingNavBar(
-              currentIndex: 0,
-              onHomeTap: () {
-                // Already on home page
-                debugPrint('Home tapped');
-              },
-              onCalendarTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CalendarPage(),
-                  ),
-                );
-                debugPrint('Calendar tapped');
-              },
-              onCreateTaskTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateItemPage(),
-                  ),
-                );
-                debugPrint('Create task tapped');
-              },
-              onCreateTaskLongPress: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AiChatPage()),
-                );
-                debugPrint('AI Chat long press');
-              },
-              onTodoListTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TaskListPage(),
-                  ),
-                );
-                debugPrint('Todo list tapped');
-              },
-              onDashboardTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DashboardPage(),
-                  ),
-                );
-                debugPrint('Dashboard tapped');
-              },
-            ),
           ],
         ),
       ),

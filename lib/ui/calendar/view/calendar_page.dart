@@ -225,52 +225,6 @@ class _CalendarPageState extends State<CalendarPage>
                 ],
               ),
 
-              // Floating Navigation Bar
-              FloatingNavBar(
-                currentIndex: 1,
-                onHomeTap: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                onCalendarTap: () {
-                  // Already on calendar page
-                  debugPrint('Calendar tapped');
-                },
-                onCreateTaskTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateItemPage(),
-                    ),
-                  );
-                  debugPrint('Create task tapped');
-                },
-                onCreateTaskLongPress: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AiChatPage()),
-                  );
-                  debugPrint('AI Chat long press');
-                },
-                onTodoListTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TaskListPage(),
-                    ),
-                  );
-                  debugPrint('Todo list tapped');
-                },
-                onDashboardTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DashboardPage(),
-                    ),
-                  );
-                  debugPrint('Dashboard tapped');
-                },
-              ),
-
               if (viewModel.isLoading)
                 const Center(child: CircularProgressIndicator()),
 

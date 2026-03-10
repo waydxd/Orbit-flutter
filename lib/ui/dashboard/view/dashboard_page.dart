@@ -187,46 +187,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
 
             // Navigation Bar
-            FloatingNavBar(
-              currentIndex: 3, // Dashboard is index 3
-              onHomeTap: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-              onCalendarTap: () {
-                // Depending on where we came from, but generally we can push or pop.
-                // Let's pop if we came from calendar, otherwise push.
-                // For simplicity, we can just pop until first, then push Calendar.
-                // Wait, Home is usually first. Calendar is separate.
-                // Let's match TaskListPage:
-                Navigator.pop(context);
-              },
-              onCreateTaskTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateItemPage(),
-                  ),
-                );
-              },
-              onCreateTaskLongPress: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AiChatPage()),
-                );
-                debugPrint('AI Chat long press');
-              },
-              onTodoListTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TaskListPage(),
-                  ),
-                );
-              },
-              onDashboardTap: () {
-                // Already on dashboard page
-              },
-            ),
+            // FloatingNavBar is now provided by the shared HomeShellPage.
           ],
         ),
       ),
