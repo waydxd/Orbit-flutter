@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
-import 'ui/home/home_screen.dart';
 import 'config/app_config.dart';
 import 'ui/auth/view_model/auth_view_model.dart';
 import 'ui/calendar/view_model/calendar_view_model.dart';
@@ -110,7 +109,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 }
 
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override

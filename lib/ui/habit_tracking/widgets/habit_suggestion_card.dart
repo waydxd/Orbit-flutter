@@ -10,17 +10,15 @@ class HabitSuggestionCard extends StatelessWidget {
   final bool isLoading;
 
   const HabitSuggestionCard({
-    super.key,
     required this.suggestion,
     required this.onAccept,
     required this.onDismiss,
+    super.key,
     this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: Constants.spacingM,
@@ -73,7 +71,7 @@ class HabitSuggestionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(Constants.radiusM),
           ),
           child: Text(
-            '${suggestion.frequency}x',
+            suggestion.status,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.bold,
@@ -98,18 +96,13 @@ class HabitSuggestionCard extends StatelessWidget {
       children: [
         _buildInfoRow(
           context,
-          Icons.repeat,
-          'Occurred ${suggestion.frequency} times',
-        ),
-        _buildInfoRow(
-          context,
           Icons.calendar_today,
-          'Every ${suggestion.dayOfWeekName}',
+          'Every ${suggestion.dayOfWeek}',
         ),
         _buildInfoRow(
           context,
           Icons.access_time,
-          '${suggestion.startTime} - ${suggestion.endTime}',
+          '${suggestion.timeOfDay} (${suggestion.durationMinutes} min)',
         ),
         if (suggestion.location != null && suggestion.location!.isNotEmpty)
           _buildInfoRow(
@@ -117,7 +110,8 @@ class HabitSuggestionCard extends StatelessWidget {
             Icons.location_on,
             suggestion.location!,
           ),
-        if (suggestion.description != null && suggestion.description!.isNotEmpty)
+        if (suggestion.description != null &&
+            suggestion.description!.isNotEmpty)
           _buildInfoRow(
             context,
             Icons.description,
@@ -154,7 +148,7 @@ class HabitSuggestionCard extends StatelessWidget {
 
   Widget _buildPromptText(BuildContext context) {
     return Text(
-      'Add this as a recurring event for the next 5 years?',
+      suggestion.message,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.outline,
             fontStyle: FontStyle.italic,

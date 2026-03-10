@@ -1,89 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../habit_tracking_view_model.dart';
-import '../habit_suggestions_screen.dart';
+import '../../calendar/view_model/calendar_view_model.dart';
+import '../view/habit_suggestions_page.dart';
 
 /// A badge widget that shows the number of pending habit suggestions
 ///
-/// Use this widget in your app bar or navigation to show users
-/// when they have habit suggestions available.
+/// Uses the shared [CalendarViewModel] from the Provider tree so that the
+/// badge count stays in sync with the calendar timetable.
 ///
 /// Example usage:
 /// ```dart
 /// HabitSuggestionsBadge(
-///   userId: currentUser.id,
 ///   child: Icon(Icons.lightbulb_outline),
 /// )
 /// ```
-class HabitSuggestionsBadge extends StatefulWidget {
-  final String userId;
+class HabitSuggestionsBadge extends StatelessWidget {
   final Widget child;
   final bool navigateOnTap;
 
   const HabitSuggestionsBadge({
-    super.key,
-    required this.userId,
     required this.child,
+    super.key,
     this.navigateOnTap = true,
   });
 
-  @override
-  State<HabitSuggestionsBadge> createState() => _HabitSuggestionsBadgeState();
-}
-
-class _HabitSuggestionsBadgeState extends State<HabitSuggestionsBadge> {
-  late final HabitTrackingViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = HabitTrackingViewModel(userId: widget.userId);
-    _viewModel.loadSuggestions();
-  }
-
-  @override
-  void dispose() {
-    _viewModel.dispose();
-    super.dispose();
-  }
-
-  void _navigateToSuggestions() {
+  void _navigateToSuggestions(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HabitSuggestionsScreen(userId: widget.userId),
+        builder: (context) => const HabitSuggestionsPage(),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Consumer<HabitTrackingViewModel>(
-        builder: (context, viewModel, child) {
-          final count = viewModel.suggestionsCount;
-          final showBadge = count > 0 && !viewModel.isLoading;
+    return Consumer<CalendarViewModel>(
+      builder: (context, viewModel, _) {
+        final count = viewModel.habitSuggestionsCount;
+        final showBadge = count > 0 && !viewModel.isLoading;
 
-          Widget badgeChild = Badge(
-            isLabelVisible: showBadge,
-            label: Text(
-              count > 99 ? '99+' : count.toString(),
-              style: const TextStyle(fontSize: 10),
-            ),
-            child: widget.child,
+        final Widget badgeChild = Badge(
+          isLabelVisible: showBadge,
+          label: Text(
+            count > 99 ? '99+' : count.toString(),
+            style: const TextStyle(fontSize: 10),
+          ),
+          child: child,
+        );
+
+        if (navigateOnTap) {
+          return GestureDetector(
+            onTap: () => _navigateToSuggestions(context),
+            child: badgeChild,
           );
+        }
 
-          if (widget.navigateOnTap) {
-            return GestureDetector(
-              onTap: _navigateToSuggestions,
-              child: badgeChild,
-            );
-          }
-
-          return badgeChild;
-        },
-      ),
+        return badgeChild;
+      },
     );
   }
 }
@@ -96,17 +70,15 @@ class _HabitSuggestionsBadgeState extends State<HabitSuggestionsBadge> {
 /// Example usage:
 /// ```dart
 /// // In your app bar actions:
-/// HabitSuggestionsIconButton(userId: currentUser.id)
+/// HabitSuggestionsIconButton()
 /// ```
 class HabitSuggestionsIconButton extends StatelessWidget {
-  final String userId;
   final Color? iconColor;
   final double? iconSize;
   final String? tooltip;
 
   const HabitSuggestionsIconButton({
     super.key,
-    required this.userId,
     this.iconColor,
     this.iconSize,
     this.tooltip = 'Habit Suggestions',
@@ -116,7 +88,6 @@ class HabitSuggestionsIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: HabitSuggestionsBadge(
-        userId: userId,
         navigateOnTap: false,
         child: Icon(
           Icons.lightbulb_outline,
@@ -129,7 +100,7 @@ class HabitSuggestionsIconButton extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => HabitSuggestionsScreen(userId: userId),
+            builder: (context) => const HabitSuggestionsPage(),
           ),
         );
       },

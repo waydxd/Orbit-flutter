@@ -1,62 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'habit_tracking_view_model.dart';
-import 'widgets/habit_suggestion_card.dart';
-import '../../utils/constants.dart';
+import '../../calendar/view_model/calendar_view_model.dart';
+import '../../auth/view_model/auth_view_model.dart';
+import '../widgets/habit_suggestion_card.dart';
+import '../../../utils/constants.dart';
 
-/// Screen displaying habit suggestions and allowing accept/dismiss actions
-class HabitSuggestionsScreen extends StatefulWidget {
-  final String userId;
-
-  const HabitSuggestionsScreen({
-    super.key,
-    required this.userId,
-  });
+/// Page displaying habit suggestions and allowing accept/dismiss actions
+class HabitSuggestionsPage extends StatefulWidget {
+  const HabitSuggestionsPage({super.key});
 
   @override
-  State<HabitSuggestionsScreen> createState() => _HabitSuggestionsScreenState();
+  State<HabitSuggestionsPage> createState() => _HabitSuggestionsPageState();
 }
 
-class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
-  late final HabitTrackingViewModel _viewModel;
-  int? _processingHabitId;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = HabitTrackingViewModel(userId: widget.userId);
-    _viewModel.loadSuggestions();
-  }
-
-  @override
-  void dispose() {
-    _viewModel.dispose();
-    super.dispose();
-  }
+class _HabitSuggestionsPageState extends State<HabitSuggestionsPage> {
+  String? _processingSuggestionId;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Scaffold(
-        appBar: _buildAppBar(context),
-        body: Consumer<HabitTrackingViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading && viewModel.suggestions.isEmpty) {
-              return _buildLoadingState();
-            }
+    return Scaffold(
+      appBar: _buildAppBar(context),
+      body: Consumer<CalendarViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.isLoading && viewModel.habitSuggestions.isEmpty) {
+            return _buildLoadingState();
+          }
 
-            if (viewModel.error != null && viewModel.suggestions.isEmpty) {
-              return _buildErrorState(context, viewModel);
-            }
+          if (viewModel.error != null && viewModel.habitSuggestions.isEmpty) {
+            return _buildErrorState(context, viewModel);
+          }
 
-            if (viewModel.suggestions.isEmpty) {
-              return _buildEmptyState();
-            }
+          if (viewModel.habitSuggestions.isEmpty) {
+            return _buildEmptyState();
+          }
 
-            return _buildSuggestionsList(viewModel);
-          },
-        ),
+          return _buildSuggestionsList(viewModel);
+        },
       ),
     );
   }
@@ -65,7 +44,7 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
     return AppBar(
       title: const Text('Habit Suggestions'),
       actions: [
-        Consumer<HabitTrackingViewModel>(
+        Consumer<CalendarViewModel>(
           builder: (context, viewModel, child) {
             return IconButton(
               icon: viewModel.isLoading
@@ -76,7 +55,15 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
                     )
                   : const Icon(Icons.refresh),
               tooltip: 'Refresh',
-              onPressed: viewModel.isLoading ? null : () => viewModel.loadSuggestions(),
+              onPressed: viewModel.isLoading
+                  ? null
+                  : () {
+                      final userId =
+                          context.read<AuthViewModel>().currentUser?.id;
+                      if (userId != null) {
+                        viewModel.fetchAll(userId: userId);
+                      }
+                    },
             );
           },
         ),
@@ -97,7 +84,8 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, HabitTrackingViewModel viewModel) {
+  Widget _buildErrorState(
+      BuildContext context, CalendarViewModel viewModel) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(Constants.spacingL),
@@ -124,7 +112,13 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
             ),
             const SizedBox(height: Constants.spacingL),
             ElevatedButton.icon(
-              onPressed: () => viewModel.loadSuggestions(),
+              onPressed: () {
+                final userId =
+                    context.read<AuthViewModel>().currentUser?.id;
+                if (userId != null) {
+                  viewModel.fetchAll(userId: userId);
+                }
+              },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
@@ -172,36 +166,46 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
     );
   }
 
-  Widget _buildSuggestionsList(HabitTrackingViewModel viewModel) {
+  Widget _buildSuggestionsList(CalendarViewModel viewModel) {
     return RefreshIndicator(
-      onRefresh: () => viewModel.loadSuggestions(),
+      onRefresh: () async {
+        final userId = context.read<AuthViewModel>().currentUser?.id;
+        if (userId != null) {
+          await viewModel.fetchAll(userId: userId);
+        }
+      },
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: Constants.spacingM),
-        itemCount: viewModel.suggestions.length,
+        itemCount: viewModel.habitSuggestions.length,
         itemBuilder: (context, index) {
-          final suggestion = viewModel.suggestions[index];
+          final suggestion = viewModel.habitSuggestions[index];
           return HabitSuggestionCard(
             suggestion: suggestion,
-            isLoading: _processingHabitId == suggestion.habitId,
-            onAccept: () => _handleAccept(viewModel, suggestion.habitId),
-            onDismiss: () => _handleDismiss(viewModel, suggestion.habitId),
+            isLoading: _processingSuggestionId == suggestion.id,
+            onAccept: () => _handleAccept(viewModel, suggestion.id),
+            onDismiss: () => _handleDismiss(viewModel, suggestion.id),
           );
         },
       ),
     );
   }
 
-  Future<void> _handleAccept(HabitTrackingViewModel viewModel, int habitId) async {
-    setState(() => _processingHabitId = habitId);
+  Future<void> _handleAccept(
+      CalendarViewModel viewModel, String suggestionId) async {
+    setState(() => _processingSuggestionId = suggestionId);
 
     try {
-      final eventsCreated = await viewModel.acceptSuggestion(habitId);
+      final userId = context.read<AuthViewModel>().currentUser?.id;
+      final response = await viewModel.acceptHabitSuggestion(
+        suggestionId,
+        userId: userId,
+      );
 
       if (mounted) {
-        if (eventsCreated != null) {
+        if (response != null && response.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Created $eventsCreated recurring events for 5 years!'),
+              content: Text(response.message),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),
@@ -212,16 +216,17 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _processingHabitId = null);
+        setState(() => _processingSuggestionId = null);
       }
     }
   }
 
-  Future<void> _handleDismiss(HabitTrackingViewModel viewModel, int habitId) async {
-    setState(() => _processingHabitId = habitId);
+  Future<void> _handleDismiss(
+      CalendarViewModel viewModel, String suggestionId) async {
+    setState(() => _processingSuggestionId = suggestionId);
 
     try {
-      final success = await viewModel.dismissSuggestion(habitId);
+      final success = await viewModel.dismissHabitSuggestion(suggestionId);
 
       if (mounted) {
         if (success) {
@@ -237,7 +242,7 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _processingHabitId = null);
+        setState(() => _processingSuggestionId = null);
       }
     }
   }
@@ -252,4 +257,3 @@ class _HabitSuggestionsScreenState extends State<HabitSuggestionsScreen> {
     );
   }
 }
-
