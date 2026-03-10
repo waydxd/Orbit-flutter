@@ -15,12 +15,18 @@ import '../widgets/chat_widgets.dart';
 /// 4. Conversation history drawer
 /// 5. Pending action confirmation/cancellation in Agent mode
 /// 6. Editable conversation titles
+/// 7. Service health check on initialization
 ///
 /// API Endpoints used (from chat.yaml):
-/// - POST /api/v1/chat/messages - Send message and get AI response
+/// - GET /api/v1/chat/health - Check service health
+/// - POST /api/v1/chat/conversations - Create a new conversation
 /// - GET /api/v1/chat/conversations/{id} - Get conversation details
+/// - DELETE /api/v1/chat/conversations/{id} - Soft delete conversation
+/// - POST /api/v1/chat/messages - Send message and get AI response
+/// - GET /api/v1/chat/actions/{id} - Get action details
 /// - POST /api/v1/chat/actions/{id}/confirm - Confirm action
 /// - POST /api/v1/chat/actions/{id}/cancel - Cancel action
+/// - GET /api/v1/chat/metrics - Get chat metrics
 class AiChatPage extends StatefulWidget {
   final String? initialConversationId;
 
@@ -199,8 +205,8 @@ class _AiChatPageState extends State<AiChatPage> {
               conversations: provider.conversations,
               currentConversationId: provider.currentConversationId,
               onNewChat: () {
-                _chatProvider.startNewConversation();
                 _messageController.clear();
+                _chatProvider.startNewConversation();
               },
               onSelectConversation: (id) => _chatProvider.selectConversation(id),
               onRenameConversation: _showRenameDialog,
@@ -265,8 +271,8 @@ class _AiChatPageState extends State<AiChatPage> {
                 IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF6366F1), size: 28),
                   onPressed: () {
-                    _chatProvider.startNewConversation();
                     _messageController.clear();
+                    _chatProvider.clearConversation();
                   },
                   tooltip: 'Back to Welcome',
                 )
@@ -325,8 +331,8 @@ class _AiChatPageState extends State<AiChatPage> {
             IconButton(
               icon: const Icon(Icons.add, color: Color(0xFF6366F1), size: 28),
               onPressed: () {
-                _chatProvider.startNewConversation();
                 _messageController.clear();
+                _chatProvider.startNewConversation();
               },
               tooltip: 'New Chat',
             )

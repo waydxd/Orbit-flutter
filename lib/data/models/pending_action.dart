@@ -180,10 +180,8 @@ class PendingAction extends Equatable {
     required this.status,
     required this.version,
     required this.correlationId,
-    this.agentMetadata = const {},
+    required this.createdAt, required this.updatedAt, this.agentMetadata = const {},
     this.errorMessage,
-    required this.createdAt,
-    required this.updatedAt,
     this.expiresAt,
   });
 

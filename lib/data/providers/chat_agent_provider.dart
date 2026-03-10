@@ -6,6 +6,7 @@ import '../services/api_client.dart';
 import '../services/chat_api_service.dart';
 import '../services/chat_exceptions.dart';
 import '../repositories/chat_repository.dart';
+import '../repositories/chat_local_repository.dart';
 import '../../utils/logger.dart';
 
 export '../models/chat_session.dart';
@@ -61,6 +62,7 @@ class ChatAgentState {
   final bool isLoading;
   final bool isLoadingHistory;
   final bool isOfflineMode;
+  final bool isServiceHealthy;
   final String? errorMessage;
   final ApiException? lastError;
 
@@ -79,6 +81,7 @@ class ChatAgentState {
     this.isLoading = false,
     this.isLoadingHistory = false,
     this.isOfflineMode = false,
+    this.isServiceHealthy = true,
     this.errorMessage,
     this.lastError,
     this.chatMode = ChatMode.ask,
@@ -94,6 +97,7 @@ class ChatAgentState {
     bool? isLoading,
     bool? isLoadingHistory,
     bool? isOfflineMode,
+    bool? isServiceHealthy,
     String? errorMessage,
     ApiException? lastError,
     ChatMode? chatMode,
@@ -102,14 +106,16 @@ class ChatAgentState {
     bool? isCancellingAction,
     bool clearError = false,
     bool clearPendingAction = false,
+    bool clearConversationId = false,
   }) {
     return ChatAgentState(
       messages: messages ?? this.messages,
       conversations: conversations ?? this.conversations,
-      currentConversationId: currentConversationId ?? this.currentConversationId,
+      currentConversationId: clearConversationId ? null : (currentConversationId ?? this.currentConversationId),
       isLoading: isLoading ?? this.isLoading,
       isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
       isOfflineMode: isOfflineMode ?? this.isOfflineMode,
+      isServiceHealthy: isServiceHealthy ?? this.isServiceHealthy,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       lastError: clearError ? null : (lastError ?? this.lastError),
       chatMode: chatMode ?? this.chatMode,
@@ -132,13 +138,18 @@ class ChatAgentState {
 /// Provider for chat with AI agent functionality
 ///
 /// Integrates with Orbit-core chat endpoints (chat.yaml):
-/// - POST /api/v1/chat/messages - Send message
+/// - GET /api/v1/chat/health - Check service health
+/// - POST /api/v1/chat/conversations - Create a new conversation
 /// - GET /api/v1/chat/conversations/{id} - Get conversation details
+/// - DELETE /api/v1/chat/conversations/{id} - Soft delete a conversation
+/// - POST /api/v1/chat/messages - Send message
 /// - GET /api/v1/chat/actions/{id} - Get action details
 /// - POST /api/v1/chat/actions/{id}/confirm - Confirm pending action
 /// - POST /api/v1/chat/actions/{id}/cancel - Cancel pending action
+/// - GET /api/v1/chat/metrics - Get chat metrics
 class ChatAgentProvider extends ChangeNotifier {
   final ChatRepository _repository;
+  final ChatLocalRepository _localRepository;
   final Uuid _uuid = const Uuid();
 
   ChatAgentState _state = const ChatAgentState();
@@ -151,6 +162,7 @@ class ChatAgentProvider extends ChangeNotifier {
   bool get isLoading => _state.isLoading;
   bool get isLoadingHistory => _state.isLoadingHistory;
   bool get isOfflineMode => _state.isOfflineMode;
+  bool get isServiceHealthy => _state.isServiceHealthy;
   String? get errorMessage => _state.errorMessage;
   bool get hasError => _state.hasError;
 
@@ -176,18 +188,22 @@ class ChatAgentProvider extends ChangeNotifier {
 
   ChatAgentProvider({
     required ApiClient apiClient,
+    ChatLocalRepository? localRepository,
     this.onAuthError,
     this.onActionConfirmed,
     this.onActionCancelled,
-  }) : _repository = ChatRepository(ChatApiService(apiClient));
+  })  : _repository = ChatRepository(ChatApiService(apiClient)),
+        _localRepository = localRepository ?? ChatLocalRepository();
 
   /// Factory constructor for dependency injection
   ChatAgentProvider.withRepository({
     required ChatRepository repository,
+    ChatLocalRepository? localRepository,
     this.onAuthError,
     this.onActionConfirmed,
     this.onActionCancelled,
-  }) : _repository = repository;
+  })  : _repository = repository,
+        _localRepository = localRepository ?? ChatLocalRepository();
 
   void _updateState(ChatAgentState newState) {
     _state = newState;
@@ -197,22 +213,69 @@ class ChatAgentProvider extends ChangeNotifier {
   /// Initialize the provider
   Future<void> initialize() async {
     await _repository.initialize();
+    await _localRepository.init();
     await loadConversations();
   }
 
-  /// Load all conversations for the user
-  /// Note: Backend doesn't provide GET /conversations endpoint, so we use local state only
-  Future<void> loadConversations() async {
-    // The backend doesn't have a GET /conversations endpoint to list all conversations
-    // Conversations are tracked locally in state and persisted when messages are sent
-    // This is intentional as per the backend API spec (chat.yaml)
-    _updateState(_state.copyWith(
-      isLoadingHistory: false,
-      clearError: true,
-    ));
+  /// Check chat service health (optional, not called on startup)
+  ///
+  /// GET /api/v1/chat/health
+  /// Note: This endpoint may be unavailable. A failed health check does NOT
+  /// block other chat operations.
+  Future<bool> checkServiceHealth() async {
+    try {
+      final health = await _repository.checkHealth();
+      _updateState(_state.copyWith(
+        isServiceHealthy: health.isHealthy,
+      ));
+      Logger.infoWithTag('ChatAgentProvider', 'Service health: ${health.status}');
+      return health.isHealthy;
+    } catch (e) {
+      _updateState(_state.copyWith(
+        isServiceHealthy: false,
+      ));
+      Logger.warningWithTag('ChatAgentProvider', 'Health check failed: $e');
+      return false;
+    }
   }
 
+  /// Load all conversations from local cache
+  ///
+  /// Sessions are persisted to Hive so they survive page navigation.
+  /// The backend doesn't provide a list-all-conversations endpoint,
+  /// so local cache is the source of truth for the sidebar list.
+  Future<void> loadConversations() async {
+    try {
+      final cachedSessions = await _localRepository.getCachedSessions(_localSessionsKey);
+      if (cachedSessions != null && cachedSessions.isNotEmpty) {
+        _updateState(_state.copyWith(
+          conversations: cachedSessions,
+          isLoadingHistory: false,
+          clearError: true,
+        ));
+        Logger.infoWithTag('ChatAgentProvider', 'Loaded ${cachedSessions.length} conversations from cache');
+      } else {
+        _updateState(_state.copyWith(
+          isLoadingHistory: false,
+          clearError: true,
+        ));
+      }
+    } catch (e) {
+      Logger.warningWithTag('ChatAgentProvider', 'Failed to load cached conversations: $e');
+      _updateState(_state.copyWith(
+        isLoadingHistory: false,
+        clearError: true,
+      ));
+    }
+  }
+
+  /// Key used to store sessions list in Hive
+  static const String _localSessionsKey = 'chat_sessions_list';
+
   /// Load chat history for a conversation
+  ///
+  /// Tries the backend first (GET /api/v1/chat/conversations/{id}),
+  /// falls back to locally cached messages from Hive if the backend is unreachable.
   Future<void> loadChatHistory(String conversationId) async {
     _updateState(_state.copyWith(
       isLoadingHistory: true,
@@ -249,60 +312,118 @@ class ChatAgentProvider extends ChangeNotifier {
         isOfflineMode: false,
         currentPendingAction: pendingAction,
       ));
+
+      // Update local cache with fresh data from backend
+      await _localRepository.cacheAgentMessages(conversationId, messages);
     } on AuthException catch (e) {
       _handleAuthError(e);
     } on NetworkException catch (e) {
-      _updateState(_state.copyWith(
-        isLoadingHistory: false,
-        isOfflineMode: true,
-        errorMessage: e.message,
-        lastError: e,
-      ));
+      // Fall back to locally cached messages
+      await _loadCachedMessages(conversationId, e);
     } on NotFoundException catch (e) {
-      _updateState(_state.copyWith(
-        isLoadingHistory: false,
-        messages: [],
-        errorMessage: e.message,
-        lastError: e,
-      ));
+      // Conversation not found on backend — try local cache
+      final cached = await _localRepository.getCachedAgentMessages(conversationId);
+      if (cached != null && cached.isNotEmpty) {
+        _updateState(_state.copyWith(
+          messages: cached,
+          isLoadingHistory: false,
+        ));
+      } else {
+        _updateState(_state.copyWith(
+          isLoadingHistory: false,
+          messages: [],
+          errorMessage: e.message,
+          lastError: e,
+        ));
+      }
     } on ApiException catch (e) {
+      // For other API errors, also try local cache
+      await _loadCachedMessages(conversationId, e);
+    }
+  }
+
+  /// Helper: load messages from Hive cache when backend fails
+  Future<void> _loadCachedMessages(String conversationId, ApiException error) async {
+    final cached = await _localRepository.getCachedAgentMessages(conversationId);
+    if (cached != null && cached.isNotEmpty) {
+      _updateState(_state.copyWith(
+        messages: cached,
+        isLoadingHistory: false,
+        isOfflineMode: error is NetworkException,
+      ));
+      Logger.infoWithTag('ChatAgentProvider', 'Loaded ${cached.length} messages from cache for $conversationId');
+    } else {
       _updateState(_state.copyWith(
         isLoadingHistory: false,
-        errorMessage: e.message,
-        lastError: e,
+        isOfflineMode: error is NetworkException,
+        errorMessage: error.message,
+        lastError: error,
       ));
     }
   }
 
   /// Send a message and get AI agent response
+  ///
+  /// If no conversation exists yet, one is created first via
+  /// POST /api/v1/chat/conversations. The returned conversation_id is then
+  /// used for all subsequent messages until the conversation is deleted.
   Future<void> sendMessage(
     String content, {
     AgentContextType context = AgentContextType.calendar,
   }) async {
-    // Use existing conversation ID or null for new conversations
-    // The backend will create a new conversation if ID is null or not found
-    final conversationId = _state.currentConversationId;
+    // If no conversation exists, create one first
+    String? conversationId = _state.currentConversationId;
 
-    // Create temporary conversation ID for UI messages (will be updated with backend ID)
-    final tempConversationId = conversationId ?? 'temp-${_uuid.v4()}';
+    if (conversationId == null) {
+      try {
+        final createResponse = await _repository.createConversation();
+        conversationId = createResponse.conversationId;
+
+        // Save to local history for sidebar
+        final session = ChatSession(
+          sessionId: conversationId,
+          userId: '',
+          title: 'New Chat',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          messageCount: 0,
+        );
+        final updatedConversations = [session, ..._state.conversations];
+
+        _updateState(_state.copyWith(
+          currentConversationId: conversationId,
+          conversations: updatedConversations,
+        ));
+
+        Logger.infoWithTag('ChatAgentProvider', 'Auto-created conversation: $conversationId');
+      } on AuthException catch (e) {
+        _handleAuthError(e);
+        return;
+      } on ApiException catch (e) {
+        _updateState(_state.copyWith(
+          errorMessage: 'Failed to start conversation: ${e.message}',
+          lastError: e,
+        ));
+        return;
+      }
+    }
 
     // Create user message
     final userMessage = AgentChatMessage.user(
       id: _uuid.v4(),
-      conversationId: tempConversationId,
+      conversationId: conversationId,
       content: content,
     );
 
     // Create loading placeholder for agent response
     final loadingMessage = AgentChatMessage.loading(
       id: _uuid.v4(),
-      conversationId: tempConversationId,
+      conversationId: conversationId,
     );
 
     // Add messages to state immediately
     _updateState(_state.copyWith(
       messages: [..._state.messages, userMessage, loadingMessage],
-      currentConversationId: tempConversationId,
       isLoading: true,
       clearError: true,
       clearPendingAction: true,
@@ -319,11 +440,10 @@ class ChatAgentProvider extends ChangeNotifier {
     }
 
     try {
-      // Send message using new API
-      // Don't send conversation_id if it's a temp ID - let backend create a new one
+      // Send message with the guaranteed conversation_id
       final result = await _repository.sendChatMessage(
         content: content,
-        conversationId: conversationId, // null for new conversations, actual ID for existing
+        conversationId: conversationId,
         context: {'type': context.value},
       );
 
@@ -336,20 +456,12 @@ class ChatAgentProvider extends ChangeNotifier {
         return;
       }
 
-      // Use the conversation ID returned from the backend
-      // The backend creates a new conversation if conversationId was null
-      final actualConversationId = result.conversationId;
-
       // Use the reply directly from the sendChatMessage result
-      // The backend returns the AI response in the reply field
       final assistantReply = result.reply;
 
-      // Replace loading message and update conversation IDs with actual backend ID
+      // Replace loading message
       final updatedMessages = _state.messages
           .where((m) => !m.isLoading)
-          .map((m) => m.conversationId == tempConversationId
-              ? m.copyWith(conversationId: actualConversationId)
-              : m)
           .toList();
 
       if (assistantReply.isNotEmpty) {
@@ -357,7 +469,7 @@ class ChatAgentProvider extends ChangeNotifier {
         if (_state.isAgentMode && result.hasProposedAction && result.actionId != null) {
           updatedMessages.add(AgentChatMessage.agentWithAction(
             id: result.messageId,
-            conversationId: actualConversationId,
+            conversationId: conversationId,
             content: assistantReply,
             agentType: AgentType.calendarAssistant,
             actionId: result.actionId!,
@@ -368,7 +480,7 @@ class ChatAgentProvider extends ChangeNotifier {
         } else {
           updatedMessages.add(AgentChatMessage.agent(
             id: result.messageId,
-            conversationId: actualConversationId,
+            conversationId: conversationId,
             content: assistantReply,
             agentType: AgentType.calendarAssistant,
           ));
@@ -386,11 +498,10 @@ class ChatAgentProvider extends ChangeNotifier {
       }
 
       // Save conversation to local history for sidebar display
-      await _saveConversationToHistory(actualConversationId, content, assistantReply);
+      await _saveConversationToHistory(conversationId, content, assistantReply);
 
       _updateState(_state.copyWith(
         messages: updatedMessages,
-        currentConversationId: actualConversationId,
         isLoading: false,
         currentPendingAction: pendingAction,
       ));
@@ -463,6 +574,11 @@ class ChatAgentProvider extends ChangeNotifier {
 
         // Trigger callback
         onActionConfirmed?.call(result.operationId);
+
+        // Persist updated messages to cache
+        if (_state.currentConversationId != null) {
+          await _persistMessages(_state.currentConversationId!);
+        }
 
         Logger.infoWithTag('ChatAgentProvider', 'Action confirmed successfully');
       } else {
@@ -558,6 +674,11 @@ class ChatAgentProvider extends ChangeNotifier {
 
         // Trigger callback
         onActionCancelled?.call();
+
+        // Persist updated messages to cache
+        if (_state.currentConversationId != null) {
+          await _persistMessages(_state.currentConversationId!);
+        }
 
         Logger.infoWithTag('ChatAgentProvider', 'Action cancelled successfully');
       } else {
@@ -678,6 +799,7 @@ class ChatAgentProvider extends ChangeNotifier {
         updatedConversations[existingIndex] = updatedSession;
 
         _updateState(_state.copyWith(conversations: updatedConversations));
+        await _persistSessions();
         Logger.infoWithTag('ChatAgentProvider', 'Updated conversation title: $newTitle');
       }
     } catch (e) {
@@ -686,22 +808,27 @@ class ChatAgentProvider extends ChangeNotifier {
   }
 
   /// Start a new conversation
+  ///
+  /// Clears local state so the next message will trigger a new conversation
+  /// creation via POST /api/v1/chat/conversations. The returned conversation_id
+  /// is then used for all subsequent messages until deleted.
   void startNewConversation() {
     _updateState(_state.copyWith(
       messages: [],
-      currentConversationId: null,
       clearError: true,
       clearPendingAction: true,
+      clearConversationId: true,
     ));
+    Logger.infoWithTag('ChatAgentProvider', 'Ready for new conversation');
   }
 
-  /// Clear the current conversation
+  /// Clear the current conversation (local only, no backend call)
   void clearConversation() {
     _updateState(_state.copyWith(
       messages: [],
-      currentConversationId: null,
       clearError: true,
       clearPendingAction: true,
+      clearConversationId: true,
     ));
   }
 
@@ -716,9 +843,13 @@ class ChatAgentProvider extends ChangeNotifier {
   }
 
   /// Delete a conversation from history
+  ///
+  /// Soft deletes the conversation on the backend via
+  /// DELETE /api/v1/chat/conversations/{conversation_id}
+  /// and removes it from local state.
   Future<void> deleteConversation(String conversationId) async {
     try {
-      // Remove from local state
+      // Remove from local state immediately for responsiveness
       final updatedConversations = _state.conversations
           .where((c) => c.sessionId != conversationId)
           .toList();
@@ -727,10 +858,41 @@ class ChatAgentProvider extends ChangeNotifier {
 
       // If this was the current conversation, clear it
       if (_state.currentConversationId == conversationId) {
-        startNewConversation();
+        _updateState(_state.copyWith(
+          messages: [],
+          clearPendingAction: true,
+          clearConversationId: true,
+        ));
+      }
+
+      // Soft delete on backend
+      if (!_state.isOfflineMode) {
+        try {
+          final response = await _repository.deleteConversation(
+            conversationId: conversationId,
+          );
+          if (response.success) {
+            Logger.infoWithTag('ChatAgentProvider', 'Deleted conversation on backend: $conversationId');
+          } else {
+            Logger.warningWithTag('ChatAgentProvider', 'Backend delete returned: ${response.message}');
+          }
+        } on NotFoundException {
+          // Already deleted or doesn't exist - that's fine
+          Logger.infoWithTag('ChatAgentProvider', 'Conversation already deleted on backend: $conversationId');
+        } on AuthException catch (e) {
+          _handleAuthError(e);
+          return;
+        } on ApiException catch (e) {
+          Logger.warningWithTag('ChatAgentProvider', 'Backend delete failed: ${e.message}');
+          // Local state already updated, don't revert
+        }
       }
 
       Logger.infoWithTag('ChatAgentProvider', 'Deleted conversation: $conversationId');
+
+      // Persist updated sessions and clean up cached messages
+      await _persistSessions();
+      await _localRepository.deleteCachedAgentMessages(conversationId);
     } catch (e) {
       Logger.errorWithTag('ChatAgentProvider', 'Failed to delete conversation: $e');
     }
@@ -774,8 +936,33 @@ class ChatAgentProvider extends ChangeNotifier {
       }
 
       _updateState(_state.copyWith(conversations: updatedConversations));
+
+      // Persist sessions and messages to Hive
+      await _persistSessions();
+      await _persistMessages(conversationId);
     } catch (e) {
       Logger.warningWithTag('ChatAgentProvider', 'Failed to save conversation to history: $e');
+    }
+  }
+
+  /// Persist the current sessions list to Hive
+  Future<void> _persistSessions() async {
+    try {
+      await _localRepository.cacheSessions(_localSessionsKey, _state.conversations);
+    } catch (e) {
+      Logger.warningWithTag('ChatAgentProvider', 'Failed to persist sessions to cache: $e');
+    }
+  }
+
+  /// Persist messages for a conversation to Hive
+  Future<void> _persistMessages(String conversationId) async {
+    try {
+      final messages = _state.messages
+          .where((m) => m.conversationId == conversationId && !m.isLoading)
+          .toList();
+      await _localRepository.cacheAgentMessages(conversationId, messages);
+    } catch (e) {
+      Logger.warningWithTag('ChatAgentProvider', 'Failed to persist messages to cache: $e');
     }
   }
 }

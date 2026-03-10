@@ -84,8 +84,7 @@ class AgentChatMessage extends Equatable {
     required this.conversationId,
     required this.content,
     required this.isUser,
-    this.agentType,
-    required this.timestamp,
+    required this.timestamp, this.agentType,
     this.isLoading = false,
     this.errorMessage,
     this.actionId,
@@ -172,17 +171,31 @@ class AgentChatMessage extends Equatable {
   }
 
   factory AgentChatMessage.fromJson(Map<String, dynamic> json) {
+    // Support both backend format (role/sender_id) and local cache format (is_user)
+    bool isUser;
+    if (json.containsKey('is_user')) {
+      isUser = json['is_user'] == true;
+    } else if (json.containsKey('role')) {
+      isUser = json['role'] == 'user';
+    } else {
+      isUser = json['sender_id'] != null;
+    }
+
     return AgentChatMessage(
       id: json['id'] ?? '',
       conversationId: json['conversation_id'] ?? '',
       content: json['content'] ?? '',
-      isUser: json['sender_id'] != null,
+      isUser: isUser,
       agentType: json['agent_type'] != null
           ? AgentTypeExtension.fromString(json['agent_type'])
           : null,
       timestamp: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
+      actionId: json['action_id'],
+      actionType: json['action_type'],
+      actionSummary: json['action_summary'],
+      actionStatus: json['action_status'],
     );
   }
 

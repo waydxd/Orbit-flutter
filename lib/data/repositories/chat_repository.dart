@@ -17,6 +17,32 @@ class ChatRepository {
     Logger.infoWithTag('ChatRepository', 'Repository initialized');
   }
 
+  /// Check chat service health
+  ///
+  /// GET /api/v1/chat/health
+  /// Returns ChatHealthResponse with status and optional error
+  Future<ChatHealthResponse> checkHealth() async {
+    return _apiService.checkHealth();
+  }
+
+  /// Create a new conversation on the backend
+  ///
+  /// POST /api/v1/chat/conversations
+  /// Returns CreateConversationResponse with conversation_id and status
+  Future<CreateConversationResponse> createConversation() async {
+    return _apiService.createConversation();
+  }
+
+  /// Soft delete a conversation on the backend
+  ///
+  /// DELETE /api/v1/chat/conversations/{conversation_id}
+  /// Returns DeleteConversationResponse with success and message
+  Future<DeleteConversationResponse> deleteConversation({
+    required String conversationId,
+  }) async {
+    return _apiService.deleteConversation(conversationId: conversationId);
+  }
+
   /// Send a chat message to the backend
   ///
   /// POST /api/v1/chat/messages
@@ -58,14 +84,14 @@ class ChatRepository {
     return response.messages.map((msg) {
       if (msg.isUser) {
         return AgentChatMessage.user(
-          id: '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+          id: msg.id.isNotEmpty ? msg.id : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
           conversationId: conversationId,
           content: msg.content,
           timestamp: msg.timestamp,
         );
       } else {
         return AgentChatMessage.agent(
-          id: '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+          id: msg.id.isNotEmpty ? msg.id : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
           conversationId: conversationId,
           content: msg.content,
           agentType: AgentType.calendarAssistant,

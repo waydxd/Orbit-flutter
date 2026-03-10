@@ -75,6 +75,7 @@ class ChatViewModel extends ChangeNotifier {
   bool get isLoading => _provider.isLoading;
   bool get isLoadingHistory => _provider.isLoadingHistory;
   bool get isOfflineMode => _provider.isOfflineMode;
+  bool get isServiceHealthy => _provider.isServiceHealthy;
   String? get errorMessage => _provider.errorMessage;
   bool get hasError => _provider.hasError;
 
@@ -93,6 +94,9 @@ class ChatViewModel extends ChangeNotifier {
 
   /// Initialize the view model
   Future<void> initialize() => _provider.initialize();
+
+  /// Check chat service health
+  Future<bool> checkServiceHealth() => _provider.checkServiceHealth();
 
   /// Send a message
   Future<void> sendMessage(String content, {AgentContextType context = AgentContextType.calendar}) =>
@@ -122,8 +126,11 @@ class ChatViewModel extends ChangeNotifier {
   /// Dismiss pending action without server call
   void dismissPendingAction() => _provider.dismissPendingAction();
 
-  /// Start a new conversation
+  /// Start a new conversation (conversation_id created on first message)
   void startNewConversation() => _provider.startNewConversation();
+
+  /// Clear conversation (local only)
+  void clearConversation() => _provider.clearConversation();
 
   /// Select a conversation from history
   Future<void> selectConversation(String conversationId) =>
@@ -133,7 +140,7 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> updateConversationTitle(String conversationId, String newTitle) =>
       _provider.updateConversationTitle(conversationId, newTitle);
 
-  /// Delete a conversation
+  /// Delete a conversation (soft delete on backend)
   Future<void> deleteConversation(String conversationId) =>
       _provider.deleteConversation(conversationId);
 

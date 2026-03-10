@@ -7,9 +7,7 @@ class ChatModeDropdown extends StatelessWidget {
   final ValueChanged<ChatMode> onModeChanged;
 
   const ChatModeDropdown({
-    super.key,
-    required this.currentMode,
-    required this.onModeChanged,
+    required this.currentMode, required this.onModeChanged, super.key,
   });
 
   bool get isAgentMode => currentMode == ChatMode.agent;

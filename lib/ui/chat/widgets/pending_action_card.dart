@@ -11,11 +11,7 @@ class PendingActionCard extends StatelessWidget {
   final bool isCancelling;
 
   const PendingActionCard({
-    super.key,
-    required this.action,
-    required this.onConfirm,
-    required this.onCancel,
-    required this.onDismiss,
+    required this.action, required this.onConfirm, required this.onCancel, required this.onDismiss, super.key,
     this.isConfirming = false,
     this.isCancelling = false,
   });

@@ -1,4 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import '../models/agent_chat_message.dart';
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
 
@@ -6,9 +7,11 @@ import '../models/chat_session.dart';
 class ChatLocalRepository {
   static const String _messagesBoxName = 'chat_messages';
   static const String _sessionsBoxName = 'chat_sessions';
+  static const String _agentMessagesBoxName = 'agent_chat_messages';
 
   Box<Map>? _messagesBox;
   Box<Map>? _sessionsBox;
+  Box<Map>? _agentMessagesBox;
   bool _isInitialized = false;
 
   /// Initialize Hive boxes for chat storage
@@ -17,6 +20,7 @@ class ChatLocalRepository {
 
     _messagesBox = await Hive.openBox<Map>(_messagesBoxName);
     _sessionsBox = await Hive.openBox<Map>(_sessionsBoxName);
+    _agentMessagesBox = await Hive.openBox<Map>(_agentMessagesBoxName);
     _isInitialized = true;
   }
 
@@ -101,17 +105,50 @@ class ChatLocalRepository {
     }
   }
 
+  /// Cache AgentChatMessage list for a conversation
+  Future<void> cacheAgentMessages(String conversationId, List<AgentChatMessage> messages) async {
+    await _ensureInitialized();
+    final data = messages.map((m) => m.toJson()).toList();
+    await _agentMessagesBox!.put(conversationId, {'messages': data});
+  }
+
+  /// Get cached AgentChatMessage list for a conversation
+  Future<List<AgentChatMessage>?> getCachedAgentMessages(String conversationId) async {
+    await _ensureInitialized();
+    final data = _agentMessagesBox!.get(conversationId);
+    if (data == null) return null;
+
+    try {
+      final messages = data['messages'] as List?;
+      if (messages == null) return null;
+
+      return messages
+          .map((m) => AgentChatMessage.fromJson(Map<String, dynamic>.from(m)))
+          .toList();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Delete cached agent messages for a conversation
+  Future<void> deleteCachedAgentMessages(String conversationId) async {
+    await _ensureInitialized();
+    await _agentMessagesBox!.delete(conversationId);
+  }
+
   /// Clear all cached chat data
   Future<void> clearCache() async {
     await _ensureInitialized();
     await _messagesBox!.clear();
     await _sessionsBox!.clear();
+    await _agentMessagesBox!.clear();
   }
 
   /// Close Hive boxes
   Future<void> close() async {
     await _messagesBox?.close();
     await _sessionsBox?.close();
+    await _agentMessagesBox?.close();
     _isInitialized = false;
   }
 }

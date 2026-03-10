@@ -8,8 +8,7 @@ class ChatMessageBubble extends StatelessWidget {
   final Widget? actionButtons;
 
   const ChatMessageBubble({
-    super.key,
-    required this.message,
+    required this.message, super.key,
     this.actionButtons,
   });
 
@@ -168,8 +167,7 @@ class ActionStatusBadge extends StatelessWidget {
   final String status;
 
   const ActionStatusBadge({
-    super.key,
-    required this.status,
+    required this.status, super.key,
   });
 
   @override
@@ -238,9 +236,7 @@ class MessageActionButtons extends StatelessWidget {
   final bool isDisabled;
 
   const MessageActionButtons({
-    super.key,
-    required this.onConfirm,
-    required this.onCancel,
+    required this.onConfirm, required this.onCancel, super.key,
     this.isConfirming = false,
     this.isCancelling = false,
     this.isDisabled = false,

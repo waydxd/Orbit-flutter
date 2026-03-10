@@ -19,9 +19,8 @@ class ChatMessageResponse {
   ChatMessageResponse({
     required this.conversationId,
     required this.reply,
-    this.proposedActionSummary,
+    required this.correlationId, this.proposedActionSummary,
     this.actionId,
-    required this.correlationId,
     this.metadata,
     this.error,
   });
@@ -69,53 +68,96 @@ class ChatError {
 /// Message model for conversation history
 /// Based on backend ConversationResponse.messages schema
 class ConversationMessage {
-  final String sender;
+  final String id;
+  final String conversationId;
+  final String? userId;
+  final String role; // 'user' or 'assistant'
   final String content;
+  final Map<String, dynamic>? metadata;
   final DateTime timestamp;
 
   ConversationMessage({
-    required this.sender,
-    required this.content,
-    required this.timestamp,
+    required this.id,
+    required this.conversationId,
+    required this.role, required this.content, required this.timestamp, this.userId,
+    this.metadata,
   });
 
   factory ConversationMessage.fromJson(Map<String, dynamic> json) {
     return ConversationMessage(
-      sender: json['sender'] ?? 'user',
+      id: json['id'] ?? '',
+      conversationId: json['conversation_id'] ?? '',
+      userId: json['user_id'],
+      role: json['role'] ?? 'user',
       content: json['content'] ?? '',
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
+      metadata: json['metadata'] as Map<String, dynamic>?,
+      timestamp: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : DateTime.now(),
     );
   }
 
-  bool get isUser => sender == 'user';
-  bool get isAssistant => sender == 'assistant';
+  bool get isUser => role == 'user';
+  bool get isAssistant => role == 'assistant';
 }
 
 /// Pending action model for conversation
 /// Based on backend ConversationResponse.pending_actions schema
 class ConversationPendingAction {
   final String actionId;
-  final String type;
-  final String status; // 'pending', 'confirmed', 'cancelled', 'expired'
+  final String? userId;
+  final String? conversationId;
+  final Map<String, dynamic>? proposedAction;
+  final String type; // action_type e.g. 'create_event'
   final String? idempotencyKey;
+  final String status; // 'pending', 'confirmed', 'cancelled', 'expired'
+  final int? version;
+  final String? correlationId;
+  final Map<String, dynamic>? agentMetadata;
+  final String? errorMessage;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? expiresAt;
   final ChatError? error;
 
   ConversationPendingAction({
     required this.actionId,
-    required this.type,
-    required this.status,
+    required this.type, required this.status, this.userId,
+    this.conversationId,
+    this.proposedAction,
     this.idempotencyKey,
+    this.version,
+    this.correlationId,
+    this.agentMetadata,
+    this.errorMessage,
+    this.createdAt,
+    this.updatedAt,
+    this.expiresAt,
     this.error,
   });
 
   factory ConversationPendingAction.fromJson(Map<String, dynamic> json) {
     return ConversationPendingAction(
       actionId: json['action_id'] ?? '',
-      type: json['type'] ?? '',
-      status: json['status'] ?? 'pending',
+      userId: json['user_id'],
+      conversationId: json['conversation_id'],
+      proposedAction: json['proposed_action'] as Map<String, dynamic>?,
+      type: json['action_type'] ?? json['type'] ?? '',
       idempotencyKey: json['idempotency_key'],
+      status: json['status'] ?? 'pending',
+      version: json['version'],
+      correlationId: json['correlation_id'],
+      agentMetadata: json['agent_metadata'] as Map<String, dynamic>?,
+      errorMessage: json['error_message'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'])
+          : null,
       error: json['error'] != null
           ? ChatError.fromJson(json['error'] as Map<String, dynamic>)
           : null,
@@ -126,6 +168,15 @@ class ConversationPendingAction {
   bool get isConfirmed => status == 'confirmed';
   bool get isCancelled => status == 'cancelled';
   bool get isExpired => status == 'expired';
+
+  /// Get proposed action title if available
+  String? get proposedTitle => proposedAction?['title'];
+
+  /// Get proposed action start time if available
+  int? get proposedStartTime => proposedAction?['start_time'];
+
+  /// Get proposed action end time if available
+  int? get proposedEndTime => proposedAction?['end_time'];
 }
 
 /// Response model for getting conversation details
@@ -133,13 +184,15 @@ class ConversationPendingAction {
 /// Based on backend ConversationResponse schema
 class ConversationDetailResponse {
   final String conversationId;
+  final String? userId;
   final List<ConversationMessage> messages;
   final List<ConversationPendingAction> pendingActions;
+  final String status;
 
   ConversationDetailResponse({
     required this.conversationId,
-    required this.messages,
-    required this.pendingActions,
+    required this.messages, required this.pendingActions, this.userId,
+    this.status = 'active',
   });
 
   factory ConversationDetailResponse.fromJson(Map<String, dynamic> json) {
@@ -148,12 +201,14 @@ class ConversationDetailResponse {
 
     return ConversationDetailResponse(
       conversationId: json['conversation_id'] ?? '',
+      userId: json['user_id'],
       messages: messagesList
           .map((m) => ConversationMessage.fromJson(Map<String, dynamic>.from(m)))
           .toList(),
       pendingActions: actionsList
           .map((a) => ConversationPendingAction.fromJson(Map<String, dynamic>.from(a)))
           .toList(),
+      status: json['status'] ?? 'active',
     );
   }
 
@@ -264,10 +319,70 @@ class ActionCancelResponse {
   }
 }
 
+/// Response model for health check
+/// GET /api/v1/chat/health
+class ChatHealthResponse {
+  final String status;
+  final String? error;
+
+  ChatHealthResponse({
+    required this.status,
+    this.error,
+  });
+
+  factory ChatHealthResponse.fromJson(Map<String, dynamic> json) {
+    return ChatHealthResponse(
+      status: json['status'] ?? 'unknown',
+      error: json['error'],
+    );
+  }
+
+  bool get isHealthy => status == 'healthy';
+}
+
+/// Response model for creating a conversation
+/// POST /api/v1/chat/conversations
+class CreateConversationResponse {
+  final String conversationId;
+  final String status;
+
+  CreateConversationResponse({
+    required this.conversationId,
+    required this.status,
+  });
+
+  factory CreateConversationResponse.fromJson(Map<String, dynamic> json) {
+    return CreateConversationResponse(
+      conversationId: json['conversation_id'] ?? '',
+      status: json['status'] ?? 'active',
+    );
+  }
+}
+
+/// Response model for deleting a conversation
+/// DELETE /api/v1/chat/conversations/{conversation_id}
+class DeleteConversationResponse {
+  final bool success;
+  final String message;
+
+  DeleteConversationResponse({
+    required this.success,
+    required this.message,
+  });
+
+  factory DeleteConversationResponse.fromJson(Map<String, dynamic> json) {
+    return DeleteConversationResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+    );
+  }
+}
+
 /// Chat metrics response
 /// GET /api/v1/chat/metrics
 /// Based on backend ChatMetrics schema
 class ChatMetrics {
+  final int paths;
   final int totalMessages;
   final int totalConversations;
   final int totalPendingActions;
@@ -287,6 +402,7 @@ class ChatMetrics {
   final double actionsPerMinute;
 
   ChatMetrics({
+    required this.paths,
     required this.totalMessages,
     required this.totalConversations,
     required this.totalPendingActions,
@@ -308,6 +424,7 @@ class ChatMetrics {
 
   factory ChatMetrics.fromJson(Map<String, dynamic> json) {
     return ChatMetrics(
+      paths: json['paths'] ?? 0,
       totalMessages: json['total_messages'] ?? 0,
       totalConversations: json['total_conversations'] ?? 0,
       totalPendingActions: json['total_pending_actions'] ?? 0,
@@ -464,8 +581,11 @@ class Conversation {
 /// Service for chat API communication with Orbit-core
 ///
 /// Implements the chat endpoints according to Orbit-core API specification (chat.yaml):
-/// - POST /api/v1/chat/messages - Send a chat message
+/// - GET /api/v1/chat/health - Check service health
+/// - POST /api/v1/chat/conversations - Create a new conversation
 /// - GET /api/v1/chat/conversations/{conversation_id} - Get conversation details
+/// - DELETE /api/v1/chat/conversations/{conversation_id} - Soft delete a conversation
+/// - POST /api/v1/chat/messages - Send a chat message
 /// - GET /api/v1/chat/actions/{action_id} - Get action details
 /// - POST /api/v1/chat/actions/{action_id}/confirm - Confirm a pending action
 /// - POST /api/v1/chat/actions/{action_id}/cancel - Cancel a pending action
@@ -474,6 +594,78 @@ class ChatApiService {
   final ApiClient _apiClient;
 
   ChatApiService(this._apiClient);
+
+  /// Check chat service health
+  ///
+  /// GET /api/v1/chat/health
+  /// Response: { status: "healthy" } or { status: "unhealthy", error: "..." }
+  Future<ChatHealthResponse> checkHealth() async {
+    try {
+      final response = await _apiClient.get('/chat/health');
+
+      if (response.statusCode == 200) {
+        return ChatHealthResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+      }
+
+      return ChatHealthResponse(status: 'unhealthy', error: 'Unexpected status: ${response.statusCode}');
+    } on DioException catch (e) {
+      // For health check, return unhealthy instead of throwing
+      Logger.warningWithTag('ChatApiService', 'Health check failed: ${e.message}');
+      return ChatHealthResponse(status: 'unhealthy', error: e.message);
+    }
+  }
+
+  /// Create a new conversation
+  ///
+  /// POST /api/v1/chat/conversations
+  /// Response (201): { conversation_id, status }
+  Future<CreateConversationResponse> createConversation() async {
+    try {
+      final response = await _apiClient.post('/chat/conversations');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return CreateConversationResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+      }
+
+      throw ApiException(
+        'Failed to create conversation',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      throw _handleDioException(e);
+    }
+  }
+
+  /// Soft delete a conversation
+  ///
+  /// DELETE /api/v1/chat/conversations/{conversation_id}
+  /// Response (200): { success, message }
+  Future<DeleteConversationResponse> deleteConversation({
+    required String conversationId,
+  }) async {
+    try {
+      final response = await _apiClient.delete(
+        '/chat/conversations/$conversationId',
+      );
+
+      if (response.statusCode == 200) {
+        return DeleteConversationResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+      }
+
+      throw ApiException(
+        'Failed to delete conversation',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      throw _handleDioException(e);
+    }
+  }
 
   /// Send a chat message
   ///

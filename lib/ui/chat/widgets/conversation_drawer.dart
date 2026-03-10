@@ -11,13 +11,7 @@ class ConversationDrawer extends StatelessWidget {
   final Function(String) onDeleteConversation;
 
   const ConversationDrawer({
-    super.key,
-    required this.conversations,
-    required this.currentConversationId,
-    required this.onNewChat,
-    required this.onSelectConversation,
-    required this.onRenameConversation,
-    required this.onDeleteConversation,
+    required this.conversations, required this.currentConversationId, required this.onNewChat, required this.onSelectConversation, required this.onRenameConversation, required this.onDeleteConversation, super.key,
   });
 
   @override
@@ -128,12 +122,7 @@ class ConversationTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   const ConversationTile({
-    super.key,
-    required this.conversation,
-    required this.isSelected,
-    required this.onTap,
-    required this.onRename,
-    required this.onDelete,
+    required this.conversation, required this.isSelected, required this.onTap, required this.onRename, required this.onDelete, super.key,
   });
 
   @override
@@ -244,9 +233,7 @@ class RenameConversationDialog extends StatelessWidget {
   final Function(String, String) onRename;
 
   const RenameConversationDialog({
-    super.key,
-    required this.conversation,
-    required this.onRename,
+    required this.conversation, required this.onRename, super.key,
   });
 
   @override
@@ -322,9 +309,7 @@ class DeleteConversationDialog extends StatelessWidget {
   final VoidCallback onDelete;
 
   const DeleteConversationDialog({
-    super.key,
-    required this.conversationId,
-    required this.onDelete,
+    required this.conversationId, required this.onDelete, super.key,
   });
 
   @override
