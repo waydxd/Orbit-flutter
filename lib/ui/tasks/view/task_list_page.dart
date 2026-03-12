@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
-import '../../calendar/widgets/floating_nav_bar.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
-import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/task_model.dart';
-import 'create_item_page.dart';
-import '../../dashboard/view/dashboard_page.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -18,19 +13,6 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   @override
-  void initState() {
-    super.initState();
-    // Fetch data from backend on load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
-      final userId = authViewModel.currentUser?.id;
-      if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F9),
@@ -39,43 +21,37 @@ class _TaskListPageState extends State<TaskListPage> {
           final pendingTasks =
               viewModel.tasks.where((t) => !t.completed).toList();
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    Expanded(
-                      child: viewModel.isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : ListView(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
+          return SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: viewModel.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          children: [
+                            const SizedBox(height: 20),
+                            _buildSummaryCard(pendingTasks),
+                            const SizedBox(height: 30),
+                            ...viewModel.tasks.map(
+                              (task) => _buildTaskItem(
+                                title: task.title,
+                                subtitle: task.description,
+                                color: _getPriorityColor(task.priority),
+                                deadline: _getDeadlineText(task.dueDate),
+                                isUrgent: task.priority == 'urgent',
                               ),
-                              children: [
-                                const SizedBox(height: 20),
-                                _buildSummaryCard(pendingTasks),
-                                const SizedBox(height: 30),
-                                ...viewModel.tasks.map(
-                                  (task) => _buildTaskItem(
-                                    title: task.title,
-                                    subtitle: task.description,
-                                    color: _getPriorityColor(task.priority),
-                                    deadline: _getDeadlineText(task.dueDate),
-                                    isUrgent: task.priority == 'urgent',
-                                  ),
-                                ),
-                                const SizedBox(height: 120), // Space for FAB
-                              ],
                             ),
-                    ),
-                  ],
+                            const SizedBox(height: 120), // Space for nav bar
+                          ],
+                        ),
                 ),
-              ),
-              // FloatingNavBar is now provided by the shared HomeShellPage.
-            ],
+              ],
+            ),
           );
         },
       ),

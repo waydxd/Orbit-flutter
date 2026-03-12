@@ -3,13 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
-import '../widgets/floating_nav_bar.dart';
-import '../../dashboard/view/dashboard_page.dart';
-import '../../tasks/view/task_list_page.dart';
-import '../../tasks/view/create_item_page.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
-import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import '../view_model/calendar_view_model.dart';
 import 'event_detail_page.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -49,15 +44,6 @@ class _CalendarPageState extends State<CalendarPage>
     final now = DateTime.now();
     _referenceDate = DateTime(now.year, now.month, now.day);
     _pageController = PageController(initialPage: _initialPage);
-
-    // Fetch data from backend
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
-      final userId = authViewModel.currentUser?.id;
-      if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
-      }
-    });
   }
 
   @override
@@ -224,10 +210,8 @@ class _CalendarPageState extends State<CalendarPage>
                   Expanded(child: _buildTaskList(viewModel)),
                 ],
               ),
-
               if (viewModel.isLoading)
                 const Center(child: CircularProgressIndicator()),
-
               if (viewModel.error != null)
                 Positioned(
                   top: topPadding + 60,

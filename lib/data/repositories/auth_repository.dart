@@ -205,4 +205,46 @@ class AuthRepository {
       return false;
     }
   }
+
+  /// Fetch the authenticated user's profile
+  Future<UserModel> getProfile() async {
+    try {
+      final response = await _apiClient.get('/profile');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        return UserModel.fromJson(data);
+      }
+
+      throw Exception('Invalid response from server');
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Failed to fetch profile: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Update the authenticated user's profile
+  Future<UserModel> updateProfile(Map<String, dynamic> payload) async {
+    try {
+      final response = await _apiClient.put('/profile', data: payload);
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        return UserModel.fromJson(data);
+      }
+
+      throw Exception('Invalid response from server');
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Failed to update profile: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
 }
