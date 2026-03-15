@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import '../../core/widgets/modern_dropdown.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/services/location_service.dart';
@@ -192,7 +193,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
   String _selectedRepeat = 'Never';
   String _selectedPriority = 'medium';
-  String _selectedTag = '';
+  String? _selectedTag;
 
   final List<Color> eventColors = [
     const Color(0xFFE0E5EC), // The planet/moon one (placeholder)
@@ -360,7 +361,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
           );
         }
 
-        final fullDescription = _selectedTag.isNotEmpty
+        final fullDescription = (_selectedTag != null && _selectedTag!.isNotEmpty)
             ? '#$_selectedTag ${_detailsController.text}'
             : _detailsController.text;
 
@@ -558,9 +559,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
         const SizedBox(height: 20),
         _buildLocationField(),
         const SizedBox(height: 20),
-        _buildDropdownField('Repeat', _selectedRepeat, (val) {
-          setState(() => _selectedRepeat = val!);
-        }, ['Never', 'Daily', 'Weekly', 'Monthly']),
+        ModernDropdownField<String>(
+          label: 'Repeat',
+          icon: Icons.repeat_rounded,
+          value: _selectedRepeat,
+          displayStringForValue: (val) => val,
+          items: const ['Never', 'Daily', 'Weekly', 'Monthly'],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedRepeat = val);
+          },
+        ),
         const SizedBox(height: 20),
         _buildDetailsField(_detailsController),
         const SizedBox(height: 20),
@@ -590,19 +598,28 @@ class _CreateItemPageState extends State<CreateItemPage> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildDropdownField(
-          '# Tag',
-          _selectedTag,
-          (val) {
-            setState(() => _selectedTag = val!);
+        ModernDropdownField<String>(
+          label: 'Tag',
+          icon: Icons.label_outline_rounded,
+          value: _selectedTag,
+          displayStringForValue: (val) => '# $val',
+          items: const ['Health', 'Work', 'Study', 'FYP'],
+          onChanged: (val) {
+            setState(() => _selectedTag = val);
           },
-          ['', 'Health', 'Work', 'Study', 'FYP'],
-          isTag: true,
         ),
         const SizedBox(height: 20),
-        _buildDropdownField('Priority', _selectedPriority, (val) {
-          setState(() => _selectedPriority = val!);
-        }, ['low', 'medium', 'high', 'urgent']),
+        ModernDropdownField<String>(
+          label: 'Priority',
+          icon: Icons.flag_outlined,
+          value: _selectedPriority,
+          displayStringForValue: (val) =>
+              val[0].toUpperCase() + val.substring(1),
+          items: const ['low', 'medium', 'high', 'urgent'],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedPriority = val);
+          },
+        ),
         const SizedBox(height: 20),
         _buildDetailsField(_detailsController),
       ],
@@ -744,47 +761,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
-  Widget _buildDropdownField(
-    String label,
-    String value,
-    void Function(String?) onChanged,
-    List<String> items, {
-    bool isTag = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      decoration: _fieldDecoration(),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            isTag ? '# Tag' : label,
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              icon: Icon(
-                Icons.unfold_more_rounded,
-                color: Colors.cyan.shade300,
-                size: 20,
-              ),
-              onChanged: onChanged,
-              items: items.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(
-                    value.isEmpty && isTag ? 'None' : value,
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildDetailsField(TextEditingController controller) {
     return Container(

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/widgets/modern_dropdown.dart';
 import '../../../utils/constants.dart';
 
 class ProfileRegistrationPage extends StatefulWidget {
@@ -284,25 +285,16 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                               label: 'Last name',
                             ),
                             const SizedBox(height: Constants.spacingM),
-                            DropdownButtonFormField<String>(
-                              key: ValueKey(_selectedGender ?? ''),
-                              initialValue: _selectedGender ?? '',
-                              decoration: _inputDecoration(label: 'Gender'),
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: '',
-                                  child: Text('Not set'),
-                                ),
-                                ..._genderLabels.entries.map(
-                                  (entry) => DropdownMenuItem<String>(
-                                    value: entry.key,
-                                    child: Text(entry.value),
-                                  ),
-                                ),
-                              ],
+                            ModernDropdownField<String>(
+                              label: 'Gender',
+                              icon: Icons.person_outline_rounded,
+                              value: _selectedGender,
+                              displayStringForValue: (key) =>
+                                  _genderLabels[key] ?? key,
+                              items: _genderLabels.keys.toList(),
                               onChanged: (value) {
                                 setState(() {
-                                  _selectedGender = value == '' ? null : value;
+                                  _selectedGender = value;
                                 });
                               },
                             ),
@@ -461,63 +453,88 @@ class _BirthDateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayValue = birthDate == null
-        ? 'Birth date'
-        : DateFormat('yyyy/MM/dd').format(birthDate!);
+    final hasValue = birthDate != null;
+    final displayText =
+        hasValue ? DateFormat('MMM d, yyyy').format(birthDate!) : 'Birth date';
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPickDate,
-        borderRadius: BorderRadius.circular(Constants.radiusL),
-        child: Container(
-          width: double.infinity,
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: Constants.spacingM),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(Constants.radiusL),
+    return GestureDetector(
+      onTap: onPickDate,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasValue
+                ? AppColors.primary.withValues(alpha: 0.18)
+                : Colors.transparent,
+            width: 1.5,
           ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_rounded,
-                color: AppColors.textSecondary,
-                size: 20,
-              ),
-              const SizedBox(width: Constants.spacingS),
-              Expanded(
-                child: Text(
-                  displayValue,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: birthDate == null
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
-                        fontWeight:
-                            birthDate == null ? FontWeight.w400 : FontWeight.w600,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.cake_outlined,
+              color: hasValue ? AppColors.primary : AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hasValue) ...[
+                    const Text(
+                      'Birth date',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
                       ),
-                ),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  Text(
+                    displayText,
+                    style: TextStyle(
+                      color:
+                          hasValue ? AppColors.textPrimary : AppColors.grey400,
+                      fontSize: hasValue ? 14 : 15,
+                      fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
-              if (onClear != null)
-                IconButton(
-                  onPressed: onClear,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 18,
-                  icon: const Icon(
+            ),
+            if (onClear != null)
+              GestureDetector(
+                onTap: onClear,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: const BoxDecoration(
+                    color: AppColors.grey100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
                     Icons.close_rounded,
                     color: AppColors.grey400,
-                    size: 20,
+                    size: 16,
                   ),
-                )
-              else
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey400,
-                  size: 22,
                 ),
-            ],
-          ),
+              )
+            else
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.grey400,
+                size: 22,
+              ),
+          ],
         ),
       ),
     );

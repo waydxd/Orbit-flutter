@@ -1,10 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/widgets/modern_dropdown.dart';
 import '../../../data/models/user_model.dart';
+import '../../../utils/region_timezone_data.dart';
 import '../../../utils/validators.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -19,11 +22,11 @@ class _ProfilePageState extends State<ProfilePage> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _usernameController = TextEditingController();
-  final _regionController = TextEditingController();
-  final _timezoneController = TextEditingController();
 
   DateTime? _birthDate;
   String? _selectedGender;
+  String? _selectedRegion;
+  String? _selectedTimezone;
   String? _lastSyncedSignature;
 
   static const Map<String, String> _genderLabels = {
@@ -47,8 +50,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _usernameController.dispose();
-    _regionController.dispose();
-    _timezoneController.dispose();
     super.dispose();
   }
 
@@ -61,8 +62,8 @@ class _ProfilePageState extends State<ProfilePage> {
     _firstNameController.text = user.firstName ?? '';
     _lastNameController.text = user.lastName ?? '';
     _usernameController.text = user.username ?? '';
-    _regionController.text = user.region ?? '';
-    _timezoneController.text = user.timezone ?? '';
+    _selectedRegion = user.region;
+    _selectedTimezone = user.timezone;
     _selectedGender = user.gender;
     _birthDate = user.birthDate;
     _lastSyncedSignature = signature;
@@ -85,11 +86,87 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _pickBirthDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final initialDate = _birthDate ?? DateTime(now.year - 20);
+    DateTime tempDate = initialDate;
+
+    final picked = await showModalBottomSheet<DateTime>(
       context: context,
-      initialDate: _birthDate ?? DateTime(now.year - 20),
-      firstDate: DateTime(now.year - 150),
-      lastDate: DateTime(now.year - 13),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Select birthday',
+                          textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(tempDate),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 220,
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.date,
+                      initialDateTime: initialDate,
+                      minimumDate: DateTime(now.year - 150),
+                      maximumDate: DateTime(now.year - 13),
+                      use24hFormat: true,
+                      onDateTimeChanged: (value) {
+                        tempDate = value;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
 
     if (picked != null) {
@@ -107,8 +184,8 @@ class _ProfilePageState extends State<ProfilePage> {
       firstName: _firstNameController.text,
       lastName: _lastNameController.text,
       username: _usernameController.text,
-      region: _regionController.text,
-      timezone: _timezoneController.text,
+      region: _selectedRegion ?? '',
+      timezone: _selectedTimezone ?? '',
       gender: _selectedGender ?? '',
       birthDate: _birthDate,
     );
@@ -230,39 +307,51 @@ class _ProfilePageState extends State<ProfilePage> {
                                   title: 'Preferences',
                                   child: Column(
                                     children: [
-                                      _buildTextField(
-                                        controller: _regionController,
+                                      ModernDropdownField<String>(
                                         label: 'Region',
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _buildTextField(
-                                        controller: _timezoneController,
-                                        label: 'Timezone',
-                                        hintText: 'e.g. Asia/Hong_Kong',
-                                      ),
-                                      const SizedBox(height: 14),
-                                      DropdownButtonFormField<String>(
-                                        key: ValueKey(_selectedGender ?? ''),
-                                        initialValue: _selectedGender ?? '',
-                                        decoration: _inputDecoration(
-                                          label: 'Gender',
-                                        ),
-                                        items: [
-                                          const DropdownMenuItem<String>(
-                                            value: '',
-                                            child: Text('Not set'),
-                                          ),
-                                          ..._genderLabels.entries.map(
-                                            (entry) => DropdownMenuItem<String>(
-                                              value: entry.key,
-                                              child: Text(entry.value),
-                                            ),
-                                          ),
-                                        ],
+                                        icon: Icons.public_rounded,
+                                        value: _selectedRegion,
+                                        searchable: true,
+                                        searchHint: 'Search countries...',
+                                        displayStringForValue: (code) =>
+                                            RegionTimezoneData
+                                                .regionDisplayName(code),
+                                        items: RegionTimezoneData.regions.keys
+                                            .toList(),
                                         onChanged: (value) {
                                           setState(() {
-                                            _selectedGender =
-                                                value == '' ? null : value;
+                                            _selectedRegion = value;
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(height: 14),
+                                      ModernDropdownField<String>(
+                                        label: 'Timezone',
+                                        icon: Icons.schedule_rounded,
+                                        value: _selectedTimezone,
+                                        searchable: true,
+                                        searchHint: 'Search timezones...',
+                                        displayStringForValue: (tz) =>
+                                            RegionTimezoneData
+                                                .timezoneDisplayName(tz),
+                                        items: RegionTimezoneData.timezones,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedTimezone = value;
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(height: 14),
+                                      ModernDropdownField<String>(
+                                        label: 'Gender',
+                                        icon: Icons.person_outline_rounded,
+                                        value: _selectedGender,
+                                        displayStringForValue: (key) =>
+                                            _genderLabels[key] ?? key,
+                                        items: _genderLabels.keys.toList(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedGender = value;
                                           });
                                         },
                                       ),
@@ -533,55 +622,88 @@ class _BirthDateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final value = birthDate == null
-        ? 'Not set'
-        : DateFormat('MMM d, yyyy').format(birthDate!);
+    final hasValue = birthDate != null;
+    final displayText =
+        hasValue ? DateFormat('MMM d, yyyy').format(birthDate!) : 'Birth date';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Birth date',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+    return GestureDetector(
+      onTap: onPickDate,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasValue
+                ? AppColors.primary.withValues(alpha: 0.18)
+                : Colors.transparent,
+            width: 1.5,
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onPickDate,
-                  child: const Text('Choose date'),
-                ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.cake_outlined,
+              color: hasValue ? AppColors.primary : AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hasValue) ...[
+                    const Text(
+                      'Birth date',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  Text(
+                    displayText,
+                    style: TextStyle(
+                      color: hasValue ? AppColors.textPrimary : AppColors.grey400,
+                      fontSize: hasValue ? 14 : 15,
+                      fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
-              if (onClear != null) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextButton(
-                    onPressed: onClear,
-                    child: const Text('Clear'),
+            ),
+            if (onClear != null)
+              GestureDetector(
+                onTap: onClear,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.grey100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.grey400,
+                    size: 16,
                   ),
                 ),
-              ],
-            ],
-          ),
-        ],
+              )
+            else
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.grey400,
+                size: 22,
+              ),
+          ],
+        ),
       ),
     );
   }
