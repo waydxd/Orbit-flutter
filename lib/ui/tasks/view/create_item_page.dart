@@ -419,7 +419,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
             hashtags: List<String>.from(_selectedTags),
             updatedAt: DateTime.now(),
           );
-          // TODO await viewModel.updateTask(task);
+          await viewModel.updateTask(task);
         } else {
           final task = TaskModel(
             id: uuid.v4(),
