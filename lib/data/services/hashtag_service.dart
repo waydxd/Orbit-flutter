@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
 import '../../utils/logger.dart';
-import 'local_storage_service.dart';
+import 'api_client.dart';
 import '../models/hashtag_prediction.dart';
 
 /// Custom exception for authentication errors
@@ -18,54 +18,10 @@ class HashtagService {
   // Remote hashtag service endpoint
   static final String _baseUrl = '${EnvironmentConfig.baseUrl}/api/hashtag';
 
-  late final Dio _dio;
+  final ApiClient _apiClient;
 
-  HashtagService() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: AppConfig.networkTimeout,
-        receiveTimeout: AppConfig.networkTimeout,
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-
-    // Add logging interceptor
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          Logger.infoWithTag(
-            'HashtagService',
-            'Request: ${options.method} ${options.uri}',
-          );
-          return handler.next(options);
-        },
-        onResponse: (response, handler) {
-          Logger.infoWithTag(
-            'HashtagService',
-            'Response: ${response.statusCode}',
-          );
-          return handler.next(response);
-        },
-        onError: (error, handler) {
-          Logger.errorWithTag(
-            'HashtagService',
-            'Request failed: ${error.message}',
-          );
-          return handler.next(error);
-        },
-      ),
-    );
-  }
-
-  /// Get authorization headers with token
-  Future<Map<String, String>> _getAuthHeaders() async {
-    final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey);
-    if (token != null) {
-      return {'Authorization': 'Bearer $token'};
-    }
-    return {};
-  }
+  HashtagService({ApiClient? apiClient})
+      : _apiClient = apiClient ?? ApiClient();
 
   /// Predict hashtags for given event text
   ///
@@ -85,21 +41,23 @@ class HashtagService {
         'Predicting hashtags for: $eventText',
       );
 
-      final headers = await _getAuthHeaders();
-
-      final response = await _dio.post(
-        '/predict',
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '$_baseUrl/predict',
         data: {
           'event_text': eventText,
           'use_bart': useBart,
           'alpha': alpha,
           'threshold': threshold,
         },
-        options: Options(headers: headers),
       );
 
       if (response.statusCode == 200) {
-        final prediction = HashtagPrediction.fromJson(response.data);
+        final data = response.data;
+        if (data == null) {
+          throw Exception('Invalid response from hashtag service');
+        }
+
+        final prediction = HashtagPrediction.fromJson(data);
 
         Logger.infoWithTag(
           'HashtagService',
@@ -142,10 +100,8 @@ class HashtagService {
         'Submitting feedback: ${selectedHashtags.length} hashtags',
       );
 
-      final headers = await _getAuthHeaders();
-
-      final response = await _dio.post(
-        '/collect',
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '$_baseUrl/collect',
         data: {
           'user_id': userId,
           'event_text': eventText,
@@ -153,13 +109,13 @@ class HashtagService {
           'timestamp': DateTime.now().toUtc().toIso8601String(),
           'source': 'orbit-flutter',
         },
-        options: Options(headers: headers),
       );
 
       if (response.statusCode == 200) {
+        final data = response.data ?? <String, dynamic>{};
         Logger.infoWithTag(
           'HashtagService',
-          'Feedback submitted: ${response.data['message'] ?? 'success'}',
+          'Feedback submitted: ${data['message'] ?? 'success'}',
         );
       } else if (response.statusCode == 401) {
         throw AuthenticationException('Token expired or invalid');
@@ -179,10 +135,12 @@ class HashtagService {
   /// Check service health
   Future<bool> checkHealth() async {
     try {
-      final response = await _dio.get('/health');
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '$_baseUrl/health',
+      );
 
       if (response.statusCode == 200) {
-        final data = response.data;
+        final data = response.data ?? <String, dynamic>{};
         Logger.infoWithTag(
           'HashtagService',
           'Health: ${data['status']}, Model: ${data['model_version']}, F1: ${data['f1_score']}',
@@ -204,6 +162,6 @@ class HashtagService {
 
   /// Close connections (no-op for HTTP, kept for API compatibility)
   Future<void> dispose() async {
-    _dio.close();
+    _apiClient.close();
   }
 }
