@@ -47,8 +47,6 @@ dependencies:
   dio: ^5.7.0
   connectivity_plus: ^7.0.0
   http: ^1.2.2
-  grpc: ^5.1.0
-  protobuf: ^6.0.0
 
   # UI & Design
   google_fonts: ^8.0.0
