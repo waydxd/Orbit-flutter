@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../config/app_config.dart';
+import '../../config/environment.dart';
 import '../../utils/logger.dart';
 import 'api_client.dart';
 import '../models/hashtag_prediction.dart';
