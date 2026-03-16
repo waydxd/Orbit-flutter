@@ -16,7 +16,7 @@ class AuthenticationException implements Exception {
 /// Service for hashtag prediction via HTTP REST API
 class HashtagService {
   // Remote hashtag service endpoint
-  static const String _baseUrl = '${AppConfig.baseUrl}/api/hashtag';
+  static final String _baseUrl = '${EnvironmentConfig.baseUrl}/api/hashtag';
 
   late final Dio _dio;
 
