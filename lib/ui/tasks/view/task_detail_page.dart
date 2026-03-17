@@ -6,7 +6,7 @@ import '../../core/themes/app_colors.dart';
 class TaskDetailPage extends StatelessWidget {
   final TaskModel task;
 
-  const TaskDetailPage({super.key, required this.task});
+  const TaskDetailPage({required this.task, super.key});
 
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {

@@ -212,7 +212,7 @@ class EventDetailPage extends StatelessWidget {
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: AppColors.textSecondary,
@@ -292,7 +292,7 @@ class EventDetailPage extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
@@ -328,7 +328,7 @@ class EventDetailPage extends StatelessWidget {
     }
     final hours = minutes ~/ 60;
     final mins = minutes % 60;
-    return mins > 0 ? '($hours hr ${mins} min)' : '($hours hr)';
+    return mins > 0 ? '($hours hr $mins min)' : '($hours hr)';
   }
 
   Future<void> _handleDelete(BuildContext context) async {

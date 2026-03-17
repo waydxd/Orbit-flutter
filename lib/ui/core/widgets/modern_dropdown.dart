@@ -14,13 +14,13 @@ class ModernDropdownField<T> extends StatelessWidget {
   final String? searchHint;
 
   const ModernDropdownField({
-    super.key,
     required this.label,
-    this.icon,
     required this.value,
     required this.displayStringForValue,
     required this.items,
     required this.onChanged,
+    super.key,
+    this.icon,
     this.placeholder,
     this.searchable = false,
     this.searchHint,
@@ -240,7 +240,7 @@ class _SelectorSheetState<T> extends State<_SelectorSheet<T>> {
                   style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
                     hintText: widget.searchHint,
-                    hintStyle: TextStyle(
+                    hintStyle: const TextStyle(
                       color: AppColors.grey400,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -259,8 +259,8 @@ class _SelectorSheetState<T> extends State<_SelectorSheet<T>> {
           Divider(height: 1, color: AppColors.grey200.withValues(alpha: 0.6)),
           Flexible(
             child: _filteredItems.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(32),
+                ? const Padding(
+                    padding: EdgeInsets.all(32),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -269,7 +269,7 @@ class _SelectorSheetState<T> extends State<_SelectorSheet<T>> {
                           color: AppColors.grey300,
                           size: 40,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           'No results found',
                           style: TextStyle(
@@ -331,7 +331,7 @@ class _SelectorSheetState<T> extends State<_SelectorSheet<T>> {
                                     Container(
                                       width: 24,
                                       height: 24,
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         color: AppColors.primary,
                                         shape: BoxShape.circle,
                                       ),

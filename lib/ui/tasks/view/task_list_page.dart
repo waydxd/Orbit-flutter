@@ -51,8 +51,8 @@ class _TaskListPageState extends State<TaskListPage> {
                               onReorder: (oldIndex, newIndex) {
                                 // Adjust indices since index 0 is summary card
                                 if (oldIndex == 0 || newIndex == 0) return;
-                                int oldTaskIndex = oldIndex - 1;
-                                int newTaskIndex = newIndex - 1;
+                                final int oldTaskIndex = oldIndex - 1;
+                                final int newTaskIndex = newIndex - 1;
 
                                 // Call view model reorder on the full tasks list
                                 // Need to find original indices in viewModel.tasks
@@ -355,9 +355,9 @@ class TaskItemWidget extends StatefulWidget {
   final Color color;
 
   const TaskItemWidget({
-    super.key,
     required this.task,
     required this.color,
+    super.key,
   });
 
   @override
@@ -452,7 +452,7 @@ class _TaskItemWidgetState extends State<TaskItemWidget> {
 
     return Container(
       height: 70,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         // Removed border radius and box shadow here since it's now handled by the parent container
       ),

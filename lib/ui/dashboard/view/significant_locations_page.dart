@@ -462,10 +462,11 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                 onTap: () {
                   _searchController.clear();
                 },
-                child: Icon(Icons.close, size: 18, color: AppColors.grey400),
+                child:
+                    const Icon(Icons.close, size: 18, color: AppColors.grey400),
               )
             else
-              Icon(Icons.search, size: 20, color: AppColors.grey400),
+              const Icon(Icons.search, size: 20, color: AppColors.grey400),
           ],
         ),
       ),
@@ -667,13 +668,13 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   }
 
   Widget _buildNoSearchResultsState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.search_off, size: 48, color: AppColors.grey400),
-          const SizedBox(height: 12),
-          const Text(
+          Icon(Icons.search_off, size: 48, color: AppColors.grey400),
+          SizedBox(height: 12),
+          Text(
             'No locations match your search',
             style: TextStyle(
               fontSize: 16,
@@ -681,7 +682,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             'Try a different search term',
             style: TextStyle(fontSize: 14, color: AppColors.textTertiary),

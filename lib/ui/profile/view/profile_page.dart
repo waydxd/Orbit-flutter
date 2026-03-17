@@ -688,7 +688,7 @@ class _BirthDateField extends StatelessWidget {
                 child: Container(
                   width: 28,
                   height: 28,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.grey100,
                     shape: BoxShape.circle,
                   ),
@@ -700,7 +700,7 @@ class _BirthDateField extends StatelessWidget {
                 ),
               )
             else
-              Icon(
+              const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: AppColors.grey400,
                 size: 22,

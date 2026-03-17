@@ -10,8 +10,8 @@ class SignificantLocationCard extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   const SignificantLocationCard({
-    super.key,
     required this.stayPoint,
+    super.key,
     this.isSelected = false,
     this.onTap,
     this.onLongPress,
