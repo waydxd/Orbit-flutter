@@ -50,6 +50,7 @@ class _AiChatPageState extends State<AiChatPage> {
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(_onFocusChange);
     _initializeChat();
   }
 
@@ -93,11 +94,16 @@ class _AiChatPageState extends State<AiChatPage> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
     _chatProvider.dispose();
     super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {});
   }
 
   void _scrollToBottom() {
@@ -201,7 +207,7 @@ class _AiChatPageState extends State<AiChatPage> {
           return Scaffold(
             key: _scaffoldKey,
             backgroundColor: Colors.white,
-            drawer: ConversationDrawer(
+            endDrawer: ConversationDrawer(
               conversations: provider.conversations,
               currentConversationId: provider.currentConversationId,
               onNewChat: () {
@@ -235,12 +241,6 @@ class _AiChatPageState extends State<AiChatPage> {
                       isConfirming: provider.isConfirmingAction,
                       isCancelling: provider.isCancellingAction,
                     ),
-                  // Loading indicator
-                  if (provider.isLoading)
-                    const LinearProgressIndicator(
-                      color: Color(0xFF6366F1),
-                      backgroundColor: Color(0xFFE0E7FF),
-                    ),
                   _buildInputSection(provider.isLoading || provider.isProcessingAction),
                 ],
               ),
@@ -267,27 +267,10 @@ class _AiChatPageState extends State<AiChatPage> {
           // Left side buttons
           Row(
             children: [
-              if (hasMessages)
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF6366F1), size: 28),
-                  onPressed: () {
-                    _messageController.clear();
-                    _chatProvider.clearConversation();
-                  },
-                  tooltip: 'Back to Welcome',
-                )
-              else
-                IconButton(
+              IconButton(
                   icon: const Icon(Icons.close, color: Color(0xFF6366F1), size: 28),
                   onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Close Chat',
-                ),
-              if (_isInitialized)
-                IconButton(
-                  icon: const Icon(Icons.history, color: Color(0xFF6366F1), size: 28),
-                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  tooltip: 'Chat History',
-                ),
+                  tooltip: 'Close Chat'),
             ],
           ),
           // Center - Editable conversation title
@@ -326,18 +309,13 @@ class _AiChatPageState extends State<AiChatPage> {
             )
           else
             const Expanded(child: SizedBox()),
-          // Right side - New chat button
-          if (hasMessages)
+          // Right side button
+          if (_isInitialized)
             IconButton(
-              icon: const Icon(Icons.add, color: Color(0xFF6366F1), size: 28),
-              onPressed: () {
-                _messageController.clear();
-                _chatProvider.startNewConversation();
-              },
-              tooltip: 'New Chat',
-            )
-          else
-            const SizedBox(width: 48),
+              icon: const Icon(Icons.history, color: Color(0xFF6366F1), size: 28),
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+              tooltip: 'Chat History',
+            ),
         ],
       ),
     );
@@ -495,75 +473,67 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   Widget _buildInputSection(bool isLoading) {
+    final isFocused = _focusNode.hasFocus;
     return Padding(
       padding: const EdgeInsets.fromLTRB(25, 0, 25, 25),
-      child: Row(
-        children: [
-          // Chat mode dropdown
-          ChatModeDropdown(
-            currentMode: _chatProvider.chatMode,
-            onModeChanged: (mode) {
-              _chatProvider.setChatMode(mode);
-              setState(() {});
-            },
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(27),
+          border: Border.all(
+            color: isFocused ? const Color(0xFF6366F1) : const Color(0xFFE0E7FF),
+            width: 1.5,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              height: 54,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE0E7FF), width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _messageController,
-                        focusNode: _focusNode,
-                        enabled: !isLoading,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: _chatProvider.isAgentMode
-                              ? 'Create an event...'
-                              : 'Ask me anything...',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFFB0B5C3),
-                            fontSize: 15,
-                          ),
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: isLoading ? null : (_) => _sendMessage(),
-                      ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 20, right: 10),
+                child: TextField(
+                  controller: _messageController,
+                  focusNode: _focusNode,
+                  enabled: !isLoading,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    hintText: 'Ask me anything...',
+                    hintStyle: TextStyle(
+                      color: Color(0xFFB0B5C3),
+                      fontSize: 15,
                     ),
                   ),
-                ],
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: isLoading ? null : (_) => _sendMessage(),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 15),
-          GestureDetector(
-            onTap: isLoading ? null : () => _sendMessage(),
-            child: Container(
-              width: 45,
-              height: 45,
-              decoration: BoxDecoration(
-                color: isLoading
-                    ? const Color(0xFFE0E7FF)
-                    : const Color(0xFF6366F1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.send_rounded,
-                color: isLoading ? const Color(0xFF6366F1) : Colors.white,
-                size: 20,
+            Padding(
+              padding: const EdgeInsets.only(right: 5),
+              child: GestureDetector(
+                onTap: isLoading ? null : () => _sendMessage(),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  color: Colors.transparent,
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: isLoading
+                        ? const Color(0xFFE0E7FF)
+                        : const Color(0xFF6366F1),
+                    size: 24,
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -759,7 +759,7 @@ class ChatApiService {
   /// Confirm a pending action
   ///
   /// POST /api/v1/chat/actions/{action_id}/confirm
-  /// Request (ConfirmActionRequest): { action_id }
+  /// Request (ConfirmActionRequest): { idempotency_key? }
   /// Response (ConfirmActionResponse): { success, message, result?, operation_id? }
   Future<ActionConfirmResponse> confirmAction({
     required String actionId,
@@ -769,7 +769,6 @@ class ChatApiService {
       final response = await _apiClient.post(
         '/chat/actions/$actionId/confirm',
         data: {
-          'action_id': actionId,
           if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
         },
       );

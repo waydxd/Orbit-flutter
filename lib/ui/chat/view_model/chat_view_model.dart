@@ -79,9 +79,6 @@ class ChatViewModel extends ChangeNotifier {
   String? get errorMessage => _provider.errorMessage;
   bool get hasError => _provider.hasError;
 
-  // Chat mode
-  ChatMode get chatMode => _provider.chatMode;
-  bool get isAgentMode => _provider.isAgentMode;
 
   // Pending actions
   PendingActionInfo? get currentPendingAction => _provider.currentPendingAction;
@@ -105,9 +102,6 @@ class ChatViewModel extends ChangeNotifier {
   /// Load chat history for a conversation
   Future<void> loadChatHistory(String conversationId) =>
       _provider.loadChatHistory(conversationId);
-
-  /// Set chat mode (Ask vs Agent)
-  void setChatMode(ChatMode mode) => _provider.setChatMode(mode);
 
   /// Confirm the current pending action
   Future<void> confirmPendingAction() => _provider.confirmPendingAction();

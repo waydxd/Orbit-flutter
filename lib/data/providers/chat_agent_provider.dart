@@ -11,31 +11,7 @@ import '../../utils/logger.dart';
 
 export '../models/chat_session.dart';
 
-/// Chat mode enum for Ask mode and Agent mode
-enum ChatMode {
-  ask,   // Normal conversation mode
-  agent, // Agent mode that allows creating calendar events
-}
 
-extension ChatModeExtension on ChatMode {
-  String get displayName {
-    switch (this) {
-      case ChatMode.ask:
-        return 'Ask Mode';
-      case ChatMode.agent:
-        return 'Agent Mode';
-    }
-  }
-
-  String get description {
-    switch (this) {
-      case ChatMode.ask:
-        return 'Normal conversation';
-      case ChatMode.agent:
-        return 'Create calendar events';
-    }
-  }
-}
 
 /// Pending action info for UI display
 class PendingActionInfo {
@@ -66,9 +42,6 @@ class ChatAgentState {
   final String? errorMessage;
   final ApiException? lastError;
 
-  // Chat mode support
-  final ChatMode chatMode;
-
   // Pending action support
   final PendingActionInfo? currentPendingAction;
   final bool isConfirmingAction;
@@ -84,7 +57,6 @@ class ChatAgentState {
     this.isServiceHealthy = true,
     this.errorMessage,
     this.lastError,
-    this.chatMode = ChatMode.ask,
     this.currentPendingAction,
     this.isConfirmingAction = false,
     this.isCancellingAction = false,
@@ -100,7 +72,6 @@ class ChatAgentState {
     bool? isServiceHealthy,
     String? errorMessage,
     ApiException? lastError,
-    ChatMode? chatMode,
     PendingActionInfo? currentPendingAction,
     bool? isConfirmingAction,
     bool? isCancellingAction,
@@ -118,7 +89,6 @@ class ChatAgentState {
       isServiceHealthy: isServiceHealthy ?? this.isServiceHealthy,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       lastError: clearError ? null : (lastError ?? this.lastError),
-      chatMode: chatMode ?? this.chatMode,
       currentPendingAction: clearPendingAction ? null : (currentPendingAction ?? this.currentPendingAction),
       isConfirmingAction: isConfirmingAction ?? this.isConfirmingAction,
       isCancellingAction: isCancellingAction ?? this.isCancellingAction,
@@ -132,7 +102,6 @@ class ChatAgentState {
   bool get canRetry => lastError is NetworkException || lastError is ServerException;
   bool get hasPendingAction => currentPendingAction != null && currentPendingAction!.isPending;
   bool get isProcessingAction => isConfirmingAction || isCancellingAction;
-  bool get isAgentMode => chatMode == ChatMode.agent;
 }
 
 /// Provider for chat with AI agent functionality
@@ -166,9 +135,6 @@ class ChatAgentProvider extends ChangeNotifier {
   String? get errorMessage => _state.errorMessage;
   bool get hasError => _state.hasError;
 
-  // Chat mode getters
-  ChatMode get chatMode => _state.chatMode;
-  bool get isAgentMode => _state.isAgentMode;
 
   // Pending action getters
   PendingActionInfo? get currentPendingAction => _state.currentPendingAction;
@@ -465,8 +431,8 @@ class ChatAgentProvider extends ChangeNotifier {
           .toList();
 
       if (assistantReply.isNotEmpty) {
-        // In agent mode, attach action info to the message if there's a proposed action
-        if (_state.isAgentMode && result.hasProposedAction && result.actionId != null) {
+        // Attach action info to the message if there's a proposed action
+        if (result.hasProposedAction && result.actionId != null) {
           updatedMessages.add(AgentChatMessage.agentWithAction(
             id: result.messageId,
             conversationId: conversationId,
@@ -774,13 +740,6 @@ class ChatAgentProvider extends ChangeNotifier {
     }
   }
 
-  /// Set the chat mode
-  void setChatMode(ChatMode mode) {
-    if (_state.chatMode != mode) {
-      _updateState(_state.copyWith(chatMode: mode));
-      Logger.infoWithTag('ChatAgentProvider', 'Chat mode changed to: ${mode.displayName}');
-    }
-  }
 
   /// Update conversation title
   Future<void> updateConversationTitle(String conversationId, String newTitle) async {
