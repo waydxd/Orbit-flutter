@@ -65,6 +65,7 @@ class _TaskListPageState extends State<TaskListPage> {
                                     color: _getPriorityColor(task.priority),
                                     deadline: _getDeadlineText(task.dueDate),
                                     isUrgent: task.priority == 'urgent',
+                                    hashtags: task.hashtags,
                                   ),
                                 ),
                                 const SizedBox(height: 120), // Space for FAB
@@ -288,10 +289,11 @@ class _TaskListPageState extends State<TaskListPage> {
     String? subtitle,
     String? deadline,
     bool isUrgent = false,
+    List<String> hashtags = const [],
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      height: 70,
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -300,7 +302,7 @@ class _TaskListPageState extends State<TaskListPage> {
         children: [
           Container(
             width: 8,
-            height: double.infinity,
+            height: 50,
             decoration: BoxDecoration(
               color: color,
               borderRadius: const BorderRadius.only(
@@ -332,7 +334,7 @@ class _TaskListPageState extends State<TaskListPage> {
                     color: AppColors.black,
                   ),
                 ),
-                if (subtitle != null)
+                if (subtitle != null && subtitle.isNotEmpty)
                   Text(
                     subtitle,
                     style: const TextStyle(
@@ -340,7 +342,36 @@ class _TaskListPageState extends State<TaskListPage> {
                       color: AppColors.grey400,
                       fontWeight: FontWeight.w500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                if (hashtags.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: hashtags.map((tag) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '#$tag',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF6366F1),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ],
             ),
           ),

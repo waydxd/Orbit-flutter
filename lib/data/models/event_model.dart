@@ -8,6 +8,7 @@ class EventModel extends BaseModel {
   final DateTime startTime;
   final DateTime endTime;
   final String location;
+  final List<String> hashtags;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +22,7 @@ class EventModel extends BaseModel {
     required this.location,
     required this.createdAt,
     required this.updatedAt,
+    this.hashtags = const [],
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,9 @@ class EventModel extends BaseModel {
       startTime: DateTime.parse(json['start_time'] as String).toLocal(),
       endTime: DateTime.parse(json['end_time'] as String).toLocal(),
       location: json['location'] as String? ?? '',
+      hashtags: json['hashtags'] != null
+          ? List<String>.from(json['hashtags'] as List)
+          : const [],
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
@@ -47,6 +52,7 @@ class EventModel extends BaseModel {
       'start_time': startTime.toUtc().toIso8601String(),
       'end_time': endTime.toUtc().toIso8601String(),
       'location': location,
+      'hashtags': hashtags,
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
     };
@@ -61,6 +67,7 @@ class EventModel extends BaseModel {
         startTime,
         endTime,
         location,
+        hashtags,
         createdAt,
         updatedAt,
       ];
@@ -73,6 +80,7 @@ class EventModel extends BaseModel {
     DateTime? startTime,
     DateTime? endTime,
     String? location,
+    List<String>? hashtags,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -84,6 +92,7 @@ class EventModel extends BaseModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
+      hashtags: hashtags ?? this.hashtags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
