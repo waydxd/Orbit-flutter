@@ -168,6 +168,10 @@ class EventDetailPage extends StatelessWidget {
                     subtitle: event.location,
                   ),
                 ],
+                if (event.hashtags.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  _buildTagsSection(event.hashtags),
+                ],
                 if (event.description.isNotEmpty) ...[
                   const SizedBox(height: 32),
                   _buildListItem(
@@ -258,6 +262,62 @@ class EventDetailPage extends StatelessWidget {
                     fontSize: 14,
                     color: Colors.grey.shade500,
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagsSection(List<String> hashtags) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.tag_rounded, color: Colors.grey.shade500, size: 28),
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Hashtags',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF374151),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: hashtags.map((tag) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        '#$tag',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
