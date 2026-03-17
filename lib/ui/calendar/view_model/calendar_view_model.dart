@@ -128,4 +128,34 @@ class CalendarViewModel extends BaseViewModel {
       notifyListeners();
     });
   }
+
+  Future<void> updateTask(TaskModel task) async {
+    final result = await executeAsync(() async {
+      await _calendarRepository.updateTask(task);
+      await fetchAll(userId: task.userId); // Refresh data after update
+      return true;
+    });
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await executeAsync(() async {
+      await _calendarRepository.deleteTask(taskId);
+      // Remove from local list to update UI immediately
+      _tasks.removeWhere((task) => task.id == taskId);
+      notifyListeners();
+    });
+  }
+
+  void reorderTasks(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final task = _tasks.removeAt(oldIndex);
+    _tasks.insert(newIndex, task);
+    notifyListeners();
+    // Optional: Call API to persist reordering if supported by backend.
+  }
 }
