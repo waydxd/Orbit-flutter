@@ -134,72 +134,74 @@ class EventDetailPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                            // Category tag (pill)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                _inferCategory(event).toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
-                                  letterSpacing: 0.8,
+                                // Category tag (pill)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _inferCategory(event).toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                            // Location section (if present)
-                            if (event.location.isNotEmpty) ...[
-                              _buildSectionLabel('LOCATION'),
-                              const SizedBox(height: 12),
-                              _buildLocationRow(event.location),
-                              const SizedBox(height: 24),
-                            ],
+                                // Location section (if present)
+                                if (event.location.isNotEmpty) ...[
+                                  _buildSectionLabel('LOCATION'),
+                                  const SizedBox(height: 12),
+                                  _buildLocationRow(event.location),
+                                  const SizedBox(height: 24),
+                                ],
 
-                            // Date & Time section
-                            _buildSectionLabel('DATE & TIME'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(
-                              icon: Icons.calendar_today_rounded,
-                              text: _formatDate(event.startTime),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildInfoRow(
-                              icon: Icons.access_time_rounded,
-                              text: '${_formatTimeRange(event.startTime, event.endTime)} ${_formatDuration(event.startTime, event.endTime)}',
-                            ),
-                            const SizedBox(height: 24),
-                            _buildSectionLabel('DESCRIPTION'),
-                            const SizedBox(height: 12),
-                            Text(
-                              event.description.isNotEmpty
-                                  ? event.description
-                                  : 'No description',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: event.description.isNotEmpty
-                                    ? AppColors.textSecondary
-                                    : AppColors.grey400,
-                                height: 1.5,
-                              ),
-                            ),
+                                // Date & Time section
+                                _buildSectionLabel('DATE & TIME'),
+                                const SizedBox(height: 12),
+                                _buildInfoRow(
+                                  icon: Icons.calendar_today_rounded,
+                                  text: _formatDate(event.startTime),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  icon: Icons.access_time_rounded,
+                                  text:
+                                      '${_formatTimeRange(event.startTime, event.endTime)} ${_formatDuration(event.startTime, event.endTime)}',
+                                ),
+                                const SizedBox(height: 24),
+                                _buildSectionLabel('DESCRIPTION'),
+                                const SizedBox(height: 12),
+                                Text(
+                                  event.description.isNotEmpty
+                                      ? event.description
+                                      : 'No description',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: event.description.isNotEmpty
+                                        ? AppColors.textSecondary
+                                        : AppColors.grey400,
+                                    height: 1.5,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      ),
                     ),
                   ),
                 ),
+              ),
             ],
           ),
         ),
@@ -345,7 +347,8 @@ class EventDetailPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -383,8 +386,10 @@ class EventDetailPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
-              title: const Text('Edit', style: TextStyle(color: AppColors.textPrimary)),
+              leading:
+                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              title: const Text('Edit',
+                  style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -404,7 +409,8 @@ class EventDetailPage extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('Delete', style: TextStyle(color: AppColors.error)),
+              title: const Text('Delete',
+                  style: TextStyle(color: AppColors.error)),
               onTap: () {
                 Navigator.pop(context);
                 _handleDelete(context);

@@ -73,7 +73,8 @@ class AuthViewModel extends BaseViewModel {
           } catch (e) {
             _isAuthenticated = false;
             _currentUser = null;
-            setError(_extractErrorMessage(e, 'Login failed. Please try again.'));
+            setError(
+                _extractErrorMessage(e, 'Login failed. Please try again.'));
             return false;
           }
         }) ??
@@ -219,7 +220,8 @@ class AuthViewModel extends BaseViewModel {
 
             final profile = await _authRepository.updateProfile(payload);
             _currentUser = profile;
-            await LocalStorageService.setPreference('user_email', profile.email);
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
             await LocalStorageService.setPreference('user_id', profile.id);
             return true;
           } catch (e) {
@@ -330,7 +332,8 @@ class AuthViewModel extends BaseViewModel {
           try {
             final profile = await _authRepository.getProfile();
             _currentUser = profile;
-            await LocalStorageService.setPreference('user_email', profile.email);
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
             await LocalStorageService.setPreference('user_id', profile.id);
             return true;
           } catch (e) {
@@ -378,7 +381,8 @@ class AuthViewModel extends BaseViewModel {
 
             final profile = await _authRepository.updateProfile(payload);
             _currentUser = profile;
-            await LocalStorageService.setPreference('user_email', profile.email);
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
             await LocalStorageService.setPreference('user_id', profile.id);
             return true;
           } catch (e) {

@@ -98,8 +98,7 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        const SignificantLocationsPage()),
+                    builder: (context) => const SignificantLocationsPage()),
               );
             },
             child: Padding(

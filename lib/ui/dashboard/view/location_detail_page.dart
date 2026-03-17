@@ -82,8 +82,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                         ),
                       ],
                     ),
-                    child: _buildSheetContent(
-                        events, scrollController),
+                    child: _buildSheetContent(events, scrollController),
                   );
                 },
               );
@@ -132,8 +131,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         Marker(
           markerId: const MarkerId('location'),
           position: _locationCoords!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueViolet),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
         ),
       },
       myLocationEnabled: true,
@@ -164,8 +163,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
               const SizedBox(width: 12),
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -272,8 +271,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                   SizedBox(height: 12),
                   Text(
                     'No events at this location',
-                    style: TextStyle(
-                        fontSize: 16, color: AppColors.textSecondary),
+                    style:
+                        TextStyle(fontSize: 16, color: AppColors.textSecondary),
                   ),
                 ],
               ),

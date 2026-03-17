@@ -27,7 +27,8 @@ class TaskDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Detail', style: TextStyle(color: AppColors.black)),
+        title:
+            const Text('Task Detail', style: TextStyle(color: AppColors.black)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.black),
@@ -52,16 +53,20 @@ class TaskDetailPage extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _getPriorityColor(task.priority).withValues(alpha: 0.2),
+                        color: _getPriorityColor(task.priority)
+                            .withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         task.priority.toUpperCase(),
                         style: TextStyle(
                           color: _getPriorityColor(task.priority),
-                          fontWeight: 'bold'.toString() == 'bold' ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: 'bold'.toString() == 'bold'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 12,
                         ),
                       ),
@@ -97,7 +102,9 @@ class TaskDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  task.description.isNotEmpty ? task.description : 'No description provided.',
+                  task.description.isNotEmpty
+                      ? task.description
+                      : 'No description provided.',
                   style: const TextStyle(
                     fontSize: 16,
                     color: AppColors.textSecondary,
@@ -108,7 +115,8 @@ class TaskDetailPage extends StatelessWidget {
                 if (task.completed)
                   Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                       decoration: BoxDecoration(
                         color: const Color(0xFF50C8AA).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(30),

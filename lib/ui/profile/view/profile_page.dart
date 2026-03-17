@@ -231,12 +231,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           Text(
                             'Profile',
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textSecondary
-                                          .withValues(alpha: 0.7),
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppColors.textSecondary
+                                      .withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w500,
+                                ),
                           ),
                           const SizedBox(height: 20),
                           IconButton(
@@ -671,7 +673,8 @@ class _BirthDateField extends StatelessWidget {
                   Text(
                     displayText,
                     style: TextStyle(
-                      color: hasValue ? AppColors.textPrimary : AppColors.grey400,
+                      color:
+                          hasValue ? AppColors.textPrimary : AppColors.grey400,
                       fontSize: hasValue ? 14 : 15,
                       fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
                     ),

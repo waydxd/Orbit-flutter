@@ -36,10 +36,10 @@ class SignificantLocationCard extends StatelessWidget {
     final coords =
         formatCoordinates(stayPoint.centroidLat, stayPoint.centroidLon);
 
-    final sameDay = stayPoint.arrivalTime.year ==
-            stayPoint.departureTime.year &&
-        stayPoint.arrivalTime.month == stayPoint.departureTime.month &&
-        stayPoint.arrivalTime.day == stayPoint.departureTime.day;
+    final sameDay =
+        stayPoint.arrivalTime.year == stayPoint.departureTime.year &&
+            stayPoint.arrivalTime.month == stayPoint.departureTime.month &&
+            stayPoint.arrivalTime.day == stayPoint.departureTime.day;
 
     final timeRange = sameDay
         ? '${DateFormat('MMM d, h:mm a').format(stayPoint.arrivalTime)} – ${DateFormat('h:mm a').format(stayPoint.departureTime)}'

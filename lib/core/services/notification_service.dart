@@ -23,7 +23,8 @@ class NotificationService {
       requestSoundPermission: true,
     );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
@@ -34,7 +35,7 @@ class NotificationService {
         // Handle notification tapped
       },
     );
-    
+
     _initialized = true;
   }
 

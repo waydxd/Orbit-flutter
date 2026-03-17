@@ -44,31 +44,40 @@ class _TaskListPageState extends State<TaskListPage> {
                               canvasColor: Colors.transparent,
                             ),
                             child: ReorderableListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: pendingTasks.length + 1, // +1 for summary card
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: pendingTasks.length +
+                                  1, // +1 for summary card
                               onReorder: (oldIndex, newIndex) {
                                 // Adjust indices since index 0 is summary card
-                                if (oldIndex == 0 || newIndex == 0) return; 
+                                if (oldIndex == 0 || newIndex == 0) return;
                                 int oldTaskIndex = oldIndex - 1;
                                 int newTaskIndex = newIndex - 1;
-                                
+
                                 // Call view model reorder on the full tasks list
                                 // Need to find original indices in viewModel.tasks
                                 final oldTask = pendingTasks[oldTaskIndex];
-                                final oldOriginalIndex = viewModel.tasks.indexOf(oldTask);
-                                
+                                final oldOriginalIndex =
+                                    viewModel.tasks.indexOf(oldTask);
+
                                 // For simplicity, we just reorder in the viewModel if supported
-                                viewModel.reorderTasks(oldOriginalIndex, newTaskIndex >= pendingTasks.length ? viewModel.tasks.length : viewModel.tasks.indexOf(pendingTasks[newTaskIndex]));
+                                viewModel.reorderTasks(
+                                    oldOriginalIndex,
+                                    newTaskIndex >= pendingTasks.length
+                                        ? viewModel.tasks.length
+                                        : viewModel.tasks.indexOf(
+                                            pendingTasks[newTaskIndex]));
                               },
                               itemBuilder: (context, index) {
                                 if (index == 0) {
                                   return Container(
                                     key: const ValueKey('summary_card'),
-                                    padding: const EdgeInsets.only(top: 20, bottom: 30),
+                                    padding: const EdgeInsets.only(
+                                        top: 20, bottom: 30),
                                     child: _buildSummaryCard(pendingTasks),
                                   );
                                 }
-                                
+
                                 final task = pendingTasks[index - 1];
                                 return Container(
                                   key: ValueKey(task.id),
@@ -78,7 +87,8 @@ class _TaskListPageState extends State<TaskListPage> {
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.05),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.05),
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
                                         ),
@@ -91,8 +101,10 @@ class _TaskListPageState extends State<TaskListPage> {
                                       background: Container(
                                         color: Colors.redAccent,
                                         alignment: Alignment.centerRight,
-                                        padding: const EdgeInsets.only(right: 20),
-                                        child: const Icon(Icons.delete, color: Colors.white),
+                                        padding:
+                                            const EdgeInsets.only(right: 20),
+                                        child: const Icon(Icons.delete,
+                                            color: Colors.white),
                                       ),
                                       confirmDismiss: (direction) async {
                                         return await showDialog<bool>(
@@ -100,15 +112,22 @@ class _TaskListPageState extends State<TaskListPage> {
                                           builder: (BuildContext context) {
                                             return AlertDialog(
                                               title: const Text('Delete Task'),
-                                              content: const Text('Are you sure you want to delete this task?'),
+                                              content: const Text(
+                                                  'Are you sure you want to delete this task?'),
                                               actions: <Widget>[
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(context).pop(false),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(false),
                                                   child: const Text('CANCEL'),
                                                 ),
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(context).pop(true),
-                                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(true),
+                                                  style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.red),
                                                   child: const Text('DELETE'),
                                                 ),
                                               ],
@@ -124,7 +143,8 @@ class _TaskListPageState extends State<TaskListPage> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) => TaskDetailPage(task: task),
+                                              builder: (context) =>
+                                                  TaskDetailPage(task: task),
                                             ),
                                           );
                                         },
@@ -132,7 +152,8 @@ class _TaskListPageState extends State<TaskListPage> {
                                           color: Colors.transparent,
                                           child: TaskItemWidget(
                                             task: task,
-                                            color: _getPriorityColor(task.priority),
+                                            color: _getPriorityColor(
+                                                task.priority),
                                           ),
                                         ),
                                       ),
@@ -410,7 +431,7 @@ class _TaskItemWidgetState extends State<TaskItemWidget> {
     } else {
       final hours = difference.inHours;
       final minutes = difference.inMinutes.remainder(60);
-      
+
       if (hours > 0) {
         newText = '${hours}h ${minutes}m';
       } else if (minutes > 0) {

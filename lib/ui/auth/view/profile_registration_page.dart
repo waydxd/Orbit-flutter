@@ -24,7 +24,8 @@ class ProfileRegistrationPage extends StatefulWidget {
   });
 
   @override
-  State<ProfileRegistrationPage> createState() => _ProfileRegistrationPageState();
+  State<ProfileRegistrationPage> createState() =>
+      _ProfileRegistrationPageState();
 }
 
 class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
@@ -214,179 +215,188 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(Constants.spacingM),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 360),
                           child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Constants.spacingL,
-                        vertical: Constants.spacingXL,
-                      ),
-                      decoration: ShapeDecoration(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(Constants.radiusXXL),
-                        ),
-                        shadows: const [
-                          BoxShadow(
-                            color: Color(0x3318303F),
-                            blurRadius: Constants.shadowBlurRadius,
-                            offset: Offset(
-                              Constants.shadowOffset,
-                              Constants.shadowOffset,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Constants.spacingL,
+                              vertical: Constants.spacingXL,
                             ),
-                          ),
-                        ],
-                      ),
-                            child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            IconButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              splashRadius: 22,
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: AppColors.primary,
-                                size: 22,
+                            decoration: ShapeDecoration(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(Constants.radiusXXL),
                               ),
-                            ),
-                            const SizedBox(height: Constants.spacingM),
-                            const Text(
-                              'Complete Your Profile',
-                              style: TextStyle(
-                                fontSize: Constants.fontSizeL,
-                                fontWeight: Constants.fontWeightBold,
-                                fontFamily: 'Poppins',
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: Constants.spacingS),
-                            Text(
-                              'Finish setting up your profile. Region and timezone will be detected automatically from your device.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    height: 1.5,
-                                  ),
-                            ),
-                            const SizedBox(height: Constants.spacingL),
-                            _buildTextField(
-                              controller: _firstNameController,
-                              label: 'First name',
-                            ),
-                            const SizedBox(height: Constants.spacingM),
-                            _buildTextField(
-                              controller: _lastNameController,
-                              label: 'Last name',
-                            ),
-                            const SizedBox(height: Constants.spacingM),
-                            ModernDropdownField<String>(
-                              label: 'Gender',
-                              icon: Icons.person_outline_rounded,
-                              value: _selectedGender,
-                              displayStringForValue: (key) =>
-                                  _genderLabels[key] ?? key,
-                              items: _genderLabels.keys.toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedGender = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: Constants.spacingM),
-                            _BirthDateCard(
-                              birthDate: _birthDate,
-                              onPickDate: _pickBirthDate,
-                              onClear: _birthDate == null
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _birthDate = null;
-                                      });
-                                    },
-                            ),
-                            if (authViewModel.error != null) ...[
-                              const SizedBox(height: Constants.spacingM),
-                              Container(
-                                padding: const EdgeInsets.all(Constants.spacingS),
-                                decoration: BoxDecoration(
-                                  color: AppColors.error.withValues(alpha: 0.1),
-                                  borderRadius:
-                                      BorderRadius.circular(Constants.radiusM),
-                                  border: Border.all(
-                                    color:
-                                        AppColors.error.withValues(alpha: 0.3),
+                              shadows: const [
+                                BoxShadow(
+                                  color: Color(0x3318303F),
+                                  blurRadius: Constants.shadowBlurRadius,
+                                  offset: Offset(
+                                    Constants.shadowOffset,
+                                    Constants.shadowOffset,
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline,
-                                      color: AppColors.error,
-                                      size: Constants.iconS,
+                              ],
+                            ),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  IconButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    splashRadius: 22,
+                                    icon: const Icon(
+                                      Icons.arrow_back_ios_new_rounded,
+                                      color: AppColors.primary,
+                                      size: 22,
                                     ),
-                                    const SizedBox(width: Constants.spacingS),
-                                    Expanded(
-                                      child: Text(
-                                        authViewModel.error!,
-                                        style: const TextStyle(
-                                          color: AppColors.error,
-                                          fontSize: Constants.fontSizeS,
+                                  ),
+                                  const SizedBox(height: Constants.spacingM),
+                                  const Text(
+                                    'Complete Your Profile',
+                                    style: TextStyle(
+                                      fontSize: Constants.fontSizeL,
+                                      fontWeight: Constants.fontWeightBold,
+                                      fontFamily: 'Poppins',
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: Constants.spacingS),
+                                  Text(
+                                    'Finish setting up your profile. Region and timezone will be detected automatically from your device.',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.textSecondary,
+                                          height: 1.5,
                                         ),
+                                  ),
+                                  const SizedBox(height: Constants.spacingL),
+                                  _buildTextField(
+                                    controller: _firstNameController,
+                                    label: 'First name',
+                                  ),
+                                  const SizedBox(height: Constants.spacingM),
+                                  _buildTextField(
+                                    controller: _lastNameController,
+                                    label: 'Last name',
+                                  ),
+                                  const SizedBox(height: Constants.spacingM),
+                                  ModernDropdownField<String>(
+                                    label: 'Gender',
+                                    icon: Icons.person_outline_rounded,
+                                    value: _selectedGender,
+                                    displayStringForValue: (key) =>
+                                        _genderLabels[key] ?? key,
+                                    items: _genderLabels.keys.toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedGender = value;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: Constants.spacingM),
+                                  _BirthDateCard(
+                                    birthDate: _birthDate,
+                                    onPickDate: _pickBirthDate,
+                                    onClear: _birthDate == null
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _birthDate = null;
+                                            });
+                                          },
+                                  ),
+                                  if (authViewModel.error != null) ...[
+                                    const SizedBox(height: Constants.spacingM),
+                                    Container(
+                                      padding: const EdgeInsets.all(
+                                          Constants.spacingS),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.error
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(
+                                            Constants.radiusM),
+                                        border: Border.all(
+                                          color: AppColors.error
+                                              .withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.error_outline,
+                                            color: AppColors.error,
+                                            size: Constants.iconS,
+                                          ),
+                                          const SizedBox(
+                                              width: Constants.spacingS),
+                                          Expanded(
+                                            child: Text(
+                                              authViewModel.error!,
+                                              style: const TextStyle(
+                                                color: AppColors.error,
+                                                fontSize: Constants.fontSizeS,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: Constants.spacingL),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(Constants.radiusM),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: Constants.buttonHeight,
-                                  ),
-                                ),
-                                onPressed: authViewModel.isLoading
-                                    ? null
-                                    : _completeRegistration,
-                                child: authViewModel.isLoading
-                                    ? const SizedBox(
-                                        height: Constants.iconS,
-                                        width: Constants.iconS,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                  const SizedBox(height: Constants.spacingL),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              Constants.radiusM),
                                         ),
-                                      )
-                                    : const Text(
-                                        'Create Account',
-                                        style: TextStyle(
-                                          fontSize: Constants.fontSizeM,
-                                          color: Colors.white,
-                                          fontWeight:
-                                              Constants.fontWeightSemiBold,
-                                          fontFamily: 'Poppins',
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: Constants.buttonHeight,
                                         ),
                                       ),
+                                      onPressed: authViewModel.isLoading
+                                          ? null
+                                          : _completeRegistration,
+                                      child: authViewModel.isLoading
+                                          ? const SizedBox(
+                                              height: Constants.iconS,
+                                              width: Constants.iconS,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(
+                                                  Colors.white,
+                                                ),
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Create Account',
+                                              style: TextStyle(
+                                                fontSize: Constants.fontSizeM,
+                                                color: Colors.white,
+                                                fontWeight: Constants
+                                                    .fontWeightSemiBold,
+                                                fontFamily: 'Poppins',
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                             ),
                           ),
                         ),

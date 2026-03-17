@@ -377,10 +377,11 @@ class _LogoutButton extends StatelessWidget {
                 const SizedBox(height: 18),
                 Text(
                   'Log out?',
-                  style: Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style:
+                      Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                 ),
                 const SizedBox(height: 10),
                 Text(

@@ -290,8 +290,7 @@ class _SelectorSheetState<T> extends State<_SelectorSheet<T>> {
                     itemBuilder: (context, index) {
                       final item = _filteredItems[index];
                       final isSelected = item == widget.selectedValue;
-                      final displayText =
-                          widget.displayStringForValue(item);
+                      final displayText = widget.displayStringForValue(item);
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),

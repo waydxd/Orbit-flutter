@@ -198,29 +198,6 @@ class CalendarRepository {
     }
   }
 
-  Future<TaskModel> updateTask(TaskModel task) async {
-    try {
-      final response = await _apiClient.put(
-        '/calendar/tasks/${task.id}',
-        data: task.toJson(),
-      );
-
-      Logger.infoWithTag(
-        'CalendarRepository',
-        'PUT /calendar/tasks/${task.id} status: ${response.statusCode}',
-      );
-
-      if ((response.statusCode == 200 || response.statusCode == 201) &&
-          response.data != null) {
-        return TaskModel.fromJson(response.data as Map<String, dynamic>);
-      }
-      throw Exception('Failed to update task: ${response.statusCode}');
-    } catch (e) {
-      Logger.errorWithTag('CalendarRepository', 'Failed to update task: $e');
-      rethrow;
-    }
-  }
-
   Future<void> deleteTask(String taskId) async {
     try {
       final response = await _apiClient.delete('/calendar/tasks/$taskId');

@@ -43,7 +43,8 @@ class UserModel extends BaseModel {
 
   String get displayName {
     if (fullName.isNotEmpty) return fullName;
-    if (username != null && username!.trim().isNotEmpty) return username!.trim();
+    if (username != null && username!.trim().isNotEmpty)
+      return username!.trim();
     return email;
   }
 
