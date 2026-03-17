@@ -35,8 +35,8 @@ class _RegistrationFormState extends State<RegistrationForm> {
         _emailController.text.trim(),
         _passwordController.text,
         _confirmPasswordController.text,
+        '', // Pass empty OTP
       );
-
       if (success && mounted) {
         // Navigation will be handled by the app's auth state listener
         ScaffoldMessenger.of(context).showSnackBar(

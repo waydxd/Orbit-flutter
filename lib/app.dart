@@ -7,7 +7,7 @@ import 'ui/calendar/view_model/calendar_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
 
-import 'ui/calendar/view/calendar_page.dart';
+import 'ui/home/view/home_page.dart';
 
 /// Main application widget
 class OrbitApp extends StatelessWidget {
@@ -157,12 +157,12 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
-/// Placeholder home screen - Replaced with CalendarPage
+/// Placeholder home screen - Replaced with HomePage
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const CalendarPage();
+    return const HomePage();
   }
 }

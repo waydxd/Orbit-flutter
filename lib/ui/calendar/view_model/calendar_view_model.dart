@@ -30,6 +30,7 @@ class CalendarViewModel extends BaseViewModel {
         endTime: endTime,
       );
       _events = fetchedEvents;
+      notifyListeners();
     });
   }
 
@@ -40,6 +41,7 @@ class CalendarViewModel extends BaseViewModel {
         completed: completed,
       );
       _tasks = fetchedTasks;
+      notifyListeners();
     });
   }
 
@@ -60,6 +62,7 @@ class CalendarViewModel extends BaseViewModel {
         ]);
         _events = results[0] as List<EventModel>;
         _tasks = results[1] as List<TaskModel>;
+        notifyListeners();
         Logger.infoWithTag(
           'CalendarViewModel',
           'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks',
@@ -72,16 +75,46 @@ class CalendarViewModel extends BaseViewModel {
   }
 
   Future<void> createEvent(EventModel event) async {
-    await executeAsync(() async {
+    final result = await executeAsync(() async {
       await _calendarRepository.createEvent(event);
       await fetchAll(userId: event.userId); // Refresh data after creation
+      return true;
     });
+
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
   }
 
   Future<void> createTask(TaskModel task) async {
-    await executeAsync(() async {
+    final result = await executeAsync(() async {
       await _calendarRepository.createTask(task);
       await fetchAll(userId: task.userId); // Refresh data after creation
+      return true;
+    });
+
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
+  }
+
+  Future<void> updateEvent(EventModel event) async {
+    final result = await executeAsync(() async {
+      await _calendarRepository.updateEvent(event);
+      await fetchAll(userId: event.userId); // Refresh data after update
+      return true;
+    });
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    await executeAsync(() async {
+      await _calendarRepository.deleteEvent(eventId);
+      // Remove from local list to update UI immediately
+      _events.removeWhere((event) => event.id == eventId);
+      notifyListeners();
     });
   }
 }

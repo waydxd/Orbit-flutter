@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import '../../core/themes/app_colors.dart';
 
 class FloatingNavBar extends StatelessWidget {
+  final VoidCallback onHomeTap;
   final VoidCallback onCalendarTap;
   final VoidCallback onCreateTaskTap;
   final VoidCallback onCreateTaskLongPress;
   final VoidCallback onTodoListTap;
+  final VoidCallback onDashboardTap;
   final int currentIndex;
 
   const FloatingNavBar({
+    required this.onHomeTap,
     required this.onCalendarTap,
     required this.onCreateTaskTap,
     required this.onCreateTaskLongPress,
     required this.onTodoListTap,
+    required this.onDashboardTap,
     super.key,
     this.currentIndex = 0,
   });
@@ -43,12 +47,23 @@ class FloatingNavBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Calendar Button (Left)
+                // Home Button (Left-most)
+                Expanded(
+                  child: Center(
+                    child: _NavButton(
+                      icon: Icons.home_outlined,
+                      isActive: currentIndex == 0,
+                      onTap: onHomeTap,
+                    ),
+                  ),
+                ),
+
+                // Calendar Button (Mid-Left)
                 Expanded(
                   child: Center(
                     child: _NavButton(
                       icon: Icons.calendar_today_outlined,
-                      isActive: currentIndex == 0,
+                      isActive: currentIndex == 1,
                       onTap: onCalendarTap,
                     ),
                   ),
@@ -57,13 +72,24 @@ class FloatingNavBar extends StatelessWidget {
                 // Spacer for the center button
                 const SizedBox(width: 80),
 
-                // Todo List Button (Right)
+                // Todo List Button (Mid-Right)
                 Expanded(
                   child: Center(
                     child: _NavButton(
                       icon: Icons.assignment_outlined,
-                      isActive: currentIndex == 1,
+                      isActive: currentIndex == 2,
                       onTap: onTodoListTap,
+                    ),
+                  ),
+                ),
+
+                // Dashboard Button (Right-most)
+                Expanded(
+                  child: Center(
+                    child: _NavButton(
+                      icon: Icons.dashboard_outlined,
+                      isActive: currentIndex == 3,
+                      onTap: onDashboardTap,
                     ),
                   ),
                 ),
