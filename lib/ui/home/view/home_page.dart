@@ -8,7 +8,7 @@ import '../../calendar/view/calendar_page.dart';
 import '../../dashboard/view/dashboard_page.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
+import '../../chat/view/chat_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
 import 'package:intl/intl.dart';

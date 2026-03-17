@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../calendar/widgets/floating_nav_bar.dart';
 import '../../tasks/view/task_list_page.dart';
 import '../../tasks/view/create_item_page.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
+import '../../chat/view/chat_page.dart';
 import '../models/daily_heatmap_record.dart';
 import '../widgets/heatmap_calendar_widget.dart';
 import '../widgets/location_card_widget.dart';
