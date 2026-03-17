@@ -12,7 +12,6 @@ import '../view_model/stay_point_view_model.dart';
 import '../widgets/significant_location_card.dart';
 import '../../../modules/location_tracking/models/stay_point.dart';
 import 'location_detail_page.dart';
-import 'location_list_page.dart';
 
 class SignificantLocationsPage extends StatefulWidget {
   const SignificantLocationsPage({super.key});
@@ -26,11 +25,22 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   GoogleMapController? _mapController;
   int? _selectedIndex;
   bool _hasInitialFit = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   static const LatLng _defaultCenter = LatLng(22.3193, 114.1694);
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
+  }
+
+  @override
   void dispose() {
+    _searchController.dispose();
     _mapController?.dispose();
     super.dispose();
   }
@@ -290,14 +300,38 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
 
   // ── Sheet content ─────────────────────────────────────────────────────
 
+  List<StayPoint> _filterStayPoints(List<StayPoint> stayPoints) {
+    if (_searchQuery.isEmpty) return stayPoints;
+    return stayPoints
+        .where((sp) =>
+            (sp.label ?? 'Significant Location')
+                .toLowerCase()
+                .contains(_searchQuery))
+        .toList();
+  }
+
+  List<MapEntry<String, List<EventModel>>> _filterEventLocations(
+      List<MapEntry<String, List<EventModel>>> eventLocations) {
+    if (_searchQuery.isEmpty) return eventLocations;
+    return eventLocations
+        .where((e) => e.key.toLowerCase().contains(_searchQuery))
+        .toList();
+  }
+
   Widget _buildSheetContent(
     StayPointViewModel vm,
     ScrollController controller,
     List<StayPoint> stayPoints,
     List<MapEntry<String, List<EventModel>>> eventLocations,
   ) {
-    final totalCount = stayPoints.length + eventLocations.length;
+    final filteredStayPoints = _filterStayPoints(stayPoints);
+    final filteredEventLocations = _filterEventLocations(eventLocations);
+    final totalCount = filteredStayPoints.length + filteredEventLocations.length;
     final allEmpty = totalCount == 0 && !vm.isLoading && !vm.hasError;
+    final hasDataButNoSearchResults =
+        totalCount == 0 &&
+            (stayPoints.isNotEmpty || eventLocations.isNotEmpty) &&
+            _searchQuery.isNotEmpty;
 
     return CustomScrollView(
       controller: controller,
@@ -315,7 +349,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
             child: AppErrorWidget(
                 message: vm.error!, onRetry: vm.loadStayPoints),
           )
-        else if (allEmpty)
+        else if (allEmpty && !hasDataButNoSearchResults)
           SliverFillRemaining(
             hasScrollBody: false,
             child: _buildEmptyState(),
@@ -323,15 +357,24 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
         else ...[
           // Header
           SliverToBoxAdapter(
-            child: _buildSheetHeader(totalCount, stayPoints),
+            child: _buildSheetHeader(totalCount, filteredStayPoints),
           ),
 
+          // Search bar
+          SliverToBoxAdapter(child: _buildSearchBar()),
+
+          if (hasDataButNoSearchResults)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildNoSearchResultsState(),
+            )
+          else ...[
           // ── Significant Locations (StayPoints) ──
-          if (stayPoints.isNotEmpty) ...[
+          if (filteredStayPoints.isNotEmpty) ...[
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Significant Locations',
-                stayPoints.length,
+                filteredStayPoints.length,
                 Icons.location_on,
                 AppColors.primary,
               ),
@@ -339,71 +382,98 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (ctx, index) {
-                  final sp = stayPoints[index];
+                  final sp = filteredStayPoints[index];
+                  final originalIndex =
+                      stayPoints.indexWhere((p) => p.id == sp.id);
                   return SignificantLocationCard(
                     stayPoint: sp,
-                    isSelected: _selectedIndex == index,
-                    onTap: () => _onStayPointCardTapped(index, sp),
+                    isSelected: _selectedIndex == originalIndex,
+                    onTap: () => _onStayPointCardTapped(originalIndex, sp),
                     onLongPress: () => _showStayPointDetail(ctx, sp),
                   );
                 },
-                childCount: stayPoints.length,
+                childCount: filteredStayPoints.length,
               ),
             ),
           ],
 
           // ── Event Locations ──
-          if (eventLocations.isNotEmpty) ...[
+          if (filteredEventLocations.isNotEmpty) ...[
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Event Locations',
-                eventLocations.length,
+                filteredEventLocations.length,
                 Icons.event_outlined,
-                AppColors.accent,
-                trailing: GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const LocationListPage()),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.map_outlined,
-                          size: 14, color: AppColors.accent),
-                      SizedBox(width: 4),
-                      Text(
-                        'Map',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                AppColors.primary,
               ),
             ),
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (ctx, index) {
-                  final entry = eventLocations[index];
+                  final entry = filteredEventLocations[index];
                   return _buildEventLocationCard(
                       ctx, entry.key, entry.value);
                 },
-                childCount: eventLocations.length,
+                childCount: filteredEventLocations.length,
               ),
             ),
           ],
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
         ],
       ],
     );
   }
 
   // ── Sheet sub-widgets ─────────────────────────────────────────────────
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.grey100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.grey200, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Search locations...',
+                  hintStyle: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textTertiary,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 6),
+                  isDense: true,
+                ),
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            if (_searchQuery.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  _searchController.clear();
+                },
+                child: Icon(Icons.close, size: 18, color: AppColors.grey400),
+              )
+            else
+              Icon(Icons.search, size: 20, color: AppColors.grey400),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildDragHandle() {
     return Center(
@@ -426,14 +496,6 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
       child: Row(
         children: [
-          Text(
-            '$totalCount Location${totalCount != 1 ? 's' : ''}',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
           const Spacer(),
           if (stayPoints.isNotEmpty)
             GestureDetector(
@@ -540,11 +602,11 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.event_outlined,
-                  color: AppColors.accent, size: 22),
+                  color: AppColors.primary, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -586,7 +648,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -594,7 +656,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.accent,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -608,6 +670,31 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                 size: 20, color: AppColors.grey400),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoSearchResultsState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+        const Icon(Icons.search_off, size: 48, color: AppColors.grey400),
+        const SizedBox(height: 12),
+        const Text(
+          'No locations match your search',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Try a different search term',
+          style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+        ),
+        ],
       ),
     );
   }

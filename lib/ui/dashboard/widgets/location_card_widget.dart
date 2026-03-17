@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/themes/app_colors.dart';
-import '../view/location_list_page.dart';
 import '../view/significant_locations_page.dart';
 
 class LocationCardWidget extends StatefulWidget {
