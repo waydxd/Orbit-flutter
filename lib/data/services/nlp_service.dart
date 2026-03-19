@@ -5,11 +5,12 @@ import '../../utils/logger.dart';
 /// Service for natural language processing using Hugging Face API
 /// Classifies text as task or event and extracts relevant entities
 class NlpService {
-  late final Dio _hfDio;  // For Hugging Face classification
-  late final Dio _localDio;  // For local NLP server parsing
+  late final Dio _hfDio; // For Hugging Face classification
+  late final Dio _localDio; // For local NLP server parsing
   final String _apiKey;
 
-  NlpService({String? apiKey}) : _apiKey = apiKey ?? AppConfig.huggingFaceApiKey {
+  NlpService({String? apiKey})
+      : _apiKey = apiKey ?? AppConfig.huggingFaceApiKey {
     // Hugging Face API client
     _hfDio = Dio(
       BaseOptions(
@@ -21,7 +22,7 @@ class NlpService {
         },
       ),
     );
-    
+
     // Local NLP server client
     _localDio = Dio(
       BaseOptions(
@@ -43,10 +44,10 @@ class NlpService {
     }
 
     final url = '/hf-inference/models/${AppConfig.hfClassificationModel}';
-    
+
     try {
       Logger.debugWithTag('NLP', 'Classifying text: "$text"');
-      
+
       final response = await _hfDio.post(
         url,
         data: {
@@ -69,15 +70,15 @@ class NlpService {
       // Parse zero-shot classification response
       // Router format: [{"label": "event", "score": 0.85}, {"label": "task", "score": 0.15}]
       // Standard format: {"sequence": "...", "labels": ["task", "event"], "scores": [0.8, 0.2]}
-      
+
       // Try router format (array of label-score pairs)
       if (data is List && data.isNotEmpty) {
         final items = data.cast<Map<String, dynamic>>();
-        
+
         // Find highest scoring item
         var maxItem = items[0];
         double maxScore = (maxItem['score'] as num).toDouble();
-        
+
         for (var item in items.skip(1)) {
           final score = (item['score'] as num).toDouble();
           if (score > maxScore) {
@@ -85,7 +86,7 @@ class NlpService {
             maxItem = item;
           }
         }
-        
+
         final result = ClassificationResult(
           type: maxItem['label'] as String,
           confidence: maxScore,
@@ -95,21 +96,22 @@ class NlpService {
             value: (item) => (item['score'] as num).toDouble(),
           ),
         );
-        
-        Logger.infoWithTag('NLP', 'Classified as: ${result.type} (${(result.confidence * 100).toStringAsFixed(1)}%)');
+
+        Logger.infoWithTag('NLP',
+            'Classified as: ${result.type} (${(result.confidence * 100).toStringAsFixed(1)}%)');
         return result;
       }
-      
+
       // Try standard format (map with labels and scores arrays)
-      if (data is Map<String, dynamic> && 
-          data.containsKey('labels') && 
+      if (data is Map<String, dynamic> &&
+          data.containsKey('labels') &&
           data.containsKey('scores')) {
         final labels = (data['labels'] as List).cast<String>();
         final scores = (data['scores'] as List).cast<num>();
-        
+
         Logger.debugWithTag('NLP', 'Labels: $labels');
         Logger.debugWithTag('NLP', 'Scores: $scores');
-        
+
         // Find the highest scoring label
         int maxIndex = 0;
         double maxScore = scores[0].toDouble();
@@ -119,7 +121,7 @@ class NlpService {
             maxIndex = i;
           }
         }
-        
+
         final result = ClassificationResult(
           type: labels[maxIndex],
           confidence: maxScore,
@@ -128,42 +130,45 @@ class NlpService {
             scores.map((s) => s.toDouble()),
           ),
         );
-        
-        Logger.infoWithTag('NLP', 'Classified as: ${result.type} (${(result.confidence * 100).toStringAsFixed(1)}%)');
+
+        Logger.infoWithTag('NLP',
+            'Classified as: ${result.type} (${(result.confidence * 100).toStringAsFixed(1)}%)');
         return result;
       }
 
       // If we get here, the format is unexpected
-      Logger.errorWithTag('NLP', 'Unexpected response format. Full response: $data');
-      throw NlpServiceException('Unexpected response format from classification API. Response: ${data.toString().substring(0, 200)}...');
+      Logger.errorWithTag(
+          'NLP', 'Unexpected response format. Full response: $data');
+      throw NlpServiceException(
+          'Unexpected response format from classification API. Response: ${data.toString().substring(0, 200)}...');
     } on DioException catch (e) {
       Logger.errorWithTag('NLP', 'Classification failed: ${e.message}');
-      
+
       // Handle model loading (cold start)
       if (e.response?.statusCode == 503) {
         final data = e.response?.data;
-        if (data is Map && data['error']?.toString().contains('loading') == true) {
+        if (data is Map &&
+            data['error']?.toString().contains('loading') == true) {
           throw NlpServiceException(
             'Model is loading, please try again in a few seconds',
             isRetryable: true,
           );
         }
       }
-      
+
       // Handle invalid/expired API key
       if (e.response?.statusCode == 410 || e.response?.statusCode == 401) {
         throw NlpServiceException(
           'Invalid API key. Please update your Hugging Face API key in app_config.dart',
         );
       }
-      
+
       throw NlpServiceException('Failed to classify text: ${e.message}');
     } catch (e) {
       Logger.errorWithTag('NLP', 'Classification error: $e');
       throw NlpServiceException('Classification error: $e');
     }
   }
-
 
   /// Parse event details using local T5 model
   /// Returns structured event data from natural language input
@@ -180,7 +185,7 @@ class NlpService {
           isRetryable: false,
         );
       }
-      
+
       final response = await _localDio.post(
         'parse/event',
         data: {'text': text},
@@ -188,7 +193,7 @@ class NlpService {
           headers: {'Authorization': 'Bearer $token'},
         ),
       );
-      
+
       Logger.debugWithTag('NLP', 'Event parsed: ${response.data}');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
@@ -200,14 +205,14 @@ class NlpService {
           isRetryable: false,
         );
       }
-      
+
       if (e.response?.statusCode == 503) {
         throw NlpServiceException(
           'Event parsing model not loaded on server',
           isRetryable: false,
         );
       }
-      
+
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
         throw NlpServiceException(
@@ -215,14 +220,14 @@ class NlpService {
           isRetryable: true,
         );
       }
-      
+
       if (e.type == DioExceptionType.connectionError) {
         throw NlpServiceException(
           'Cannot connect to NLP server at ${AppConfig.nlpServerBaseUrl}. Please start the server.',
           isRetryable: true,
         );
       }
-      
+
       throw NlpServiceException('Failed to parse event: ${e.message}');
     } catch (e) {
       Logger.errorWithTag('NLP', 'Event parsing error: $e');
@@ -244,7 +249,7 @@ class NlpService {
           isRetryable: false,
         );
       }
-      
+
       final response = await _localDio.post(
         'parse/task',
         data: {'text': text},
@@ -252,7 +257,7 @@ class NlpService {
           headers: {'Authorization': 'Bearer $token'},
         ),
       );
-      
+
       Logger.debugWithTag('NLP', 'Task parsed: ${response.data}');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
@@ -264,14 +269,14 @@ class NlpService {
           isRetryable: false,
         );
       }
-      
+
       if (e.response?.statusCode == 503) {
         throw NlpServiceException(
           'Task parsing model not loaded on server',
           isRetryable: false,
         );
       }
-      
+
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
         throw NlpServiceException(
@@ -279,14 +284,14 @@ class NlpService {
           isRetryable: true,
         );
       }
-      
+
       if (e.type == DioExceptionType.connectionError) {
         throw NlpServiceException(
           'Cannot connect to NLP server at ${AppConfig.nlpServerBaseUrl}. Please start the server.',
           isRetryable: true,
         );
       }
-      
+
       throw NlpServiceException('Failed to parse task: ${e.message}');
     } catch (e) {
       Logger.errorWithTag('NLP', 'Task parsing error: $e');
@@ -328,4 +333,3 @@ class NlpServiceException implements Exception {
   @override
   String toString() => 'NlpServiceException: $message';
 }
-

@@ -28,14 +28,15 @@ class AppConfig {
 
   // Hugging Face API Configuration
   static const String huggingFaceBaseUrl = 'https://router.huggingface.co';
-  static const String huggingFaceApiKey = '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';
+  static const String huggingFaceApiKey =
+      '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';
   static const String hfClassificationModel = 'facebook/bart-large-mnli';
-
 
   // Remote NLP Server Configuration
   // Note: `NlpService` appends `parse/event` and `parse/task` to this base URL.
   static const String nlpServerBaseUrl = 'https://wayd.zapto.org/api/nlp/';
 
   // Dev-only bearer token for the protected NLP parse endpoints.
-  static const String nlpParseBearerTokenDev = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Inp3dWNiQGNvbm5lY3QudXN0LmhrIiwiZXhwIjoxNzc0MDI5MzA1LCJpYXQiOjE3NzM5NDI5MDUsImlkIjoiNzg5YjNmMzQtMGQ5Yi00YTQ4LWE4MzAtNTg3NjQ3MzgyNTlhIn0.PG8IRF-NICOOZo76MdwCMY_aNJWX3p4M3aT0RYiMwoY';
+  static const String nlpParseBearerTokenDev =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Inp3dWNiQGNvbm5lY3QudXN0LmhrIiwiZXhwIjoxNzc0MDI5MzA1LCJpYXQiOjE3NzM5NDI5MDUsImlkIjoiNzg5YjNmMzQtMGQ5Yi00YTQ4LWE4MzAtNTg3NjQ3MzgyNTlhIn0.PG8IRF-NICOOZo76MdwCMY_aNJWX3p4M3aT0RYiMwoY';
 }

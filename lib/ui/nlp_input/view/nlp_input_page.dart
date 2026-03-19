@@ -6,7 +6,7 @@ import '../../tasks/view/create_item_page.dart';
 /// Page for natural language input to create tasks/events
 class NlpInputPage extends StatefulWidget {
   final String? apiKey;
-  
+
   const NlpInputPage({super.key, this.apiKey});
 
   @override
@@ -117,7 +117,8 @@ class _NlpInputPageState extends State<NlpInputPage> {
             controller: _textController,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText: 'e.g. "Meeting with John tomorrow at 3pm" or "Buy groceries by Friday"',
+              hintText:
+                  'e.g. "Meeting with John tomorrow at 3pm" or "Buy groceries by Friday"',
               hintStyle: TextStyle(color: Colors.grey.shade400),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(20),
@@ -164,7 +165,7 @@ class _NlpInputPageState extends State<NlpInputPage> {
         MaterialPageRoute(
           builder: (_) => CreateItemPage(
             initialIsEvent: isEvent,
-            parsedResult: result,  // Pass the full result
+            parsedResult: result, // Pass the full result
           ),
         ),
       );
@@ -204,5 +205,4 @@ class _NlpInputPageState extends State<NlpInputPage> {
       },
     );
   }
-
 }

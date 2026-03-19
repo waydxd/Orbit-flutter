@@ -5,9 +5,8 @@ import '../../data/services/nlp_service.dart';
 /// State management for NLP input feature
 class NlpInputProvider extends ChangeNotifier {
   final NlpService _nlpService;
-  
-  NlpInputProvider({String? apiKey}) 
-      : _nlpService = NlpService(apiKey: apiKey);
+
+  NlpInputProvider({String? apiKey}) : _nlpService = NlpService(apiKey: apiKey);
 
   NlpParseResult? _result;
   bool _isLoading = false;
@@ -35,7 +34,7 @@ class NlpInputProvider extends ChangeNotifier {
     try {
       // Step 1: Classify as task or event
       final classification = await _nlpService.classifyText(text);
-      
+
       // Step 2: Parse details using local server
       Map<String, dynamic>? parsedData;
       try {
@@ -49,7 +48,7 @@ class NlpInputProvider extends ChangeNotifier {
         print('Parsing failed (using classification only): ${e.message}');
         parsedData = null;
       }
-      
+
       // Step 3: Build result
       _result = _buildParseResult(classification, text, parsedData);
       _error = null;
@@ -80,7 +79,7 @@ class NlpInputProvider extends ChangeNotifier {
         originalText: text,
       );
     }
-    
+
     // Build result with parsed data
     if (classification.type == 'event') {
       final recurrenceRaw = parsedData['recurrence'] as String?;
@@ -92,11 +91,11 @@ class NlpInputProvider extends ChangeNotifier {
         type: classification.type,
         title: parsedData['title'] as String? ?? text,
         description: parsedData['description'] as String?,
-        startTime: parsedData['start_time'] != null 
-            ? DateTime.parse(parsedData['start_time'] as String) 
+        startTime: parsedData['start_time'] != null
+            ? DateTime.parse(parsedData['start_time'] as String)
             : null,
-        endTime: parsedData['end_time'] != null 
-            ? DateTime.parse(parsedData['end_time'] as String) 
+        endTime: parsedData['end_time'] != null
+            ? DateTime.parse(parsedData['end_time'] as String)
             : null,
         location: parsedData['location'] as String?,
         recurrence: recurrence,
@@ -109,8 +108,8 @@ class NlpInputProvider extends ChangeNotifier {
         type: classification.type,
         title: parsedData['title'] as String? ?? text,
         description: parsedData['description'] as String?,
-        dueDate: parsedData['due_date'] != null 
-            ? DateTime.parse(parsedData['due_date'] as String) 
+        dueDate: parsedData['due_date'] != null
+            ? DateTime.parse(parsedData['due_date'] as String)
             : null,
         priority: parsedData['priority'] as String? ?? 'medium',
         confidence: classification.confidence,
@@ -132,4 +131,3 @@ class NlpInputProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

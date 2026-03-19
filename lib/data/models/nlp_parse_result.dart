@@ -142,4 +142,3 @@ class NlpParseResult extends Equatable {
     return 'NlpParseResult(type: $type, title: $title, confidence: $confidence)';
   }
 }
-

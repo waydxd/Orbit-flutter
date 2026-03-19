@@ -216,9 +216,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
       }
 
       final recurrence = result.recurrence;
-      _selectedRepeat = (recurrence == null || recurrence.isEmpty)
-          ? 'Never'
-          : recurrence;
+      _selectedRepeat =
+          (recurrence == null || recurrence.isEmpty) ? 'Never' : recurrence;
     } else {
       if (result.dueDate != null) {
         _deadlineDate = result.dueDate!;
