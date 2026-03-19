@@ -1,0 +1,8 @@
+services:
+  nlp-server:
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped

@@ -9,6 +9,7 @@ import '../../auth/view_model/auth_view_model.dart';
 import '../../core/widgets/modern_dropdown.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
+import '../../../data/models/nlp_parse_result.dart';
 import '../../../data/models/hashtag_prediction.dart';
 import '../../../data/services/hashtag_service.dart';
 import '../../../data/services/location_service.dart';
@@ -155,7 +156,7 @@ class CreateItemPage extends StatefulWidget {
 }
 
 class _CreateItemPageState extends State<CreateItemPage> {
-  bool isEvent = true;
+  late bool isEvent;
   int selectedColorIndex = 0;
 
   // Form controllers and state
@@ -854,6 +855,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 : 'Deadline',
             Icons.access_time_rounded,
             title: 'Deadline',
+            isTask: true,
           ),
         ),
         const SizedBox(height: 20),
@@ -876,10 +878,32 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
+  Widget _buildTextField(TextEditingController controller, String hint) {
+    return Container(
+      decoration: _fieldDecoration(),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLocationField() {
+    final initialLocation = _locationController.text;
     return Container(
       decoration: _fieldDecoration(),
       child: Autocomplete<String>(
+        initialValue: initialLocation.isNotEmpty
+            ? TextEditingValue(text: initialLocation)
+            : null,
         optionsBuilder: (TextEditingValue textEditingValue) async {
           if (textEditingValue.text.isEmpty) {
             return const Iterable<String>.empty();
