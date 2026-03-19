@@ -6,6 +6,7 @@ class FloatingNavBar extends StatefulWidget {
   final VoidCallback onCalendarTap;
   final VoidCallback onCreateTaskTap;
   final VoidCallback onCreateTaskLongPress;
+  final VoidCallback onNlpInputTap;
   final VoidCallback onTodoListTap;
   final VoidCallback onDashboardTap;
   final int currentIndex;
@@ -15,6 +16,7 @@ class FloatingNavBar extends StatefulWidget {
     required this.onCalendarTap,
     required this.onCreateTaskTap,
     required this.onCreateTaskLongPress,
+    required this.onNlpInputTap,
     required this.onTodoListTap,
     required this.onDashboardTap,
     super.key,
@@ -42,7 +44,7 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
   }
 
   void _handleSecondaryCreateTap() {
-    widget.onCreateTaskLongPress();
+    widget.onNlpInputTap();
     setState(() {
       _isCreateMenuOpen = false;
     });

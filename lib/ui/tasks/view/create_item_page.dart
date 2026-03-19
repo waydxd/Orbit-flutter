@@ -144,10 +144,12 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
 class CreateItemPage extends StatefulWidget {
   final bool initialIsEvent;
   final EventModel? editEvent;
+  final NlpParseResult? parsedResult;
 
   const CreateItemPage({
     this.initialIsEvent = true,
     this.editEvent,
+    this.parsedResult,
     super.key,
   });
 
@@ -167,10 +169,14 @@ class _CreateItemPageState extends State<CreateItemPage> {
   @override
   void initState() {
     super.initState();
-    isEvent = widget.editEvent != null ? true : widget.initialIsEvent;
-
     if (widget.editEvent != null) {
+      isEvent = true;
       _prefillFromEditEvent();
+    } else if (widget.parsedResult != null) {
+      isEvent = widget.parsedResult!.type == 'event';
+      _prefillFromParsedResult();
+    } else {
+      isEvent = widget.initialIsEvent;
     }
 
     // Auto-predict hashtags when text changes (event + task)
@@ -188,6 +194,39 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _endDate = event.endTime;
     _endTime = TimeOfDay.fromDateTime(event.endTime);
     _selectedTags = List<String>.from(event.hashtags);
+  }
+
+  void _prefillFromParsedResult() {
+    final result = widget.parsedResult!;
+
+    _nameController.text = result.title;
+    _detailsController.text = result.description ?? '';
+    if (result.location != null) {
+      _locationController.text = result.location!;
+    }
+
+    if (result.isEvent) {
+      if (result.startTime != null) {
+        _startDate = result.startTime!;
+        _startTime = TimeOfDay.fromDateTime(result.startTime!);
+      }
+      if (result.endTime != null) {
+        _endDate = result.endTime!;
+        _endTime = TimeOfDay.fromDateTime(result.endTime!);
+      }
+
+      final recurrence = result.recurrence;
+      _selectedRepeat = (recurrence == null || recurrence.isEmpty)
+          ? 'Never'
+          : recurrence;
+    } else {
+      if (result.dueDate != null) {
+        _deadlineDate = result.dueDate!;
+        _deadlineTime = TimeOfDay.fromDateTime(result.dueDate!);
+      }
+      _selectedPriority =
+          (result.priority.isNotEmpty) ? result.priority : 'medium';
+    }
   }
 
   DateTime _startDate = DateTime.now();
@@ -855,7 +894,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 : 'Deadline',
             Icons.access_time_rounded,
             title: 'Deadline',
-            isTask: true,
           ),
         ),
         const SizedBox(height: 20),
@@ -967,24 +1005,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, String hint) {
-    return Container(
-      decoration: _fieldDecoration(),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
-        ),
       ),
     );
   }

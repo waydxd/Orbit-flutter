@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
-import 'local_storage_service.dart';
 import '../../utils/logger.dart';
 
 /// Service for natural language processing using Hugging Face API
@@ -173,16 +172,20 @@ class NlpService {
       Logger.debugWithTag('NLP', 'Parsing event: "$text"');
 
       // The hosted NLP API protects /parse/* with a bearer token.
-      // Use the logged-in user's access token from secure storage.
-      // Fall back to a dev-only token if none is available.
-      final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey) ??
-          AppConfig.nlpParseBearerTokenDev;
+      // Dev-only: hardcoded bearer token (token expiry risk is accepted).
+      final token = AppConfig.nlpParseBearerTokenDev;
+      if (token.isEmpty) {
+        throw NlpServiceException(
+          'NLP parse bearer token dev value is empty. Update AppConfig.nlpParseBearerTokenDev.',
+          isRetryable: false,
+        );
+      }
       
       final response = await _localDio.post(
         'parse/event',
         data: {'text': text},
         options: Options(
-          headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null,
+          headers: {'Authorization': 'Bearer $token'},
         ),
       );
       
@@ -193,7 +196,7 @@ class NlpService {
 
       if (e.response?.statusCode == 401) {
         throw NlpServiceException(
-          'Unauthorized: NLP parse API requires a valid bearer token. Make sure you are logged in.',
+          'Unauthorized: NLP parse API rejected the bearer token. Update AppConfig.nlpParseBearerTokenDev with a valid (non-expired) token.',
           isRetryable: false,
         );
       }
@@ -234,14 +237,19 @@ class NlpService {
       Logger.debugWithTag('NLP', 'Parsing task: "$text"');
 
       // See `parseEvent` for why we attach the bearer token here.
-      final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey) ??
-          AppConfig.nlpParseBearerTokenDev;
+      final token = AppConfig.nlpParseBearerTokenDev;
+      if (token.isEmpty) {
+        throw NlpServiceException(
+          'NLP parse bearer token dev value is empty. Update AppConfig.nlpParseBearerTokenDev.',
+          isRetryable: false,
+        );
+      }
       
       final response = await _localDio.post(
         'parse/task',
         data: {'text': text},
         options: Options(
-          headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null,
+          headers: {'Authorization': 'Bearer $token'},
         ),
       );
       
@@ -252,7 +260,7 @@ class NlpService {
 
       if (e.response?.statusCode == 401) {
         throw NlpServiceException(
-          'Unauthorized: NLP parse API requires a valid bearer token. Make sure you are logged in.',
+          'Unauthorized: NLP parse API rejected the bearer token. Update AppConfig.nlpParseBearerTokenDev with a valid (non-expired) token.',
           isRetryable: false,
         );
       }

@@ -3,14 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
-import '../widgets/floating_nav_bar.dart';
-import '../../tasks/view/task_list_page.dart';
-import '../../tasks/view/create_item_page.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
-import '../../nlp_input/view/nlp_input_page.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
-import '../view_model/calendar_view_model.dart';
 import 'event_detail_page.dart';
 
 class CalendarPage extends StatefulWidget {

@@ -9,6 +9,7 @@ import '../../dashboard/view/dashboard_page.dart';
 import '../../home/view/home_page.dart';
 import '../../tasks/view/create_item_page.dart';
 import '../../tasks/view/task_list_page.dart';
+import '../../nlp_input/view/nlp_input_page.dart';
 
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -57,6 +58,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     );
   }
 
+  Future<void> _openNlpInput() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const NlpInputPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,6 +77,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             onCalendarTap: () => _selectTab(1),
             onCreateTaskTap: _openCreateItem,
             onCreateTaskLongPress: _openAiChat,
+            onNlpInputTap: _openNlpInput,
             onTodoListTap: () => _selectTab(2),
             onDashboardTap: () => _selectTab(3),
           ),
