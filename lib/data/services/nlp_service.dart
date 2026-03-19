@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
+import 'local_storage_service.dart';
 import '../../utils/logger.dart';
 
 /// Service for natural language processing using Hugging Face API
@@ -170,16 +171,32 @@ class NlpService {
   Future<Map<String, dynamic>> parseEvent(String text) async {
     try {
       Logger.debugWithTag('NLP', 'Parsing event: "$text"');
+
+      // The hosted NLP API protects /parse/* with a bearer token.
+      // Use the logged-in user's access token from secure storage.
+      // Fall back to a dev-only token if none is available.
+      final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey) ??
+          AppConfig.nlpParseBearerTokenDev;
       
       final response = await _localDio.post(
-        '/parse/event',
+        'parse/event',
         data: {'text': text},
+        options: Options(
+          headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null,
+        ),
       );
       
       Logger.debugWithTag('NLP', 'Event parsed: ${response.data}');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       Logger.errorWithTag('NLP', 'Event parsing failed: ${e.message}');
+
+      if (e.response?.statusCode == 401) {
+        throw NlpServiceException(
+          'Unauthorized: NLP parse API requires a valid bearer token. Make sure you are logged in.',
+          isRetryable: false,
+        );
+      }
       
       if (e.response?.statusCode == 503) {
         throw NlpServiceException(
@@ -215,16 +232,30 @@ class NlpService {
   Future<Map<String, dynamic>> parseTask(String text) async {
     try {
       Logger.debugWithTag('NLP', 'Parsing task: "$text"');
+
+      // See `parseEvent` for why we attach the bearer token here.
+      final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey) ??
+          AppConfig.nlpParseBearerTokenDev;
       
       final response = await _localDio.post(
-        '/parse/task',
+        'parse/task',
         data: {'text': text},
+        options: Options(
+          headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : null,
+        ),
       );
       
       Logger.debugWithTag('NLP', 'Task parsed: ${response.data}');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       Logger.errorWithTag('NLP', 'Task parsing failed: ${e.message}');
+
+      if (e.response?.statusCode == 401) {
+        throw NlpServiceException(
+          'Unauthorized: NLP parse API requires a valid bearer token. Make sure you are logged in.',
+          isRetryable: false,
+        );
+      }
       
       if (e.response?.statusCode == 503) {
         throw NlpServiceException(
