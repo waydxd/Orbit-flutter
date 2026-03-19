@@ -39,6 +39,7 @@ class NlpParseResult extends Equatable {
   const NlpParseResult({
     required this.type,
     required this.title,
+    required this.originalText,
     this.description,
     this.startTime,
     this.endTime,
@@ -47,7 +48,6 @@ class NlpParseResult extends Equatable {
     this.recurrence,
     this.priority = 'medium',
     this.confidence = 0.0,
-    required this.originalText,
   });
 
   /// Returns true if this is classified as an event

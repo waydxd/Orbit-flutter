@@ -5,6 +5,7 @@ import '../../data/services/nlp_service.dart';
 /// State management for NLP input feature
 class NlpInputProvider extends ChangeNotifier {
   final NlpService _nlpService;
+  bool _isDisposed = false;
 
   NlpInputProvider({String? apiKey}) : _nlpService = NlpService(apiKey: apiKey);
 
@@ -20,16 +21,17 @@ class NlpInputProvider extends ChangeNotifier {
 
   /// Classify natural language input as task or event, then parse details
   Future<void> parseInput(String text) async {
+    if (_isDisposed) return;
     if (text.trim().isEmpty) {
       _error = 'Please enter some text';
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
       return;
     }
 
     _isLoading = true;
     _error = null;
     _result = null;
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
 
     try {
       // Step 1: Classify as task or event
@@ -45,7 +47,9 @@ class NlpInputProvider extends ChangeNotifier {
         }
       } on NlpServiceException catch (e) {
         // If parsing fails, log but continue with classification only
-        print('Parsing failed (using classification only): ${e.message}');
+        debugPrint(
+          'Parsing failed (using classification only): ${e.message}',
+        );
         parsedData = null;
       }
 
@@ -60,7 +64,7 @@ class NlpInputProvider extends ChangeNotifier {
       _result = null;
     } finally {
       _isLoading = false;
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
     }
   }
 
@@ -122,11 +126,12 @@ class NlpInputProvider extends ChangeNotifier {
   void clear() {
     _result = null;
     _error = null;
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _nlpService.dispose();
     super.dispose();
   }

@@ -220,7 +220,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
           (recurrence == null || recurrence.isEmpty) ? 'Never' : recurrence;
     } else {
       if (result.dueDate != null) {
-        _deadlineDate = result.dueDate!;
+        _deadlineDate = result.dueDate;
         _deadlineTime = TimeOfDay.fromDateTime(result.dueDate!);
       }
       _selectedPriority =

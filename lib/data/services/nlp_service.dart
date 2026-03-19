@@ -16,7 +16,7 @@ class NlpService {
       BaseOptions(
         baseUrl: AppConfig.huggingFaceBaseUrl,
         connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -27,8 +27,8 @@ class NlpService {
     _localDio = Dio(
       BaseOptions(
         baseUrl: AppConfig.nlpServerBaseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -43,7 +43,7 @@ class NlpService {
       throw NlpServiceException('Hugging Face API key is not configured');
     }
 
-    final url = '/hf-inference/models/${AppConfig.hfClassificationModel}';
+    const url = '/hf-inference/models/${AppConfig.hfClassificationModel}';
 
     try {
       Logger.debugWithTag('NLP', 'Classifying text: "$text"');
@@ -90,11 +90,10 @@ class NlpService {
         final result = ClassificationResult(
           type: maxItem['label'] as String,
           confidence: maxScore,
-          allScores: Map.fromIterable(
-            items,
-            key: (item) => item['label'] as String,
-            value: (item) => (item['score'] as num).toDouble(),
-          ),
+          allScores: {
+            for (final item in items)
+              (item['label'] as String): (item['score'] as num).toDouble(),
+          },
         );
 
         Logger.infoWithTag('NLP',
@@ -178,7 +177,7 @@ class NlpService {
 
       // The hosted NLP API protects /parse/* with a bearer token.
       // Dev-only: hardcoded bearer token (token expiry risk is accepted).
-      final token = AppConfig.nlpParseBearerTokenDev;
+      const token = AppConfig.nlpParseBearerTokenDev;
       if (token.isEmpty) {
         throw NlpServiceException(
           'NLP parse bearer token dev value is empty. Update AppConfig.nlpParseBearerTokenDev.',
@@ -242,7 +241,7 @@ class NlpService {
       Logger.debugWithTag('NLP', 'Parsing task: "$text"');
 
       // See `parseEvent` for why we attach the bearer token here.
-      final token = AppConfig.nlpParseBearerTokenDev;
+      const token = AppConfig.nlpParseBearerTokenDev;
       if (token.isEmpty) {
         throw NlpServiceException(
           'NLP parse bearer token dev value is empty. Update AppConfig.nlpParseBearerTokenDev.',
