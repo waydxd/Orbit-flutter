@@ -122,6 +122,13 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
               bottom: bottomBarOffset + 15,
               child: GestureDetector(
                 onTap: _toggleCreateMenu,
+                onLongPress: () {
+                  // Long press should open AI chat, not keep the menu open.
+                  setState(() {
+                    _isCreateMenuOpen = false;
+                  });
+                  widget.onCreateTaskLongPress();
+                },
                 child: AnimatedRotation(
                   turns: _isCreateMenuOpen ? 0.125 : 0,
                   duration: const Duration(milliseconds: 220),
