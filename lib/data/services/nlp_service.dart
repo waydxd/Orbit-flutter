@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+
 import '../../config/app_config.dart';
 import '../../utils/logger.dart';
+import 'local_storage_service.dart';
 
 /// Service for natural language processing using Hugging Face API
 /// Classifies text as task or event and extracts relevant entities
@@ -158,7 +160,7 @@ class NlpService {
       // Handle invalid/expired API key
       if (e.response?.statusCode == 410 || e.response?.statusCode == 401) {
         throw NlpServiceException(
-          'Invalid API key. Please update your Hugging Face API key in app_config.dart',
+          'Invalid API key. Set HUGGING_FACE_API_KEY via --dart-define when building/running.',
         );
       }
 
@@ -171,16 +173,16 @@ class NlpService {
 
   /// Parse event details using local T5 model
   /// Returns structured event data from natural language input
+  /// Uses the JWT Bearer token issued at login (Orbit-core).
   Future<Map<String, dynamic>> parseEvent(String text) async {
     try {
       Logger.debugWithTag('NLP', 'Parsing event: "$text"');
 
-      // The hosted NLP API protects /parse/* with a bearer token.
-      // Dev-only: hardcoded bearer token (token expiry risk is accepted).
-      const token = AppConfig.nlpParseBearerTokenDev;
-      if (token.isEmpty) {
+      final token =
+          await LocalStorageService.getSecure(AppConfig.accessTokenKey);
+      if (token == null || token.isEmpty) {
         throw NlpServiceException(
-          'NLP parse bearer token dev value is empty. Update AppConfig.nlpParseBearerTokenDev.',
+          'Please sign in to use NLP parsing.',
           isRetryable: false,
         );
       }
@@ -200,7 +202,7 @@ class NlpService {
 
       if (e.response?.statusCode == 401) {
         throw NlpServiceException(
-          'Unauthorized: NLP parse API rejected the bearer token. Update AppConfig.nlpParseBearerTokenDev with a valid (non-expired) token.',
+          'Session expired. Please sign in again.',
           isRetryable: false,
         );
       }
@@ -236,15 +238,16 @@ class NlpService {
 
   /// Parse task details using local T5 model
   /// Returns structured task data from natural language input
+  /// Uses the JWT Bearer token issued at login (Orbit-core).
   Future<Map<String, dynamic>> parseTask(String text) async {
     try {
       Logger.debugWithTag('NLP', 'Parsing task: "$text"');
 
-      // See `parseEvent` for why we attach the bearer token here.
-      const token = AppConfig.nlpParseBearerTokenDev;
-      if (token.isEmpty) {
+      final token =
+          await LocalStorageService.getSecure(AppConfig.accessTokenKey);
+      if (token == null || token.isEmpty) {
         throw NlpServiceException(
-          'NLP parse bearer token dev value is empty. Update AppConfig.nlpParseBearerTokenDev.',
+          'Please sign in to use NLP parsing.',
           isRetryable: false,
         );
       }
@@ -264,7 +267,7 @@ class NlpService {
 
       if (e.response?.statusCode == 401) {
         throw NlpServiceException(
-          'Unauthorized: NLP parse API rejected the bearer token. Update AppConfig.nlpParseBearerTokenDev with a valid (non-expired) token.',
+          'Session expired. Please sign in again.',
           isRetryable: false,
         );
       }
