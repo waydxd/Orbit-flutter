@@ -1,0 +1,3 @@
+[submodule "Orbit-core"]
+	path = Orbit-core
+	url = https://github.com/waydxd/Orbit-core

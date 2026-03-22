@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../calendar/widgets/floating_nav_bar.dart';
-import '../../tasks/view/task_list_page.dart';
-import '../../tasks/view/create_item_page.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
 import '../models/daily_heatmap_record.dart';
 import '../widgets/heatmap_calendar_widget.dart';
 import '../widgets/location_card_widget.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
+import '../../settings/view/settings_page.dart';
 import '../../../data/models/event_model.dart';
 
 import '../../core/themes/app_colors.dart';
@@ -116,26 +113,19 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ],
           ),
-          Stack(
-            children: [
-              const Icon(
-                Icons.notifications_outlined,
-                color: AppColors.black,
-                size: 28,
-              ),
-              Positioned(
-                right: 4,
-                top: 4,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF8B80F0),
-                    shape: BoxShape.circle,
-                  ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
                 ),
-              ),
-            ],
+              );
+            },
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.black,
+              size: 28,
+            ),
           ),
         ],
       ),
@@ -153,81 +143,34 @@ class _DashboardPageState extends State<DashboardPage> {
             colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
           ),
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            SafeArea(
-              child: Consumer<CalendarViewModel>(
-                builder: (context, viewModel, child) {
-                  final records = _generateRecordsFromEvents(viewModel.events);
+        child: SafeArea(
+          child: Consumer<CalendarViewModel>(
+            builder: (context, viewModel, child) {
+              final records = _generateRecordsFromEvents(viewModel.events);
 
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 120),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: 20),
-                        HeatmapCalendarWidget(
-                          records: records,
-                          focusedDate: _focusedDate,
-                          onPageChanged: (focusedDay) {
-                            setState(() {
-                              _focusedDate = focusedDay;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        const LocationCardWidget(),
-                      ],
+              return SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 20),
+                    HeatmapCalendarWidget(
+                      records: records,
+                      focusedDate: _focusedDate,
+                      onPageChanged: (focusedDay) {
+                        setState(() {
+                          _focusedDate = focusedDay;
+                        });
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
-
-            // Navigation Bar
-            FloatingNavBar(
-              currentIndex: 3, // Dashboard is index 3
-              onHomeTap: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-              onCalendarTap: () {
-                // Depending on where we came from, but generally we can push or pop.
-                // Let's pop if we came from calendar, otherwise push.
-                // For simplicity, we can just pop until first, then push Calendar.
-                // Wait, Home is usually first. Calendar is separate.
-                // Let's match TaskListPage:
-                Navigator.pop(context);
-              },
-              onCreateTaskTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateItemPage(),
-                  ),
-                );
-              },
-              onCreateTaskLongPress: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AiChatPage()),
-                );
-                debugPrint('AI Chat long press');
-              },
-              onTodoListTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TaskListPage(),
-                  ),
-                );
-              },
-              onDashboardTap: () {
-                // Already on dashboard page
-              },
-            ),
-          ],
+                    const SizedBox(height: 20),
+                    const LocationCardWidget(),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

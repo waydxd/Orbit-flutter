@@ -19,6 +19,35 @@ class AuthViewModel extends BaseViewModel {
   bool get isAuthenticated => _isAuthenticated;
   UserModel? get currentUser => _currentUser;
   String? get currentUserEmail => _currentUser?.email;
+  String? get currentUserDisplayName => _currentUser?.displayName;
+
+  Future<void> _persistAuthenticatedSession(
+    String token,
+    UserModel user,
+  ) async {
+    _isAuthenticated = true;
+    _currentUser = user;
+
+    await LocalStorageService.storeSecure(AppConfig.accessTokenKey, token);
+    await LocalStorageService.setPreference('is_authenticated', true);
+    await LocalStorageService.setPreference('user_email', user.email);
+    await LocalStorageService.setPreference('user_id', user.id);
+  }
+
+  String _extractErrorMessage(dynamic error, String fallbackMessage) {
+    if (error is Exception) {
+      return error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+    }
+    final message = error.toString();
+    return message.isEmpty ? fallbackMessage : message;
+  }
+
+  bool _isValidUsername(String username) {
+    if (username.length < 3 || username.length > 50) return false;
+    if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(username)) return false;
+    if (RegExp(r'[_-]{2,}').hasMatch(username)) return false;
+    return true;
+  }
 
   /// Login with email and password
   Future<bool> login(String email, String password) async {
@@ -28,8 +57,8 @@ class AuthViewModel extends BaseViewModel {
       return false;
     }
 
-    if (!Validators.isValidPassword(password)) {
-      setError('Password must be at least 8 characters long');
+    if (password.isEmpty) {
+      setError('Please enter your password');
       return false;
     }
 
@@ -38,38 +67,14 @@ class AuthViewModel extends BaseViewModel {
             final result = await _authRepository.login(email, password);
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
-
-            _isAuthenticated = true;
-            _currentUser = user;
-
-            // Store authentication state
-            await LocalStorageService.storeSecure(
-              AppConfig.accessTokenKey,
-              token,
-            );
-            await LocalStorageService.setPreference('is_authenticated', true);
-            await LocalStorageService.setPreference('user_email', user.email);
-            await LocalStorageService.setPreference('user_id', user.id);
+            await _persistAuthenticatedSession(token, user);
 
             return true;
           } catch (e) {
             _isAuthenticated = false;
             _currentUser = null;
-
-            // Extract error message from exception
-            String errorMessage = 'Login failed. Please try again.';
-            if (e is Exception) {
-              final message = e.toString();
-              // Remove "Exception: " prefix if present
-              errorMessage = message.replaceFirst(
-                RegExp(r'^Exception:\s*'),
-                '',
-              );
-            } else {
-              errorMessage = e.toString();
-            }
-
-            setError(errorMessage);
+            setError(
+                _extractErrorMessage(e, 'Login failed. Please try again.'));
             return false;
           }
         }) ??
@@ -119,7 +124,7 @@ class AuthViewModel extends BaseViewModel {
     }
 
     if (!Validators.isValidPassword(password)) {
-      setError('Password must be at least 8 characters long');
+      setError(Validators.passwordRequirementError);
       return false;
     }
 
@@ -133,38 +138,99 @@ class AuthViewModel extends BaseViewModel {
             final result = await _authRepository.register(email, password, otp);
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
-
-            _isAuthenticated = true;
-            _currentUser = user;
-
-            // Store authentication state
-            await LocalStorageService.storeSecure(
-              AppConfig.accessTokenKey,
-              token,
-            );
-            await LocalStorageService.setPreference('is_authenticated', true);
-            await LocalStorageService.setPreference('user_email', user.email);
-            await LocalStorageService.setPreference('user_id', user.id);
+            await _persistAuthenticatedSession(token, user);
 
             return true;
           } catch (e) {
             _isAuthenticated = false;
             _currentUser = null;
+            setError(
+              _extractErrorMessage(e, 'Registration failed. Please try again.'),
+            );
+            return false;
+          }
+        }) ??
+        false;
+  }
 
-            // Extract error message from exception
-            String errorMessage = 'Registration failed. Please try again.';
-            if (e is Exception) {
-              final message = e.toString();
-              // Remove "Exception: " prefix if present
-              errorMessage = message.replaceFirst(
-                RegExp(r'^Exception:\s*'),
+  Future<bool> completeRegistration({
+    required String email,
+    required String username,
+    required String password,
+    required String confirmPassword,
+    required String firstName,
+    required String lastName,
+    required String region,
+    required String timezone,
+    required String gender,
+    DateTime? birthDate,
+  }) async {
+    final trimmedEmail = email.trim();
+    final trimmedUsername = username.trim();
+
+    if (!Validators.isValidEmail(trimmedEmail)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    if (!_isValidUsername(trimmedUsername)) {
+      setError(
+        'Username must be 3-50 characters and use only letters, numbers, underscores, and hyphens',
+      );
+      return false;
+    }
+
+    if (!Validators.isValidPassword(password)) {
+      setError(Validators.passwordRequirementError);
+      return false;
+    }
+
+    if (password != confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final shouldRegister =
+                !(_isAuthenticated && _currentUser?.email == trimmedEmail);
+
+            if (shouldRegister) {
+              final result = await _authRepository.register(
+                trimmedEmail,
+                password,
                 '',
               );
-            } else {
-              errorMessage = e.toString();
+              final token = result['token'] as String;
+              final user = result['user'] as UserModel;
+              await _persistAuthenticatedSession(token, user);
             }
 
-            setError(errorMessage);
+            final payload = <String, dynamic>{
+              'first_name': firstName.trim(),
+              'last_name': lastName.trim(),
+              'username': trimmedUsername,
+              'region': region.trim(),
+              'timezone': timezone.trim(),
+              'gender': gender.trim(),
+              'birth_date': birthDate == null
+                  ? ''
+                  : '${birthDate.year.toString().padLeft(4, '0')}-${birthDate.month.toString().padLeft(2, '0')}-${birthDate.day.toString().padLeft(2, '0')}',
+            };
+
+            final profile = await _authRepository.updateProfile(payload);
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            setError(
+              _extractErrorMessage(
+                e,
+                'Registration failed. Please try again.',
+              ),
+            );
             return false;
           }
         }) ??
@@ -205,7 +271,7 @@ class AuthViewModel extends BaseViewModel {
     }
 
     if (!Validators.isValidPassword(newPassword)) {
-      setError('Password must be at least 8 characters long');
+      setError(Validators.passwordRequirementError);
       return false;
     }
 
@@ -254,6 +320,84 @@ class AuthViewModel extends BaseViewModel {
         await LocalStorageService.removePreference('user_id');
       }
     }, showLoading: false);
+  }
+
+  Future<bool> loadProfile() async {
+    if (!_isAuthenticated && _currentUser == null) {
+      setError('Please login again to view your profile');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final profile = await _authRepository.getProfile();
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            String errorMessage = 'Failed to load profile.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
+            setError(errorMessage);
+            return false;
+          }
+        }, showLoading: true) ??
+        false;
+  }
+
+  Future<bool> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String username,
+    required String region,
+    required String timezone,
+    required String gender,
+    DateTime? birthDate,
+  }) async {
+    if (!_isAuthenticated && _currentUser == null) {
+      setError('Please login again to update your profile');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final payload = <String, dynamic>{
+              'first_name': firstName.trim(),
+              'last_name': lastName.trim(),
+              'username': username.trim(),
+              'region': region.trim(),
+              'timezone': timezone.trim(),
+              'gender': gender.trim(),
+              'birth_date': birthDate == null
+                  ? ''
+                  : '${birthDate.year.toString().padLeft(4, '0')}-${birthDate.month.toString().padLeft(2, '0')}-${birthDate.day.toString().padLeft(2, '0')}',
+            };
+
+            final profile = await _authRepository.updateProfile(payload);
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            String errorMessage = 'Failed to update profile.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
+            setError(errorMessage);
+            return false;
+          }
+        }) ??
+        false;
   }
 
   /// Check if user is already authenticated

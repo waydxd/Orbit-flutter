@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
+import 'ui/core/view/main_navigation_shell.dart';
 import 'config/app_config.dart';
 import 'ui/auth/view_model/auth_view_model.dart';
 import 'ui/calendar/view_model/calendar_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
-
-import 'ui/home/view/home_page.dart';
 
 /// Main application widget
 class OrbitApp extends StatelessWidget {
@@ -99,7 +98,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         // Navigate based on authentication state
         if (authViewModel.isAuthenticated) {
-          return const HomeScreen();
+          return const MainNavigationShell();
         } else {
           return const LoginPage();
         }
@@ -154,15 +153,5 @@ class SplashScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Placeholder home screen - Replaced with HomePage
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const HomePage();
   }
 }

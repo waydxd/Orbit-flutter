@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/themes/app_colors.dart';
-import '../view/location_list_page.dart';
+import '../view/significant_locations_page.dart';
 
 class LocationCardWidget extends StatefulWidget {
   const LocationCardWidget({super.key});
@@ -98,7 +98,7 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const LocationListPage()),
+                    builder: (context) => const SignificantLocationsPage()),
               );
             },
             child: Padding(
@@ -153,7 +153,7 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
-                                      const LocationListPage()),
+                                      const SignificantLocationsPage()),
                             );
                           },
                           child: GoogleMap(
@@ -172,7 +172,7 @@ class _LocationCardWidgetState extends State<LocationCardWidget> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) =>
-                                        const LocationListPage()),
+                                        const SignificantLocationsPage()),
                               );
                             },
                           ),

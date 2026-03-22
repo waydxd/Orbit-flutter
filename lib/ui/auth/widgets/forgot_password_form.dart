@@ -200,7 +200,7 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
                       return 'Please enter your new password';
                     }
                     if (!Validators.isValidPassword(value)) {
-                      return 'Password must be at least 8 characters long';
+                      return Validators.passwordRequirementError;
                     }
                     return null;
                   },

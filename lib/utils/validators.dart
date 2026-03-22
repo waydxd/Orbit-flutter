@@ -2,6 +2,12 @@
 class Validators {
   const Validators._();
 
+  static const String passwordHelperText =
+      'Use at least 8 characters with uppercase, lowercase, number, and special character.';
+
+  static const String passwordRequirementError =
+      'Password must be at least 8 characters and include uppercase, lowercase, number, and special character';
+
   /// Email validation
   static String? email(String? value) {
     if (value == null || value.isEmpty) {
@@ -34,8 +40,8 @@ class Validators {
       return 'Password must be at least 8 characters long';
     }
 
-    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(value)) {
-      return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+    if (!isValidPassword(value)) {
+      return passwordRequirementError;
     }
 
     return null;
@@ -194,10 +200,30 @@ class Validators {
 
   /// Check if password is valid (returns boolean)
   static bool isValidPassword(String password) {
-    if (password.length < 8) return false;
-    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
-    final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
-    final hasDigit = RegExp(r'\d').hasMatch(password);
-    return hasUppercase && hasLowercase && hasDigit;
+    return hasMinPasswordLength(password) &&
+        hasUppercase(password) &&
+        hasLowercase(password) &&
+        hasDigit(password) &&
+        hasSpecialCharacter(password);
+  }
+
+  static bool hasMinPasswordLength(String password) {
+    return password.length >= 8;
+  }
+
+  static bool hasUppercase(String password) {
+    return RegExp(r'[A-Z]').hasMatch(password);
+  }
+
+  static bool hasLowercase(String password) {
+    return RegExp(r'[a-z]').hasMatch(password);
+  }
+
+  static bool hasDigit(String password) {
+    return RegExp(r'\d').hasMatch(password);
+  }
+
+  static bool hasSpecialCharacter(String password) {
+    return RegExp(r'[^A-Za-z0-9\s]').hasMatch(password);
   }
 }

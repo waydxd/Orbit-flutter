@@ -197,4 +197,20 @@ class CalendarRepository {
       rethrow;
     }
   }
+
+  Future<void> deleteTask(String taskId) async {
+    try {
+      final response = await _apiClient.delete('/calendar/tasks/$taskId');
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'DELETE /calendar/tasks/$taskId status: ${response.statusCode}',
+      );
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete task: ${response.statusCode}');
+      }
+    } catch (e) {
+      Logger.errorWithTag('CalendarRepository', 'Failed to delete task: $e');
+      rethrow;
+    }
+  }
 }

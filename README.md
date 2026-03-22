@@ -49,5 +49,9 @@ License: This project is licensed under the GNU Affero General Public License v3
 For iOS: Ensure CocoaPods is installed (`pod install` in `ios/` folder).
 
 ### Environment Configuration
-- Create `.env` in root:
+- Create `.env` in root for Google Maps, Gemini API, Resend, etc. (use `flutter_dotenv` package).
+- **Compile-time secrets** (pass via `--dart-define` when building/running):
+  - `HUGGING_FACE_API_KEY` – Hugging Face API key for text classification.
+  - Example: `flutter run --dart-define=HUGGING_FACE_API_KEY=your_key`
+  - Note: NLP parse endpoints use the JWT Bearer token from login (Orbit-core); no separate token needed.
 
