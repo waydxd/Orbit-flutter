@@ -140,8 +140,12 @@ class NlpService {
       // If we get here, the format is unexpected
       Logger.errorWithTag(
           'NLP', 'Unexpected response format. Full response: $data');
+      final responseString = data.toString();
+      final preview = responseString.length > 200
+          ? responseString.substring(0, 200)
+          : responseString;
       throw NlpServiceException(
-          'Unexpected response format from classification API. Response: ${data.toString().substring(0, 200)}...');
+          'Unexpected response format from classification API. Response: $preview...');
     } on DioException catch (e) {
       Logger.errorWithTag('NLP', 'Classification failed: ${e.message}');
 
