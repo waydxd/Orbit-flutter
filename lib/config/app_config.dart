@@ -29,7 +29,7 @@ class AppConfig {
   // Hugging Face API Configuration
   static const String huggingFaceBaseUrl = 'https://router.huggingface.co';
   static const String huggingFaceApiKey =
-      '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';
+      String.fromEnvironment('HUGGING_FACE_API_KEY', defaultValue: '');
   static const String hfClassificationModel = 'facebook/bart-large-mnli';
 
   // Remote NLP Server Configuration
@@ -38,5 +38,5 @@ class AppConfig {
 
   // Dev-only bearer token for the protected NLP parse endpoints.
   static const String nlpParseBearerTokenDev =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Inp3dWNiQGNvbm5lY3QudXN0LmhrIiwiZXhwIjoxNzc0MDI5MzA1LCJpYXQiOjE3NzM5NDI5MDUsImlkIjoiNzg5YjNmMzQtMGQ5Yi00YTQ4LWE4MzAtNTg3NjQ3MzgyNTlhIn0.PG8IRF-NICOOZo76MdwCMY_aNJWX3p4M3aT0RYiMwoY';
+      String.fromEnvironment('NLP_PARSE_BEARER_TOKEN_DEV', defaultValue: '');
 }
