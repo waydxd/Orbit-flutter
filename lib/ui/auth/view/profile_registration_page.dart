@@ -69,8 +69,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
     String timezone = '';
 
     try {
-      final tzInfo = await FlutterTimezone.getLocalTimezone();
-      timezone = tzInfo.identifier;
+      timezone = await FlutterTimezone.getLocalTimezone();
     } catch (_) {
       timezone = '';
     }
