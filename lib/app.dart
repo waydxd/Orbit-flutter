@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
 import 'ui/core/view/main_navigation_shell.dart';
+import 'ui/core/widgets/orbit_animation.dart';
 import 'config/app_config.dart';
 import 'ui/auth/view_model/auth_view_model.dart';
 import 'ui/calendar/view_model/calendar_view_model.dart';
@@ -61,11 +62,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (!mounted) return;
 
     try {
-      // Check authentication status with a timeout
-      await Provider.of<AuthViewModel>(
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      final calendarViewModel = Provider.of<CalendarViewModel>(
         context,
         listen: false,
-      ).checkAuthStatus().timeout(
+      );
+
+      // Check authentication status with a timeout
+      await authViewModel.checkAuthStatus().timeout(
         const Duration(seconds: 5),
         onTimeout: () {
           // If check takes too long, just proceed without authentication
@@ -73,6 +77,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return;
         },
       );
+
+      // Keep splash visible until initial calendar/task data is loaded.
+      if (authViewModel.isAuthenticated) {
+        final userId = authViewModel.currentUser?.id;
+        if (userId != null) {
+          await calendarViewModel.fetchAll(userId: userId).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () {
+              debugPrint('Initial data preload timed out, continuing app');
+            },
+          );
+        }
+      }
     } catch (e) {
       // If check fails, proceed without authentication
       debugPrint('Auth check failed: $e');
@@ -113,41 +130,30 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Constants.spacingM),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: Constants.splashIconSize,
-                  color: Theme.of(context).colorScheme.primary,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(Constants.spacingM),
+              child: Transform.translate(
+                offset: const Offset(0, -24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OrbitAnimation(
+                      width: Constants.splashIconSize * 1.8,
+                      height: Constants.splashIconSize * 1.8,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: Constants.spacingL),
-                Text(
-                  AppConfig.appName,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontWeight: Constants.fontWeightBold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: Constants.spacingS),
-                Text(
-                  'Intelligent Calendar & Planning',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSurface.withValues(
-                                  alpha: Constants.opacityHigh,
-                                ),
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: Constants.spacingXXL),
-                const CircularProgressIndicator(),
-              ],
+              ),
             ),
           ),
         ),

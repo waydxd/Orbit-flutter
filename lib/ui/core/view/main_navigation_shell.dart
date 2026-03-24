@@ -31,12 +31,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userId = context.read<AuthViewModel>().currentUser?.id;
-      if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
-      }
-    });
   }
 
   void _selectTab(int index) {
