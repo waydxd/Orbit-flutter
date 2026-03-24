@@ -14,250 +14,249 @@ class EventDetailPage extends StatelessWidget {
     super.key,
   });
 
+  String _inferCategory(EventModel e) {
+    final combined = '${e.title} ${e.description}'.toLowerCase();
+    if (combined.contains('work') ||
+        combined.contains('meeting') ||
+        combined.contains('sync') ||
+        combined.contains('office')) {
+      return 'Work';
+    }
+    if (combined.contains('study') ||
+        combined.contains('class') ||
+        combined.contains('lecture') ||
+        combined.contains('exam')) {
+      return 'Study';
+    }
+    if (combined.contains('gym') ||
+        combined.contains('exercise') ||
+        combined.contains('workout') ||
+        combined.contains('run')) {
+      return 'Exercise';
+    }
+    if (combined.contains('personal') ||
+        combined.contains('dinner') ||
+        combined.contains('lunch') ||
+        combined.contains('friend') ||
+        combined.contains('family')) {
+      return 'Personal';
+    }
+    return 'Event';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      children: [
-                        // Illustration Area
-                        Container(
-                          height: 240,
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                          ),
-                          child: Stack(
-                            children: [
-                              // Abstract shapes to simulate illustration background
-                              Positioned(
-                                bottom: 0,
-                                left: -50,
-                                child: Container(
-                                  width: 300,
-                                  height: 150,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: -50,
-                                right: -20,
-                                child: Container(
-                                  width: 250,
-                                  height: 200,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                              // Demo Icon in center
-                              const Center(
-                                child: Icon(
-                                  Icons.event_note_rounded,
-                                  size: 100,
-                                  color: Colors.white30,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Title Area
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(88, 16, 24, 16),
-                          color: AppColors.primaryDark,
-                          child: Text(
-                            event.title,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new),
+                      color: AppColors.textPrimary,
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    // Top Actions
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
-                      left: 8,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+                    Expanded(
+                      child: Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
-                      right: 8,
-                      child: IconButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.white),
-                        onPressed: () => _showMoreOptions(context),
-                      ),
-                    ),
-                    // Floating Action Button
-                    Positioned(
-                      bottom: -28,
-                      right: 24,
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.secondary,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.secondary.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            customBorder: const CircleBorder(),
-                            onTap: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CreateItemPage(
-                                    initialIsEvent: true,
-                                    editEvent: event,
-                                  ),
-                                ),
-                              );
-                              // We could pop this page to return to calendar if edited
-                              if (result == true && context.mounted) {
-                                Navigator.pop(context);
-                              }
-                            },
-                            child: const Icon(
-                              Icons.edit,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.more_horiz),
+                      color: AppColors.textPrimary,
+                      onPressed: () => _showMoreOptions(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 48),
-                _buildListItem(
-                  icon: Icons.access_time_rounded,
-                  title: _formatDate(event.startTime),
-                  subtitle: _formatTimeRange(event.startTime, event.endTime),
-                ),
-                if (event.location.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  _buildListItem(
-                    icon: Icons.location_on_rounded,
-                    title: 'Location',
-                    subtitle: event.location,
-                  ),
-                ],
-                if (event.description.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  _buildListItem(
-                    icon: Icons.flag_rounded,
-                    title: 'Description',
-                    subtitle: event.description,
-                  ),
-                ],
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
+              ),
 
-          // Bottom Actions
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade200),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => _handleDelete(context),
-                    child: const Text(
-                      'DELETE',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Template image placeholder (1:1 ratio - replace with actual image later)
+                          // No top/left/right padding - image fits edge-to-edge in card
+                          AspectRatio(
+                            aspectRatio: 1,
+                            child: Container(
+                              color: AppColors.grey100,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 48,
+                                  color: AppColors.grey400,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Category tag (pill)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _inferCategory(event).toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Location section (if present)
+                                if (event.location.isNotEmpty) ...[
+                                  _buildSectionLabel('LOCATION'),
+                                  const SizedBox(height: 12),
+                                  _buildLocationRow(event.location),
+                                  const SizedBox(height: 24),
+                                ],
+
+                                // Date & Time section
+                                _buildSectionLabel('DATE & TIME'),
+                                const SizedBox(height: 12),
+                                _buildInfoRow(
+                                  icon: Icons.calendar_today_rounded,
+                                  text: _formatDate(event.startTime),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  icon: Icons.access_time_rounded,
+                                  text:
+                                      '${_formatTimeRange(event.startTime, event.endTime)} ${_formatDuration(event.startTime, event.endTime)}',
+                                ),
+                                const SizedBox(height: 24),
+                                _buildSectionLabel('DESCRIPTION'),
+                                const SizedBox(height: 12),
+                                Text(
+                                  event.description.isNotEmpty
+                                      ? event.description
+                                      : 'No description',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: event.description.isNotEmpty
+                                        ? AppColors.textSecondary
+                                        : AppColors.grey400,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'DONE',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildListItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildLocationRow(String location) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.grey50,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.grey.shade500, size: 28),
-          const SizedBox(width: 24),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  location,
                   style: const TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF374151),
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -267,12 +266,51 @@ class EventDetailPage extends StatelessWidget {
     );
   }
 
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String text,
+    String? subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.primary, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   String _formatDate(DateTime date) {
-    return DateFormat('EEEE, d MMM').format(date);
+    return DateFormat('EEEE, d MMMM yyyy').format(date);
   }
 
   String _formatTimeRange(DateTime start, DateTime end) {
-    final timeFormatter = DateFormat('HH:mm');
+    final timeFormatter = DateFormat('h:mm a');
     if (start.year == end.year &&
         start.month == end.month &&
         start.day == end.day) {
@@ -283,10 +321,23 @@ class EventDetailPage extends StatelessWidget {
     }
   }
 
+  String _formatDuration(DateTime start, DateTime end) {
+    final minutes = end.difference(start).inMinutes;
+    if (minutes < 60) {
+      return '($minutes min)';
+    }
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    return mins > 0 ? '($hours hr $mins min)' : '($hours hr)';
+  }
+
   Future<void> _handleDelete(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: const Text('Delete Event'),
         content: const Text('Are you sure you want to delete this event?'),
         actions: [
@@ -296,7 +347,8 @@ class EventDetailPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -326,16 +378,42 @@ class EventDetailPage extends StatelessWidget {
   void _showMoreOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete', style: TextStyle(color: Colors.red)),
+              leading:
+                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              title: const Text('Edit',
+                  style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
-                Navigator.pop(context); // Close bottom sheet
-                _handleDelete(context); // Trigger delete confirmation
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateItemPage(
+                      initialIsEvent: true,
+                      editEvent: event,
+                    ),
+                  ),
+                ).then((result) {
+                  if (result == true && context.mounted) {
+                    Navigator.pop(context);
+                  }
+                });
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
+              title: const Text('Delete',
+                  style: TextStyle(color: AppColors.error)),
+              onTap: () {
+                Navigator.pop(context);
+                _handleDelete(context);
               },
             ),
           ],

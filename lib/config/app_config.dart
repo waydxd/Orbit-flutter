@@ -25,4 +25,16 @@ class AppConfig {
   // Timeouts
   static const Duration networkTimeout = Duration(seconds: 30);
   static const Duration syncInterval = Duration(minutes: 15);
+
+  // Hugging Face API Configuration
+  static const String huggingFaceBaseUrl = 'https://router.huggingface.co';
+  static const String huggingFaceApiKey = String.fromEnvironment(
+      'HUGGING_FACE_API_KEY',
+      defaultValue: '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');
+  static const String hfClassificationModel = 'facebook/bart-large-mnli';
+
+  // Remote NLP Server Configuration
+  // Note: `NlpService` appends `parse/event` and `parse/task` to this base URL.
+  // NLP parse endpoints use the same JWT Bearer token issued at login (Orbit-core).
+  static const String nlpServerBaseUrl = 'https://wayd.zapto.org/api/nlp/';
 }
