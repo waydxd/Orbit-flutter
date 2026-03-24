@@ -251,7 +251,7 @@ class ChatbotProvider extends ChangeNotifier {
       if (_state.currentSessionId!.startsWith('temp-') && response.sessionId.isNotEmpty) {
         newSessionId = response.sessionId;
         // Update user message with real session ID
-        final updatedUserMessage = userMessage.copyWith(sessionId: newSessionId);
+        // final updatedUserMessage = userMessage.copyWith(sessionId: newSessionId);
         _state.messages.last.copyWith(sessionId: newSessionId);
       }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/view_model/auth_view_model.dart';
-import '../../ai_chat/view/ai_chat_page.dart';
+import '../../chat/view/chat_page.dart';
 import '../../calendar/view/calendar_page.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../calendar/widgets/floating_nav_bar.dart';
