@@ -34,6 +34,9 @@ class EnvironmentConfig {
       case Environment.local:
         return 'http://$_localHost:8080';
       case Environment.development:
+        // Use the shared remote backend in development to match main branch behavior
+        // If you want to target a local Orbit-core instance instead, update this
+        // to the appropriate host (e.g. 10.0.2.2 for Android emulator).
         return 'https://wayd.zapto.org';
       case Environment.staging:
         return 'https://wayd.zapto.org';

@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
-import '../../calendar/widgets/floating_nav_bar.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
-import '../../auth/view_model/auth_view_model.dart';
-import '../../calendar/view/calendar_page.dart';
-import '../../dashboard/view/dashboard_page.dart';
-import '../../tasks/view/task_list_page.dart';
-import '../../tasks/view/create_item_page.dart';
-import '../../chat/view/chat_page.dart';
+import '../../settings/view/settings_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
 import 'package:intl/intl.dart';
@@ -22,19 +16,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final PageController _pageController = PageController(viewportFraction: 0.85);
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch data from backend on load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
-      final userId = authViewModel.currentUser?.id;
-      if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
-      }
-    });
-  }
 
   @override
   void dispose() {
@@ -53,160 +34,107 @@ class _HomePageState extends State<HomePage> {
             colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
           ),
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            SafeArea(
-              child: Consumer<CalendarViewModel>(
-                builder: (context, viewModel, child) {
-                  if (viewModel.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+        child: SafeArea(
+          child: Consumer<CalendarViewModel>(
+            builder: (context, viewModel, child) {
+              if (viewModel.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                  // Prepare data
-                  final now = DateTime.now();
+              // Prepare data
+              final now = DateTime.now();
 
-                  // Past vs Total Events (Only Today)
-                  final todayEvents = viewModel.events.where((e) {
-                    return e.startTime.year == now.year &&
-                        e.startTime.month == now.month &&
-                        e.startTime.day == now.day;
-                  }).toList();
-                  final totalEvents = todayEvents.length;
-                  final pastEvents =
-                      todayEvents.where((e) => e.endTime.isBefore(now)).length;
+              // Past vs Total Events (Only Today)
+              final todayEvents = viewModel.events.where((e) {
+                return e.startTime.year == now.year &&
+                    e.startTime.month == now.month &&
+                    e.startTime.day == now.day;
+              }).toList();
+              final totalEvents = todayEvents.length;
+              final pastEvents =
+                  todayEvents.where((e) => e.endTime.isBefore(now)).length;
 
-                  // Tasks
-                  final totalTasks = viewModel.tasks.length;
-                  final completedTasks =
-                      viewModel.tasks.where((t) => t.completed).length;
+              // Tasks
+              final totalTasks = viewModel.tasks.length;
+              final completedTasks =
+                  viewModel.tasks.where((t) => t.completed).length;
 
-                  // Upcoming tasks/events for swappable cards
-                  final upcomingTasks =
-                      viewModel.tasks.where((t) => !t.completed).toList();
-                  final upcomingEvents = viewModel.events
-                      .where((e) => e.startTime.isAfter(now))
-                      .toList();
+              // Upcoming tasks/events for swappable cards
+              final upcomingTasks =
+                  viewModel.tasks.where((t) => !t.completed).toList();
+              final upcomingEvents = viewModel.events
+                  .where((e) => e.startTime.isAfter(now))
+                  .toList();
 
-                  // Combine and sort
-                  final List<dynamic> combinedUpcoming = [
-                    ...upcomingTasks,
-                    ...upcomingEvents
-                  ];
-                  combinedUpcoming.sort((a, b) {
-                    final dateA = a is TaskModel
-                        ? (a.dueDate ?? DateTime(2099))
-                        : (a as EventModel).startTime;
-                    final dateB = b is TaskModel
-                        ? (b.dueDate ?? DateTime(2099))
-                        : (b as EventModel).startTime;
-                    return dateA.compareTo(dateB);
-                  });
+              // Combine and sort
+              final List<dynamic> combinedUpcoming = [
+                ...upcomingTasks,
+                ...upcomingEvents
+              ];
+              combinedUpcoming.sort((a, b) {
+                final dateA = a is TaskModel
+                    ? (a.dueDate ?? DateTime(2099))
+                    : (a as EventModel).startTime;
+                final dateB = b is TaskModel
+                    ? (b.dueDate ?? DateTime(2099))
+                    : (b as EventModel).startTime;
+                return dateA.compareTo(dateB);
+              });
 
-                  return ListView(
-                    padding: const EdgeInsets.only(
-                        bottom: 120), // Space for floating nav bar
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 20),
+              return ListView(
+                padding: const EdgeInsets.only(
+                    bottom: 120), // Space for floating nav bar
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
 
-                      // 1. Swappable Cards (Upcoming Tasks/Events)
-                      _buildSectionTitle('Upcoming'),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 160,
-                        child: combinedUpcoming.isEmpty
-                            ? _buildEmptyStateCard('No upcoming items!')
-                            : PageView.builder(
-                                controller: _pageController,
-                                itemCount: combinedUpcoming.length > 5
-                                    ? 5
-                                    : combinedUpcoming.length,
-                                itemBuilder: (context, index) {
-                                  final item = combinedUpcoming[index];
-                                  return _buildUpcomingCard(item);
-                                },
-                              ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // 2. AI Agent Suggestion
-                      _buildSectionTitle('AI Suggestions'),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _buildAiSuggestionCard(),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // 3. Count of past event / total event
-                      _buildSectionTitle('Today\'s Statistics'),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _buildStatsCard(pastEvents, totalEvents,
-                            completedTasks, totalTasks),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-
-            // Floating Navigation Bar
-            FloatingNavBar(
-              currentIndex: 0,
-              onHomeTap: () {
-                // Already on home page
-                debugPrint('Home tapped');
-              },
-              onCalendarTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CalendarPage(),
+                  // 1. Swappable Cards (Upcoming Tasks/Events)
+                  _buildSectionTitle('Upcoming'),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 160,
+                    child: combinedUpcoming.isEmpty
+                        ? _buildEmptyStateCard('No upcoming items!')
+                        : PageView.builder(
+                            controller: _pageController,
+                            itemCount: combinedUpcoming.length > 5
+                                ? 5
+                                : combinedUpcoming.length,
+                            itemBuilder: (context, index) {
+                              final item = combinedUpcoming[index];
+                              return _buildUpcomingCard(item);
+                            },
+                          ),
                   ),
-                );
-                debugPrint('Calendar tapped');
-              },
-              onCreateTaskTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateItemPage(),
+
+                  const SizedBox(height: 30),
+
+                  // 2. AI Agent Suggestion
+                  _buildSectionTitle('AI Suggestions'),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildAiSuggestionCard(),
                   ),
-                );
-                debugPrint('Create task tapped');
-              },
-              onCreateTaskLongPress: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AiChatPage()),
-                );
-                debugPrint('AI Chat long press');
-              },
-              onTodoListTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TaskListPage(),
+
+                  const SizedBox(height: 30),
+
+                  // 3. Count of past event / total event
+                  _buildSectionTitle('Today\'s Statistics'),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildStatsCard(
+                      pastEvents,
+                      totalEvents,
+                      completedTasks,
+                      totalTasks,
+                    ),
                   ),
-                );
-                debugPrint('Todo list tapped');
-              },
-              onDashboardTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DashboardPage(),
-                  ),
-                );
-                debugPrint('Dashboard tapped');
-              },
-            ),
-          ],
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -239,26 +167,19 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          Stack(
-            children: [
-              const Icon(
-                Icons.notifications_outlined,
-                color: AppColors.black,
-                size: 28,
-              ),
-              Positioned(
-                right: 4,
-                top: 4,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF8B80F0),
-                    shape: BoxShape.circle,
-                  ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
                 ),
-              ),
-            ],
+              );
+            },
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.black,
+              size: 28,
+            ),
           ),
         ],
       ),

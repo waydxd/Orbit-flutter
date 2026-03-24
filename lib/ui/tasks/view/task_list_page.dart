@@ -1,13 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
-import '../../calendar/widgets/floating_nav_bar.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
-import '../../auth/view_model/auth_view_model.dart';
 import '../../../data/models/task_model.dart';
-import 'create_item_page.dart';
-import '../../dashboard/view/dashboard_page.dart';
-import '../../chat/view/chat_page.dart';
+import '../../../core/services/notification_service.dart';
+import 'task_detail_page.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -18,103 +16,159 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   @override
-  void initState() {
-    super.initState();
-    // Fetch data from backend on load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
-      final userId = authViewModel.currentUser?.id;
-      if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F5F9),
-      body: Consumer<CalendarViewModel>(
-        builder: (context, viewModel, child) {
-          final pendingTasks =
-              viewModel.tasks.where((t) => !t.completed).toList();
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+          ),
+        ),
+        child: Consumer<CalendarViewModel>(
+          builder: (context, viewModel, child) {
+            final pendingTasks =
+                viewModel.tasks.where((t) => !t.completed).toList();
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    Expanded(
-                      child: viewModel.isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : ListView(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              children: [
-                                const SizedBox(height: 20),
-                                _buildSummaryCard(pendingTasks),
-                                const SizedBox(height: 30),
-                                ...viewModel.tasks.map(
-                                  (task) => _buildTaskItem(
-                                    title: task.title,
-                                    subtitle: task.description,
-                                    color: _getPriorityColor(task.priority),
-                                    deadline: _getDeadlineText(task.dueDate),
-                                    isUrgent: task.priority == 'urgent',
-                                    hashtags: task.hashtags,
-                                  ),
-                                ),
-                                const SizedBox(height: 120), // Space for FAB
-                              ],
+            return SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: viewModel.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : Theme(
+                            data: Theme.of(context).copyWith(
+                              canvasColor: Colors.transparent,
                             ),
-                    ),
-                  ],
-                ),
+                            child: ReorderableListView.builder(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: pendingTasks.length +
+                                  1, // +1 for summary card
+                              onReorder: (oldIndex, newIndex) {
+                                // Adjust indices since index 0 is summary card
+                                if (oldIndex == 0 || newIndex == 0) return;
+                                final int oldTaskIndex = oldIndex - 1;
+                                final int newTaskIndex = newIndex - 1;
+
+                                // Call view model reorder on the full tasks list
+                                // Need to find original indices in viewModel.tasks
+                                final oldTask = pendingTasks[oldTaskIndex];
+                                final oldOriginalIndex =
+                                    viewModel.tasks.indexOf(oldTask);
+
+                                // For simplicity, we just reorder in the viewModel if supported
+                                viewModel.reorderTasks(
+                                    oldOriginalIndex,
+                                    newTaskIndex >= pendingTasks.length
+                                        ? viewModel.tasks.length
+                                        : viewModel.tasks.indexOf(
+                                            pendingTasks[newTaskIndex]));
+                              },
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  return Container(
+                                    key: const ValueKey('summary_card'),
+                                    padding: const EdgeInsets.only(
+                                        top: 20, bottom: 30),
+                                    child: _buildSummaryCard(pendingTasks),
+                                  );
+                                }
+
+                                final task = pendingTasks[index - 1];
+                                return Container(
+                                  key: ValueKey(task.id),
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Dismissible(
+                                      key: ValueKey('dismiss_${task.id}'),
+                                      direction: DismissDirection.endToStart,
+                                      background: Container(
+                                        color: Colors.redAccent,
+                                        alignment: Alignment.centerRight,
+                                        padding:
+                                            const EdgeInsets.only(right: 20),
+                                        child: const Icon(Icons.delete,
+                                            color: Colors.white),
+                                      ),
+                                      confirmDismiss: (direction) async {
+                                        return await showDialog<bool>(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text('Delete Task'),
+                                              content: const Text(
+                                                  'Are you sure you want to delete this task?'),
+                                              actions: <Widget>[
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(false),
+                                                  child: const Text('CANCEL'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(true),
+                                                  style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.red),
+                                                  child: const Text('DELETE'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                      onDismissed: (direction) {
+                                        viewModel.deleteTask(task.id);
+                                      },
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  TaskDetailPage(task: task),
+                                            ),
+                                          );
+                                        },
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: TaskItemWidget(
+                                            task: task,
+                                            color: _getPriorityColor(
+                                                task.priority),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                  ),
+                ],
               ),
-              FloatingNavBar(
-                currentIndex: 2,
-                onHomeTap: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                onCalendarTap: () {
-                  Navigator.pop(context);
-                },
-                onCreateTaskTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateItemPage(),
-                    ),
-                  );
-                  debugPrint('Create task tapped');
-                },
-                onCreateTaskLongPress: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AiChatPage()),
-                  );
-                  debugPrint('AI Chat long press');
-                },
-                onTodoListTap: () {
-                  // Already here
-                },
-                onDashboardTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DashboardPage(),
-                    ),
-                  );
-                  debugPrint('Dashboard tapped');
-                },
-              ),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -132,15 +186,6 @@ class _TaskListPageState extends State<TaskListPage> {
       default:
         return Colors.grey;
     }
-  }
-
-  String? _getDeadlineText(DateTime? dueDate) {
-    if (dueDate == null) return null;
-    final now = DateTime.now();
-    final difference = dueDate.difference(now).inDays;
-    if (difference < 0) return 'Overdue';
-    if (difference == 0) return 'Today';
-    return '$difference days';
   }
 
   Widget _buildHeader() {
@@ -206,9 +251,9 @@ class _TaskListPageState extends State<TaskListPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
@@ -222,6 +267,13 @@ class _TaskListPageState extends State<TaskListPage> {
               fontWeight: FontWeight.bold,
               color: Colors.white,
               height: 1.2,
+              shadows: [
+                Shadow(
+                  color: Colors.black26,
+                  offset: Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
           Text(
@@ -231,6 +283,13 @@ class _TaskListPageState extends State<TaskListPage> {
               fontWeight: FontWeight.bold,
               color: Colors.white,
               height: 1.2,
+              shadows: [
+                Shadow(
+                  color: Colors.black26,
+                  offset: Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 25),
@@ -241,6 +300,13 @@ class _TaskListPageState extends State<TaskListPage> {
               fontWeight: FontWeight.w900,
               color: Color(0xFF8178D3),
               letterSpacing: 1.0,
+              shadows: [
+                Shadow(
+                  color: Colors.black12,
+                  offset: Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
@@ -282,29 +348,121 @@ class _TaskListPageState extends State<TaskListPage> {
       ),
     );
   }
+}
 
-  Widget _buildTaskItem({
-    required String title,
-    required Color color,
-    String? subtitle,
-    String? deadline,
-    bool isUrgent = false,
-    List<String> hashtags = const [],
-  }) {
+class TaskItemWidget extends StatefulWidget {
+  final TaskModel task;
+  final Color color;
+
+  const TaskItemWidget({
+    required this.task,
+    required this.color,
+    super.key,
+  });
+
+  @override
+  State<TaskItemWidget> createState() => _TaskItemWidgetState();
+}
+
+class _TaskItemWidgetState extends State<TaskItemWidget> {
+  Timer? _timer;
+  String _countdownText = '';
+  bool _hasNotified = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCountdown();
+    if (widget.task.dueDate != null) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        _updateCountdown();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.task.dueDate != oldWidget.task.dueDate) {
+      _timer?.cancel();
+      _updateCountdown();
+      if (widget.task.dueDate != null) {
+        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          _updateCountdown();
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _updateCountdown() {
+    if (widget.task.dueDate == null) {
+      if (_countdownText != '') {
+        setState(() => _countdownText = '');
+      }
+      return;
+    }
+
+    final now = DateTime.now();
+    final difference = widget.task.dueDate!.difference(now);
+
+    // Notify if task is due in less than 30 minutes and hasn't been notified yet
+    if (!difference.isNegative && difference.inMinutes <= 30 && !_hasNotified) {
+      _hasNotified = true;
+      NotificationService().showNotification(
+        id: widget.task.id.hashCode,
+        title: 'Task Due Soon',
+        body: '${widget.task.title} is due in ${difference.inMinutes} minutes.',
+      );
+    }
+
+    String newText;
+    if (difference.isNegative) {
+      newText = 'Overdue';
+    } else if (difference.inDays > 1) {
+      newText = '${difference.inDays} days';
+    } else if (difference.inDays == 1) {
+      newText = '1 day ${difference.inHours.remainder(24)}h';
+    } else {
+      final hours = difference.inHours;
+      final minutes = difference.inMinutes.remainder(60);
+
+      if (hours > 0) {
+        newText = '${hours}h ${minutes}m';
+      } else if (minutes > 0) {
+        newText = '${minutes}m';
+      } else {
+        newText = '< 1m';
+      }
+    }
+
+    if (_countdownText != newText) {
+      setState(() => _countdownText = newText);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isUrgent = widget.task.priority.toLowerCase() == 'urgent';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
+      height: 70,
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        // Removed border radius and box shadow here since it's now handled by the parent container
       ),
       child: Row(
         children: [
           Container(
             width: 8,
-            height: 50,
+            height: double.infinity,
             decoration: BoxDecoration(
-              color: color,
+              color: widget.color,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 bottomLeft: Radius.circular(16),
@@ -327,16 +485,16 @@ class _TaskListPageState extends State<TaskListPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  widget.task.title,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: AppColors.black,
                   ),
                 ),
-                if (subtitle != null && subtitle.isNotEmpty)
+                if (widget.task.description.isNotEmpty)
                   Text(
-                    subtitle,
+                    widget.task.description,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.grey400,
@@ -345,43 +503,16 @@ class _TaskListPageState extends State<TaskListPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                if (hashtags.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: hashtags.map((tag) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '#$tag',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF6366F1),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
               ],
             ),
           ),
-          if (deadline != null)
+          if (_countdownText.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Row(
                 children: [
                   Text(
-                    deadline,
+                    _countdownText,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

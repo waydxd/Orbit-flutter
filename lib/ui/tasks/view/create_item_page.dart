@@ -6,11 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import '../../core/widgets/modern_dropdown.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
+import '../../../data/models/nlp_parse_result.dart';
 import '../../../data/models/hashtag_prediction.dart';
-import '../../../data/services/location_service.dart';
 import '../../../data/services/hashtag_service.dart';
+import '../../../data/services/location_service.dart';
 
 class _DateTimePickerSheet extends StatefulWidget {
   final DateTime initialDate;
@@ -142,12 +144,12 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
 class CreateItemPage extends StatefulWidget {
   final bool initialIsEvent;
   final EventModel? editEvent;
-  final TaskModel? editTask;
+  final NlpParseResult? parsedResult;
 
   const CreateItemPage({
     this.initialIsEvent = true,
     this.editEvent,
-    this.editTask,
+    this.parsedResult,
     super.key,
   });
 
@@ -156,7 +158,7 @@ class CreateItemPage extends StatefulWidget {
 }
 
 class _CreateItemPageState extends State<CreateItemPage> {
-  bool isEvent = true;
+  late bool isEvent;
   int selectedColorIndex = 0;
 
   // Form controllers and state
@@ -170,27 +172,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
     if (widget.editEvent != null) {
       isEvent = true;
       _prefillFromEditEvent();
-    } else if (widget.editTask != null) {
-      isEvent = false;
-      _prefillFromEditTask();
+    } else if (widget.parsedResult != null) {
+      isEvent = widget.parsedResult!.type == 'event';
+      _prefillFromParsedResult();
     } else {
       isEvent = widget.initialIsEvent;
     }
 
-    // Auto-predict hashtags when name changes
-    _nameController.addListener(_onNameChanged);
-  }
-
-  void _onNameChanged() {
-    _debounceTimer?.cancel();
-    final text = _nameController.text.trim();
-    if (text.isEmpty) {
-      setState(() => _predictedTags = []);
-      return;
-    }
-    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
-      _predictHashtags();
-    });
+    // Auto-predict hashtags when text changes (event + task)
+    _nameController.addListener(_onTextChanged);
+    _detailsController.addListener(_onTextChanged);
   }
 
   void _prefillFromEditEvent() {
@@ -205,15 +196,35 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _selectedTags = List<String>.from(event.hashtags);
   }
 
-  void _prefillFromEditTask() {
-    final task = widget.editTask!;
-    _nameController.text = task.title;
-    _detailsController.text = task.description;
-    _selectedPriority = task.priority;
-    _selectedTags = List<String>.from(task.hashtags);
-    if (task.dueDate != null) {
-      _deadlineDate = task.dueDate;
-      _deadlineTime = TimeOfDay.fromDateTime(task.dueDate!);
+  void _prefillFromParsedResult() {
+    final result = widget.parsedResult!;
+
+    _nameController.text = result.title;
+    _detailsController.text = result.description ?? '';
+    if (result.location != null) {
+      _locationController.text = result.location!;
+    }
+
+    if (result.isEvent) {
+      if (result.startTime != null) {
+        _startDate = result.startTime!;
+        _startTime = TimeOfDay.fromDateTime(result.startTime!);
+      }
+      if (result.endTime != null) {
+        _endDate = result.endTime!;
+        _endTime = TimeOfDay.fromDateTime(result.endTime!);
+      }
+
+      final recurrence = result.recurrence;
+      _selectedRepeat =
+          (recurrence == null || recurrence.isEmpty) ? 'Never' : recurrence;
+    } else {
+      if (result.dueDate != null) {
+        _deadlineDate = result.dueDate;
+        _deadlineTime = TimeOfDay.fromDateTime(result.dueDate!);
+      }
+      _selectedPriority =
+          (result.priority.isNotEmpty) ? result.priority : 'medium';
     }
   }
 
@@ -229,9 +240,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
   String _selectedRepeat = 'Never';
   String _selectedPriority = 'medium';
-  List<String> _selectedTags = [];
 
-  // Hashtag prediction state
+  // Hashtag state (used for events)
+  List<String> _selectedTags = [];
   final HashtagService _hashtagService = HashtagService();
   final TextEditingController _tagInputController = TextEditingController();
   List<HashtagScore> _predictedTags = [];
@@ -252,13 +263,21 @@ class _CreateItemPageState extends State<CreateItemPage> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
-    _nameController.removeListener(_onNameChanged);
+    _nameController.removeListener(_onTextChanged);
+    _detailsController.removeListener(_onTextChanged);
     _nameController.dispose();
     _detailsController.dispose();
     _locationController.dispose();
     _tagInputController.dispose();
     _hashtagService.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      _predictHashtags();
+    });
   }
 
   Future<void> _showDateTimePicker(
@@ -410,62 +429,37 @@ class _CreateItemPageState extends State<CreateItemPage> {
           );
         }
 
-        if (widget.editTask != null) {
-          final task = widget.editTask!.copyWith(
-            title: _nameController.text,
-            description: _detailsController.text,
-            dueDate: deadline,
-            priority: _selectedPriority,
-            hashtags: List<String>.from(_selectedTags),
-            updatedAt: DateTime.now(),
-          );
-          await viewModel.updateTask(task);
-        } else {
-          final task = TaskModel(
-            id: uuid.v4(),
-            userId: currentUserId,
-            title: _nameController.text,
-            description: _detailsController.text,
-            dueDate: deadline,
-            completed: false,
-            priority: _selectedPriority,
-            hashtags: List<String>.from(_selectedTags),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-          await viewModel.createTask(task);
-        }
+        final task = TaskModel(
+          id: uuid.v4(),
+          userId: currentUserId,
+          title: _nameController.text,
+          description: _detailsController.text,
+          dueDate: deadline,
+          completed: false,
+          priority: _selectedPriority,
+          hashtags: List<String>.from(_selectedTags),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await viewModel.createTask(task);
       }
 
       if (mounted) {
-        // Submit hashtag feedback for model improvement
-        if (_selectedTags.isNotEmpty) {
-          final eventText =
-              '${_nameController.text} ${_detailsController.text}';
-          _hashtagService.submitFeedback(
-            userId: currentUserId,
-            eventText: eventText,
-            selectedHashtags: _selectedTags,
-          );
-        }
-
         Navigator.pop(context, true);
-        final isEditing = widget.editEvent != null || widget.editTask != null;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${isEvent ? 'Event' : 'Task'} ${isEditing ? 'updated' : 'created'} successfully!',
+              '${isEvent ? 'Event' : 'Task'} ${widget.editEvent != null ? 'updated' : 'created'} successfully!',
             ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        final isEditing = widget.editEvent != null || widget.editTask != null;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Failed to ${isEditing ? 'update' : 'create'} ${isEvent ? 'event' : 'task'}: $e'),
+                'Failed to ${widget.editEvent != null ? 'update' : 'create'} ${isEvent ? 'event' : 'task'}: $e'),
           ),
         );
       }
@@ -491,13 +485,13 @@ class _CreateItemPageState extends State<CreateItemPage> {
             children: [
               _buildHeader(),
               const SizedBox(height: 20),
-              if (widget.editEvent == null && widget.editTask == null) ...[
+              if (widget.editEvent == null) ...[
                 _buildToggle(),
                 const SizedBox(height: 30),
               ] else ...[
-                Text(
-                  widget.editEvent != null ? 'Edit Event' : 'Edit Task',
-                  style: const TextStyle(
+                const Text(
+                  'Edit Event',
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1F2937),
@@ -630,9 +624,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
         const SizedBox(height: 20),
         _buildLocationField(),
         const SizedBox(height: 20),
-        _buildDropdownField('Repeat', _selectedRepeat, (val) {
-          setState(() => _selectedRepeat = val!);
-        }, ['Never', 'Daily', 'Weekly', 'Monthly']),
+        ModernDropdownField<String>(
+          label: 'Repeat',
+          icon: Icons.repeat_rounded,
+          value: _selectedRepeat,
+          displayStringForValue: (val) => val,
+          items: const ['Never', 'Daily', 'Weekly', 'Monthly'],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedRepeat = val);
+          },
+        ),
         const SizedBox(height: 20),
         _buildHashtagField(),
         const SizedBox(height: 20),
@@ -640,6 +641,237 @@ class _CreateItemPageState extends State<CreateItemPage> {
         const SizedBox(height: 20),
         _buildColorPicker(),
       ],
+    );
+  }
+
+  Future<void> _predictHashtags() async {
+    final text = '${_nameController.text} ${_detailsController.text}'.trim();
+    if (text.isEmpty) return;
+    setState(() => _isPredicting = true);
+    try {
+      final prediction = await _hashtagService.predictHashtags(text);
+      if (!mounted) return;
+      setState(() {
+        _predictedTags = prediction.top5;
+        _isPredicting = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isPredicting = false);
+    }
+  }
+
+  void _addTag(String tag) {
+    final trimmed = tag.trim().replaceAll(RegExp(r'^#+'), '');
+    if (trimmed.isEmpty) return;
+    if (_selectedTags.contains(trimmed)) return;
+    setState(() => _selectedTags.add(trimmed));
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _selectedTags.remove(tag));
+  }
+
+  Widget _buildHashtagField() {
+    return Container(
+      decoration: _fieldDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.tag_rounded, color: Colors.grey.shade500, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Hashtags',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (_isPredicting) ...[
+                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF6366F1),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              TextButton(
+                onPressed: _predictHashtags,
+                child: const Text('Suggest'),
+              ),
+            ],
+          ),
+          if (_selectedTags.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedTags.map((tag) {
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '#$tag',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => _removeTag(tag),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+          if (_predictedTags.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Suggestions',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _predictedTags
+                  .where((p) => !_selectedTags
+                      .contains(p.hashtag.replaceAll(RegExp(r'^#+'), '')))
+                  .map((prediction) {
+                final pct = (prediction.confidence * 100).toStringAsFixed(0);
+                final displayTag = prediction.hashtag.startsWith('#')
+                    ? prediction.hashtag
+                    : '#${prediction.hashtag}';
+                return GestureDetector(
+                  onTap: () => _addTag(prediction.hashtag),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          displayTag,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6366F1),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$pct%',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 14,
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.6),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _tagInputController,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Add tag manually...',
+                    hintStyle:
+                        TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide:
+                          BorderSide(color: Colors.grey.shade300, width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide:
+                          BorderSide(color: Colors.grey.shade300, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6366F1),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    _addTag(value);
+                    _tagInputController.clear();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  _addTag(_tagInputController.text);
+                  _tagInputController.clear();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(Icons.add, size: 18, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -666,19 +898,49 @@ class _CreateItemPageState extends State<CreateItemPage> {
         const SizedBox(height: 20),
         _buildHashtagField(),
         const SizedBox(height: 20),
-        _buildDropdownField('Priority', _selectedPriority, (val) {
-          setState(() => _selectedPriority = val!);
-        }, ['low', 'medium', 'high', 'urgent']),
+        ModernDropdownField<String>(
+          label: 'Priority',
+          icon: Icons.flag_outlined,
+          value: _selectedPriority,
+          displayStringForValue: (val) =>
+              val[0].toUpperCase() + val.substring(1),
+          items: const ['low', 'medium', 'high', 'urgent'],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedPriority = val);
+          },
+        ),
         const SizedBox(height: 20),
         _buildDetailsField(_detailsController),
       ],
     );
   }
 
+  Widget _buildTextField(TextEditingController controller, String hint) {
+    return Container(
+      decoration: _fieldDecoration(),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLocationField() {
+    final initialLocation = _locationController.text;
     return Container(
       decoration: _fieldDecoration(),
       child: Autocomplete<String>(
+        initialValue: initialLocation.isNotEmpty
+            ? TextEditingValue(text: initialLocation)
+            : null,
         optionsBuilder: (TextEditingValue textEditingValue) async {
           if (textEditingValue.text.isEmpty) {
             return const Iterable<String>.empty();
@@ -746,24 +1008,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint) {
-    return Container(
-      decoration: _fieldDecoration(),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildTimeField(String value, IconData icon, {String? title}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -804,283 +1048,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdownField(
-    String label,
-    String value,
-    void Function(String?) onChanged,
-    List<String> items, {
-    bool isTag = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      decoration: _fieldDecoration(),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            isTag ? '# Tag' : label,
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              icon: Icon(
-                Icons.unfold_more_rounded,
-                color: Colors.cyan.shade300,
-                size: 20,
-              ),
-              onChanged: onChanged,
-              items: items.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(
-                    value.isEmpty && isTag ? 'None' : value,
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _predictHashtags() async {
-    final text = '${_nameController.text} ${_detailsController.text}'.trim();
-    if (text.isEmpty) return;
-
-    setState(() => _isPredicting = true);
-    try {
-      final prediction = await _hashtagService.predictHashtags(text);
-      if (mounted) {
-        setState(() {
-          _predictedTags = prediction.top5;
-          _isPredicting = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isPredicting = false;
-        });
-      }
-    }
-  }
-
-  void _addTag(String tag) {
-    final trimmed = tag.trim().replaceAll(RegExp(r'^#+'), '');
-    if (trimmed.isNotEmpty && !_selectedTags.contains(trimmed)) {
-      setState(() {
-        _selectedTags.add(trimmed);
-      });
-    }
-  }
-
-  void _removeTag(String tag) {
-    setState(() {
-      _selectedTags.remove(tag);
-    });
-  }
-
-  Widget _buildHashtagField() {
-    return Container(
-      decoration: _fieldDecoration(),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header row with label
-          Row(
-            children: [
-              Icon(Icons.tag_rounded, color: Colors.grey.shade500, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Hashtags',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (_isPredicting) ...[
-                const SizedBox(width: 8),
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xFF6366F1),
-                  ),
-                ),
-              ],
-            ],
-          ),
-
-          // Selected tags display
-          if (_selectedTags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _selectedTags.map((tag) {
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '#$tag',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: () => _removeTag(tag),
-                        child: const Icon(Icons.close,
-                            size: 14, color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-
-          // Predicted tags
-          if (_predictedTags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Suggestions',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _predictedTags
-                  .where((p) => !_selectedTags
-                      .contains(p.hashtag.replaceAll(RegExp(r'^#+'), '')))
-                  .map((prediction) {
-                final pct = (prediction.confidence * 100).toStringAsFixed(0);
-                final displayTag = prediction.hashtag.startsWith('#')
-                    ? prediction.hashtag
-                    : '#${prediction.hashtag}';
-                return GestureDetector(
-                  onTap: () => _addTag(prediction.hashtag),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          displayTag,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF6366F1),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$pct%',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.add_circle_outline,
-                          size: 14,
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.6),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-
-          // Manual input
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _tagInputController,
-                  style: const TextStyle(fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'Add tag manually...',
-                    hintStyle:
-                        TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                    isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide:
-                          BorderSide(color: Colors.grey.shade300, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide:
-                          BorderSide(color: Colors.grey.shade300, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(
-                          color: Color(0xFF6366F1), width: 1.5),
-                    ),
-                  ),
-                  onSubmitted: (value) {
-                    _addTag(value);
-                    _tagInputController.clear();
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  _addTag(_tagInputController.text);
-                  _tagInputController.clear();
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(Icons.add, size: 18, color: Colors.white),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -1191,9 +1158,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
               child: viewModel.isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : Text(
-                      (widget.editEvent != null || widget.editTask != null)
-                          ? 'Update'
-                          : 'Create',
+                      widget.editEvent != null ? 'Update' : 'Create',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,

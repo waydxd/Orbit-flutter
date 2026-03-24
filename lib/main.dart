@@ -3,13 +3,17 @@ import 'package:flutter/services.dart';
 import 'app.dart';
 import 'config/environment.dart';
 import 'data/services/local_storage_service.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set environment - use local for development with local backend
-  EnvironmentConfig.setEnvironment(Environment.local);
-  //EnvironmentConfig.setEnvironment(Environment.development);
+  // Initialize notifications
+  await NotificationService().initialize();
+
+  // Set environment
+  // EnvironmentConfig.setEnvironment(Environment.local);
+  EnvironmentConfig.setEnvironment(Environment.development);
 
   // Initialize local storage
   await LocalStorageService.initialize();
