@@ -37,6 +37,7 @@ class _CalendarPageState extends State<CalendarPage>
   late DateTime _referenceDate;
   bool _isYearScrollScheduled = false;
   final List<GlobalKey> _yearMonthKeys = List.generate(12, (_) => GlobalKey());
+  DateTime? _yearViewLastTapDay;
 
   static const double _hourHeight = 80.0;
 
@@ -66,6 +67,43 @@ class _CalendarPageState extends State<CalendarPage>
     final double initialOffset =
         (monthIndex * _approxMonthHeight).clamp(0.0, 11.0 * _approxMonthHeight);
     _yearScrollController = ScrollController(initialScrollOffset: initialOffset);
+  }
+
+  void _handleYearViewDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    final lastDay = _yearViewLastTapDay;
+    final isSecondTapOnSameDate =
+        lastDay != null && isSameDay(lastDay, selectedDay);
+
+    if (isSecondTapOnSameDate) {
+      _yearViewLastTapDay = null;
+      final normalized = DateTime(
+        selectedDay.year,
+        selectedDay.month,
+        selectedDay.day,
+      );
+      final page = _initialPage +
+          normalized.difference(_referenceDate).inDays;
+      setState(() {
+        _selectedDay = normalized;
+        _focusedDay = focusedDay;
+        _viewMode = CalendarViewMode.week;
+        _calendarFormat = CalendarFormat.week;
+        _currentHeight = _weekHeight;
+      });
+      // PageView is not mounted in year view; wait until week mode rebuilds.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_pageController.hasClients) return;
+        _pageController.jumpToPage(page);
+      });
+      return;
+    }
+
+    _yearViewLastTapDay =
+        DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+    setState(() {
+      _selectedDay = selectedDay;
+      _focusedDay = focusedDay;
+    });
   }
 
   void _scheduleYearViewScrollToFocusedMonth() {
@@ -706,12 +744,7 @@ class _CalendarPageState extends State<CalendarPage>
                             ),
                             selectedDayPredicate: (day) =>
                                 isSameDay(_selectedDay, day),
-                            onDaySelected: (selectedDay, focusedDay) {
-                              setState(() {
-                                _selectedDay = selectedDay;
-                                _focusedDay = focusedDay;
-                              });
-                            },
+                            onDaySelected: _handleYearViewDaySelected,
                           ),
                         ),
                       ],
