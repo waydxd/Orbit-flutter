@@ -384,6 +384,31 @@ class _CalendarPageState extends State<CalendarPage>
         rightChevronIcon: Icon(Icons.chevron_right, color: AppColors.primary),
       ),
       calendarStyle: CalendarStyle(
+        defaultTextStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+        ),
+        weekendTextStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+        ),
+        outsideTextStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textSecondary,
+        ),
+        todayTextStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        selectedTextStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
         selectedDecoration: BoxDecoration(
           color: AppColors.primary,
           shape: BoxShape.circle,
@@ -410,7 +435,11 @@ class _CalendarPageState extends State<CalendarPage>
             alignment: Alignment.center,
             child: Text(
               '${day.day}',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           );
         },
@@ -427,7 +456,11 @@ class _CalendarPageState extends State<CalendarPage>
             alignment: Alignment.center,
             child: Text(
               '${day.day}',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           );
         },
@@ -589,6 +622,31 @@ class _CalendarPageState extends State<CalendarPage>
                             availableGestures: AvailableGestures
                                 .none, // Disable swiping in this view
                             calendarStyle: CalendarStyle(
+                              defaultTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                              weekendTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                              outsideTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
+                              ),
+                              todayTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                              selectedTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                               selectedDecoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
@@ -615,7 +673,11 @@ class _CalendarPageState extends State<CalendarPage>
                                   alignment: Alignment.center,
                                   child: Text(
                                     '${day.day}',
-                                    style: const TextStyle(color: Colors.white),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 );
                               },
@@ -633,7 +695,11 @@ class _CalendarPageState extends State<CalendarPage>
                                   alignment: Alignment.center,
                                   child: Text(
                                     '${day.day}',
-                                    style: const TextStyle(color: Colors.white),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 );
                               },
