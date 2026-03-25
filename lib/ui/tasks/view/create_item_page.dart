@@ -586,40 +586,32 @@ class _CreateItemPageState extends State<CreateItemPage> {
       children: [
         _buildTextField(_nameController, 'Event name'),
         const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectStartDateTime,
-                child: _buildTimeField(
-                  DateFormat('MMM d, h:mm a').format(DateTime(
-                      _startDate.year,
-                      _startDate.month,
-                      _startDate.day,
-                      _startTime.hour,
-                      _startTime.minute)),
-                  Icons.flag_outlined,
-                  title: 'Start',
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectEndDateTime,
-                child: _buildTimeField(
-                  DateFormat('MMM d, h:mm a').format(DateTime(
-                      _endDate.year,
-                      _endDate.month,
-                      _endDate.day,
-                      _endTime.hour,
-                      _endTime.minute)),
-                  Icons.play_arrow_outlined,
-                  title: 'End',
-                ),
-              ),
-            ),
-          ],
+        GestureDetector(
+          onTap: _selectStartDateTime,
+          child: _buildTimeField(
+            DateFormat('MMM d, h:mm a').format(DateTime(
+                _startDate.year,
+                _startDate.month,
+                _startDate.day,
+                _startTime.hour,
+                _startTime.minute)),
+            Icons.flag_outlined,
+            title: 'Start',
+          ),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: _selectEndDateTime,
+          child: _buildTimeField(
+            DateFormat('MMM d, h:mm a').format(DateTime(
+                _endDate.year,
+                _endDate.month,
+                _endDate.day,
+                _endTime.hour,
+                _endTime.minute)),
+            Icons.play_arrow_outlined,
+            title: 'End',
+          ),
         ),
         const SizedBox(height: 20),
         _buildLocationField(),
@@ -922,7 +914,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         controller: controller,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
+          hintStyle: TextStyle(color: Colors.grey.shade600),
           border: InputBorder.none,
           filled: true,
           fillColor: Colors.white,
@@ -964,7 +956,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
             onEditingComplete: onEditingComplete,
             decoration: InputDecoration(
               hintText: 'Location (Optional)',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: TextStyle(color: Colors.grey.shade600),
               prefixIcon:
                   Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
               border: InputBorder.none,
@@ -1073,7 +1065,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
               textAlignVertical: TextAlignVertical.top,
               decoration: InputDecoration(
                 hintText: 'Details',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
+                hintStyle: TextStyle(color: Colors.grey.shade600),
                 border: InputBorder.none,
                 filled: true,
                 fillColor: Colors.white,
