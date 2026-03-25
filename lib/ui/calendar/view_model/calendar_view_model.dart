@@ -4,9 +4,11 @@ import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/services/api_client.dart';
 import '../../../utils/logger.dart';
+import '../../../core/services/notification_service.dart';
 
 class CalendarViewModel extends BaseViewModel {
   final CalendarRepository _calendarRepository;
+  final NotificationService _notificationService;
 
   List<EventModel> _events = [];
   List<TaskModel> _tasks = [];
@@ -14,9 +16,45 @@ class CalendarViewModel extends BaseViewModel {
   List<EventModel> get events => _events;
   List<TaskModel> get tasks => _tasks;
 
-  CalendarViewModel({CalendarRepository? calendarRepository})
-      : _calendarRepository =
-            calendarRepository ?? CalendarRepository(ApiClient());
+  CalendarViewModel({
+    CalendarRepository? calendarRepository,
+    NotificationService? notificationService,
+  })  : _calendarRepository =
+            calendarRepository ?? CalendarRepository(ApiClient()),
+        _notificationService = notificationService ?? NotificationService();
+
+  // Schedule a notification 30 minutes before the task's due date.
+  Future<void> _scheduleTaskNotification(TaskModel task) async {
+    if (task.dueDate == null || task.completed) return;
+
+    final notificationTime = task.dueDate!.subtract(const Duration(minutes: 30));
+    if (notificationTime.isBefore(DateTime.now())) return;
+
+    // Use task id hash as notification id for easy lookup/cancellation later.
+    final notificationId = task.id.hashCode;
+
+    await _notificationService.scheduleNotification(
+      id: notificationId,
+      title: 'Task Due Soon',
+      body: '"${task.title}" is due in 30 minutes',
+      scheduledTime: notificationTime,
+    );
+
+    Logger.infoWithTag(
+      'CalendarViewModel',
+      'Scheduled notification for task ${task.id} at $notificationTime',
+    );
+  }
+
+  // Cancel notification for a task.
+  Future<void> _cancelTaskNotification(String taskId) async {
+    final notificationId = taskId.hashCode;
+    await _notificationService.cancelNotification(notificationId);
+    Logger.infoWithTag(
+      'CalendarViewModel',
+      'Cancelled notification for task $taskId',
+    );
+  }
 
   Future<void> fetchEvents({
     required String userId,
@@ -67,6 +105,13 @@ class CalendarViewModel extends BaseViewModel {
           'CalendarViewModel',
           'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks',
         );
+
+        // Schedule notifications for tasks with due dates that aren't completed
+        for (final task in _tasks) {
+          if (task.dueDate != null && !task.completed) {
+            await _scheduleTaskNotification(task);
+          }
+        }
       } catch (e) {
         Logger.errorWithTag('CalendarViewModel', 'Fetch all failed: $e');
         rethrow;
@@ -96,6 +141,11 @@ class CalendarViewModel extends BaseViewModel {
     if (result == null && error != null) {
       throw Exception(error);
     }
+
+    // Schedule notification if task has a due date
+    if (task.dueDate != null && !task.completed) {
+      await _scheduleTaskNotification(task);
+    }
   }
 
   Future<void> updateEvent(EventModel event) async {
@@ -110,6 +160,12 @@ class CalendarViewModel extends BaseViewModel {
   }
 
   Future<void> updateTask(TaskModel task) async {
+    // Find the old task to check if due date or completion changed
+    final oldTask = _tasks.firstWhere(
+      (t) => t.id == task.id,
+      orElse: () => task,
+    );
+
     final result = await executeAsync(() async {
       await _calendarRepository.updateTask(task);
       await fetchAll(userId: task.userId); // Refresh data after update
@@ -118,18 +174,39 @@ class CalendarViewModel extends BaseViewModel {
     if (result == null && error != null) {
       throw Exception(error);
     }
+
+    // Handle notification updates based on task changes
+    if (task.completed) {
+      // Task was completed - cancel the notification
+      await _cancelTaskNotification(task.id);
+    } else if (task.dueDate != oldTask.dueDate ||
+        task.completed != oldTask.completed) {
+      // Due date changed or was uncompleted - reschedule notification
+      await _cancelTaskNotification(task.id);
+      if (task.dueDate != null) {
+        await _scheduleTaskNotification(task);
+      }
+    }
   }
 
   Future<void> deleteEvent(String eventId) async {
-    await executeAsync(() async {
+    final result = await executeAsync(() async {
       await _calendarRepository.deleteEvent(eventId);
       // Remove from local list to update UI immediately
       _events.removeWhere((event) => event.id == eventId);
       notifyListeners();
+      return true;
     });
+
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
   }
 
   Future<void> deleteTask(String taskId) async {
+    // Cancel notification before deleting
+    await _cancelTaskNotification(taskId);
+
     await executeAsync(() async {
       await _calendarRepository.deleteTask(taskId);
       // Remove from local list to update UI immediately

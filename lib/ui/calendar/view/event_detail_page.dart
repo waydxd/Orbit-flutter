@@ -332,9 +332,12 @@ class EventDetailPage extends StatelessWidget {
   }
 
   Future<void> _handleDelete(BuildContext context) async {
+    // Capture mounted state before async gap
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -342,11 +345,11 @@ class EventDetailPage extends StatelessWidget {
         content: const Text('Are you sure you want to delete this event?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child:
                 const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
@@ -354,34 +357,37 @@ class EventDetailPage extends StatelessWidget {
       ),
     );
 
-    if (confirm == true && context.mounted) {
-      try {
-        final viewModel =
-            Provider.of<CalendarViewModel>(context, listen: false);
-        await viewModel.deleteEvent(event.id);
-        if (context.mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Event deleted successfully')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete event: $e')),
-          );
-        }
+    if (confirm != true) return;
+
+    try {
+      final viewModel =
+          Provider.of<CalendarViewModel>(context, listen: false);
+      await viewModel.deleteEvent(event.id);
+      if (context.mounted) {
+        Navigator.pop(context);
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Event deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Failed to delete event: $e')),
+        );
       }
     }
   }
 
   void _showMoreOptions(BuildContext context) {
+    // Important: use the page's context for navigation/dialog/provider lookups.
+    // The bottom sheet's BuildContext is disposed after closing the sheet.
+    final pageContext = context;
     showModalBottomSheet(
-      context: context,
+      context: pageContext,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -391,9 +397,9 @@ class EventDetailPage extends StatelessWidget {
               title: const Text('Edit',
                   style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 Navigator.push(
-                  context,
+                  pageContext,
                   MaterialPageRoute(
                     builder: (context) => CreateItemPage(
                       initialIsEvent: true,
@@ -401,8 +407,8 @@ class EventDetailPage extends StatelessWidget {
                     ),
                   ),
                 ).then((result) {
-                  if (result == true && context.mounted) {
-                    Navigator.pop(context);
+                  if (result == true && pageContext.mounted) {
+                    Navigator.pop(pageContext);
                   }
                 });
               },
@@ -412,8 +418,8 @@ class EventDetailPage extends StatelessWidget {
               title: const Text('Delete',
                   style: TextStyle(color: AppColors.error)),
               onTap: () {
-                Navigator.pop(context);
-                _handleDelete(context);
+                Navigator.pop(sheetContext);
+                _handleDelete(pageContext);
               },
             ),
           ],
