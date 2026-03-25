@@ -924,6 +924,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade400),
           border: InputBorder.none,
+          filled: true,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 16,
@@ -966,6 +968,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
               prefixIcon:
                   Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
               border: InputBorder.none,
+              filled: true,
+              fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 16,
@@ -1060,14 +1064,21 @@ class _CreateItemPageState extends State<CreateItemPage> {
       decoration: _fieldDecoration(),
       child: Stack(
         children: [
-          TextField(
-            controller: controller,
-            maxLines: null,
-            decoration: InputDecoration(
-              hintText: 'Details',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(20),
+          // Ensure the multiline TextField fills the whole container height.
+          Positioned.fill(
+            child: TextField(
+              controller: controller,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              decoration: InputDecoration(
+                hintText: 'Details',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                border: InputBorder.none,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.all(20),
+              ),
             ),
           ),
           Positioned(
