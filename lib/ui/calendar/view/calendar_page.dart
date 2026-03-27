@@ -176,7 +176,9 @@ class _CalendarPageState extends State<CalendarPage>
     CalendarViewMode targetMode;
 
     final double velocity = details.velocity.pixelsPerSecond.dy;
-
+    final bool isTransitioningToYear =
+        _viewMode != CalendarViewMode.year && targetMode == CalendarViewMode.year;
+    if (isTransitioningToYear) {
     // If moving down fast, snap to next larger view
     if (velocity > 500) {
       if (_currentHeight < _monthHeight) {
