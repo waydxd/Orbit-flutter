@@ -66,7 +66,8 @@ class _CalendarPageState extends State<CalendarPage>
     _yearScrollController.dispose();
     final double initialOffset =
         (monthIndex * _approxMonthHeight).clamp(0.0, 11.0 * _approxMonthHeight);
-    _yearScrollController = ScrollController(initialScrollOffset: initialOffset);
+    _yearScrollController =
+        ScrollController(initialScrollOffset: initialOffset);
   }
 
   void _handleYearViewDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -81,8 +82,7 @@ class _CalendarPageState extends State<CalendarPage>
         selectedDay.month,
         selectedDay.day,
       );
-      final page = _initialPage +
-          normalized.difference(_referenceDate).inDays;
+      final page = _initialPage + normalized.difference(_referenceDate).inDays;
       setState(() {
         _selectedDay = normalized;
         _focusedDay = focusedDay;
@@ -241,8 +241,8 @@ class _CalendarPageState extends State<CalendarPage>
     final double calendarOccupiedHeight = _currentHeight + topPadding;
     final double remainingHeight = screenHeight - calendarOccupiedHeight;
     const double minTaskListHeight = 180.0;
-    final bool shouldShowTaskList =
-        _viewMode != CalendarViewMode.year && remainingHeight >= minTaskListHeight;
+    final bool shouldShowTaskList = _viewMode != CalendarViewMode.year &&
+        remainingHeight >= minTaskListHeight;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,

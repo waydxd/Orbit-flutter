@@ -603,12 +603,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
         GestureDetector(
           onTap: _selectEndDateTime,
           child: _buildTimeField(
-            DateFormat('MMM d, h:mm a').format(DateTime(
-                _endDate.year,
-                _endDate.month,
-                _endDate.day,
-                _endTime.hour,
-                _endTime.minute)),
+            DateFormat('MMM d, h:mm a').format(DateTime(_endDate.year,
+                _endDate.month, _endDate.day, _endTime.hour, _endTime.minute)),
             Icons.play_arrow_outlined,
             title: 'End',
           ),
