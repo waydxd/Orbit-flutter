@@ -42,6 +42,7 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isInitialCheckComplete = false;
+  static const Duration _minimumSplashDuration = Duration(seconds: 2);
 
   @override
   void initState() {
@@ -60,6 +61,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // purpose without creating timers that persist in tests.
 
     if (!mounted) return;
+
+    final startedAt = DateTime.now();
 
     try {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -94,6 +97,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // If check fails, proceed without authentication
       debugPrint('Auth check failed: $e');
     } finally {
+      final elapsed = DateTime.now().difference(startedAt);
+      final remaining = _minimumSplashDuration - elapsed;
+      if (remaining > Duration.zero) {
+        await Future.delayed(remaining);
+      }
+
       // Always set the flag to true to proceed to login page
       if (mounted) {
         setState(() {
@@ -150,6 +159,7 @@ class SplashScreen extends StatelessWidget {
                     OrbitAnimation(
                       width: Constants.splashIconSize * 1.8,
                       height: Constants.splashIconSize * 1.8,
+                      duration: _AuthWrapperState._minimumSplashDuration,
                     ),
                   ],
                 ),
