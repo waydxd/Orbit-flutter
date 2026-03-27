@@ -40,6 +40,7 @@ class _CalendarPageState extends State<CalendarPage>
   DateTime? _yearViewLastTapDay;
 
   static const double _hourHeight = 80.0;
+  static const double _minTaskListHeight = 220.0;
 
   @override
   void initState() {
@@ -240,9 +241,8 @@ class _CalendarPageState extends State<CalendarPage>
     final double yearHeight = screenHeight - topPadding;
     final double calendarOccupiedHeight = _currentHeight + topPadding;
     final double remainingHeight = screenHeight - calendarOccupiedHeight;
-    const double minTaskListHeight = 180.0;
     final bool shouldShowTaskList = _viewMode != CalendarViewMode.year &&
-        remainingHeight >= minTaskListHeight;
+        remainingHeight >= _minTaskListHeight;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -784,7 +784,7 @@ class _CalendarPageState extends State<CalendarPage>
       builder: (context, constraints) {
         // Runtime guard: during drag transitions the remaining area can briefly
         // become too small, which would otherwise cause a RenderFlex overflow.
-        if (constraints.maxHeight < 220) {
+        if (constraints.maxHeight < _minTaskListHeight) {
           return const SizedBox.shrink();
         }
 
