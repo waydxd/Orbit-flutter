@@ -5,19 +5,17 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:orbit_calendar/app.dart';
+import 'package:orbit_calendar/ui/core/widgets/orbit_animation.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
     await tester.pumpWidget(const OrbitApp());
 
-    // Verify that the app loads with the splash screen
-    expect(find.text('Orbit'), findsOneWidget);
-    expect(find.text('Intelligent Calendar & Planning'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // Assert before further frames: auth init moves off splash quickly in tests.
+    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.byType(OrbitAnimation), findsOneWidget);
   });
 }
