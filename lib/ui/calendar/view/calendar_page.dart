@@ -211,8 +211,7 @@ class _CalendarPageState extends State<CalendarPage>
       }
     }
 
-    final bool isTransitioningToYear =
-        _viewMode != CalendarViewMode.year &&
+    final bool isTransitioningToYear = _viewMode != CalendarViewMode.year &&
         targetMode == CalendarViewMode.year;
 
     // Pre-position the year scroll controller before setState so the ListView
