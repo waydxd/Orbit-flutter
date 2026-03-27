@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../auth/view_model/auth_view_model.dart';
 import '../../ai_chat/view/ai_chat_page.dart';
 import '../../calendar/view/calendar_page.dart';
+import '../../calendar/view_model/calendar_view_model.dart';
 import '../../calendar/widgets/floating_nav_bar.dart';
 import '../../dashboard/view/dashboard_page.dart';
 import '../../home/view/home_page.dart';
@@ -28,6 +31,13 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userId = context.read<AuthViewModel>().currentUser?.id;
+      if (userId != null) {
+        context.read<CalendarViewModel>().fetchAll(userId: userId);
+      }
+    });
   }
 
   void _selectTab(int index) {
