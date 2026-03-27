@@ -447,7 +447,7 @@ class _CalendarPageState extends State<CalendarPage>
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        selectedDecoration: BoxDecoration(
+        selectedDecoration: const BoxDecoration(
           color: AppColors.primary,
           shape: BoxShape.circle,
         ),
@@ -466,7 +466,7 @@ class _CalendarPageState extends State<CalendarPage>
           const selectedColor = AppColors.primary;
           return Container(
             margin: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: selectedColor,
               shape: BoxShape.circle,
             ),
@@ -685,7 +685,7 @@ class _CalendarPageState extends State<CalendarPage>
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
-                              selectedDecoration: BoxDecoration(
+                              selectedDecoration: const BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                               ),
@@ -704,7 +704,7 @@ class _CalendarPageState extends State<CalendarPage>
                                 const selectedColor = AppColors.primary;
                                 return Container(
                                   margin: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: selectedColor,
                                     shape: BoxShape.circle,
                                   ),

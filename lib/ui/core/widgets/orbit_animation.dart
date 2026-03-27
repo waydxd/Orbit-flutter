@@ -10,9 +10,9 @@ class OrbitAnimation extends StatefulWidget {
   final Duration duration;
 
   const OrbitAnimation({
-    super.key,
     required this.width,
     required this.height,
+    super.key,
     this.duration = const Duration(seconds: 3),
   });
 

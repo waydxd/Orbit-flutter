@@ -144,7 +144,7 @@ class SplashScreen extends StatelessWidget {
               padding: const EdgeInsets.all(Constants.spacingM),
               child: Transform.translate(
                 offset: const Offset(0, -24),
-                child: Column(
+                child: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     OrbitAnimation(
