@@ -36,6 +36,8 @@ class _CalendarPageState extends State<CalendarPage>
   final int _initialPage = 10000;
   late DateTime _referenceDate;
   bool _isYearScrollScheduled = false;
+  int? _pendingPageJump;
+  bool _isPendingPageJumpScheduled = false;
   final List<GlobalKey> _yearMonthKeys = List.generate(12, (_) => GlobalKey());
   DateTime? _yearViewLastTapDay;
 
@@ -93,8 +95,8 @@ class _CalendarPageState extends State<CalendarPage>
       });
       // PageView is not mounted in year view; wait until week mode rebuilds.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_pageController.hasClients) return;
-        _pageController.jumpToPage(page);
+        if (!mounted) return;
+        _jumpOrDeferToPage(page);
       });
       return;
     }
@@ -121,6 +123,30 @@ class _CalendarPageState extends State<CalendarPage>
         duration: Duration.zero,
         alignment: 0.0,
       );
+    });
+  }
+
+  void _jumpOrDeferToPage(int page) {
+    if (_pageController.hasClients) {
+      _pendingPageJump = null;
+      _pageController.jumpToPage(page);
+      return;
+    }
+
+    _pendingPageJump = page;
+  }
+
+  void _schedulePendingPageJumpIfNeeded() {
+    if (_isPendingPageJumpScheduled || _pendingPageJump == null) return;
+    _isPendingPageJumpScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isPendingPageJumpScheduled = false;
+      if (!mounted) return;
+      final pendingPage = _pendingPageJump;
+      if (pendingPage == null || !_pageController.hasClients) return;
+      _pendingPageJump = null;
+      _pageController.jumpToPage(pendingPage);
     });
   }
 
@@ -398,9 +424,7 @@ class _CalendarPageState extends State<CalendarPage>
           selectedDay.month,
           selectedDay.day,
         ).difference(_referenceDate).inDays;
-        _pageController.jumpToPage(
-          _initialPage + difference,
-        );
+        _jumpOrDeferToPage(_initialPage + difference);
       },
       onFormatChanged: (format) {
         if (_calendarFormat != format) {
@@ -790,6 +814,8 @@ class _CalendarPageState extends State<CalendarPage>
         if (constraints.maxHeight < _minTaskListHeight) {
           return const SizedBox.shrink();
         }
+
+        _schedulePendingPageJumpIfNeeded();
 
         return Container(
           color: AppColors.grey50,

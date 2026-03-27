@@ -82,7 +82,11 @@ class _OrbitBallPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double scale = size.shortestSide / _svgSize;
+    // Match SvgPicture's default BoxFit.contain behavior:
+    // scale uniformly and center the 100x100 viewBox in the paint area.
+    final double scale = min(size.width / _svgSize, size.height / _svgSize);
+    final double dx = (size.width - (_svgSize * scale)) / 2;
+    final double dy = (size.height - (_svgSize * scale)) / 2;
     final double t = 2 * pi * progress;
 
     final double cosT = cos(t);
@@ -93,8 +97,8 @@ class _OrbitBallPainter extends CustomPainter {
     final double svgX = _cx + _rx * cosT * cosR - _ry * sinT * sinR;
     final double svgY = _cy + _rx * cosT * sinR + _ry * sinT * cosR;
 
-    final double x = svgX * scale;
-    final double y = svgY * scale;
+    final double x = dx + (svgX * scale);
+    final double y = dy + (svgY * scale);
     final double r = _ballRadius * scale;
 
     final paint = Paint()
