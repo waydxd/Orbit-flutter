@@ -176,9 +176,7 @@ class _CalendarPageState extends State<CalendarPage>
     CalendarViewMode targetMode;
 
     final double velocity = details.velocity.pixelsPerSecond.dy;
-    final bool isTransitioningToYear =
-        _viewMode != CalendarViewMode.year && targetMode == CalendarViewMode.year;
-    if (isTransitioningToYear) {
+
     // If moving down fast, snap to next larger view
     if (velocity > 500) {
       if (_currentHeight < _monthHeight) {
@@ -213,10 +211,14 @@ class _CalendarPageState extends State<CalendarPage>
       }
     }
 
+    final bool isTransitioningToYear =
+        _viewMode != CalendarViewMode.year &&
+        targetMode == CalendarViewMode.year;
+
     // Pre-position the year scroll controller before setState so the ListView
     // renders starting near the focused month on its very first frame,
     // avoiding the visible Jan → current-month jump.
-    if (targetMode == CalendarViewMode.year) {
+    if (isTransitioningToYear) {
       _resetYearScrollControllerForMonth((_focusedDay.month - 1).clamp(0, 11));
     }
 
@@ -231,7 +233,7 @@ class _CalendarPageState extends State<CalendarPage>
       }
     });
 
-    if (targetMode == CalendarViewMode.year) {
+    if (isTransitioningToYear) {
       _scheduleYearViewScrollToFocusedMonth();
     }
   }
