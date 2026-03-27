@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
@@ -44,22 +46,44 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _isInitialCheckComplete = false;
   static const Duration _minimumSplashDuration = Duration(seconds: 2);
 
+  Timer? _minimumSplashTimer;
+  Completer<void>? _minimumSplashWaitCompleter;
+
   @override
   void initState() {
     super.initState();
-    // Schedule auth initialization after the first frame to avoid creating
-    // timers (e.g. Future.delayed) which can leave pending timers in widget
-    // tests. Using addPostFrameCallback does not create a test timer.
+    // Schedule auth after first frame. Minimum splash uses a Timer that is
+    // cancelled in dispose so widget tests do not end with a pending timer.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeAuth();
     });
   }
 
-  Future<void> _initializeAuth() async {
-    // Note: previous implementation used a small Future.delayed to ensure the
-    // widget was built; using addPostFrameCallback above serves the same
-    // purpose without creating timers that persist in tests.
+  @override
+  void dispose() {
+    _minimumSplashTimer?.cancel();
+    _minimumSplashTimer = null;
+    final wait = _minimumSplashWaitCompleter;
+    _minimumSplashWaitCompleter = null;
+    if (wait != null && !wait.isCompleted) {
+      wait.complete();
+    }
+    super.dispose();
+  }
 
+  Future<void> _waitRemainingMinimumSplash(Duration remaining) async {
+    if (remaining <= Duration.zero) return;
+    final completer = Completer<void>();
+    _minimumSplashWaitCompleter = completer;
+    _minimumSplashTimer = Timer(remaining, () {
+      _minimumSplashTimer = null;
+      _minimumSplashWaitCompleter = null;
+      if (!completer.isCompleted) completer.complete();
+    });
+    await completer.future;
+  }
+
+  Future<void> _initializeAuth() async {
     if (!mounted) return;
 
     final startedAt = DateTime.now();
@@ -99,9 +123,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     } finally {
       final elapsed = DateTime.now().difference(startedAt);
       final remaining = _minimumSplashDuration - elapsed;
-      if (remaining > Duration.zero) {
-        await Future.delayed(remaining);
-      }
+      await _waitRemainingMinimumSplash(remaining);
 
       // Always set the flag to true to proceed to login page
       if (mounted) {
