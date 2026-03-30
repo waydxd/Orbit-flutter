@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "445439637163",
+    "project_id": "orbit-41815",
+    "storage_bucket": "orbit-41815.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445439637163:android:9fa777a6a0823a1fd469ee",
+        "android_client_info": {
+          "package_name": "com.orbit.calendar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvHhhbyb9oOU8mmYnaff_i-c7u9Iw5abg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,41 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "orbit-41815",
+                    "appId": "1:445439637163:android:9fa777a6a0823a1fd469ee",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "ios": {
+                "default": {
+                    "projectId": "orbit-41815",
+                    "appId": "1:445439637163:ios:f8daccdd172a0cf4d469ee",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "ios/Runner/GoogleService-Info.plist"
+                }
+            },
+            "macos": {
+                "default": {
+                    "projectId": "orbit-41815",
+                    "appId": "1:445439637163:ios:f8daccdd172a0cf4d469ee",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "macos/Runner/GoogleService-Info.plist"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "orbit-41815",
+                    "configurations": {
+                        "android": "1:445439637163:android:9fa777a6a0823a1fd469ee",
+                        "ios": "1:445439637163:ios:f8daccdd172a0cf4d469ee",
+                        "macos": "1:445439637163:ios:f8daccdd172a0cf4d469ee",
+                        "web": "1:445439637163:web:d5ad8284c8888c74d469ee",
+                        "windows": "1:445439637163:web:0cad3b78bc7c2a75d469ee"
+                    }
+                }
+            }
+        }
+    }
+}
