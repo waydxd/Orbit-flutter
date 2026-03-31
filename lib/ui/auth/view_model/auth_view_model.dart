@@ -6,14 +6,59 @@ import '../../../data/services/local_storage_service.dart';
 import '../../../config/app_config.dart';
 import '../../../utils/validators.dart';
 
+abstract class AuthLocalStore {
+  Future<void> storeSecure(String key, String value);
+  Future<String?> getSecure(String key);
+  Future<void> deleteSecure(String key);
+  Future<bool> setPreference<T>(String key, T value);
+  T? getPreference<T>(String key);
+  Future<bool> removePreference(String key);
+}
+
+class DefaultAuthLocalStore implements AuthLocalStore {
+  @override
+  Future<void> storeSecure(String key, String value) {
+    return LocalStorageService.storeSecure(key, value);
+  }
+
+  @override
+  Future<String?> getSecure(String key) {
+    return LocalStorageService.getSecure(key);
+  }
+
+  @override
+  Future<void> deleteSecure(String key) {
+    return LocalStorageService.deleteSecure(key);
+  }
+
+  @override
+  Future<bool> setPreference<T>(String key, T value) {
+    return LocalStorageService.setPreference(key, value);
+  }
+
+  @override
+  T? getPreference<T>(String key) {
+    return LocalStorageService.getPreference<T>(key);
+  }
+
+  @override
+  Future<bool> removePreference(String key) {
+    return LocalStorageService.removePreference(key);
+  }
+}
+
 /// Authentication state management
 class AuthViewModel extends BaseViewModel {
   final AuthRepository _authRepository;
+  final AuthLocalStore _localStore;
   bool _isAuthenticated = false;
   UserModel? _currentUser;
 
-  AuthViewModel({AuthRepository? authRepository})
-      : _authRepository = authRepository ?? AuthRepository(ApiClient());
+  AuthViewModel({
+    AuthRepository? authRepository,
+    AuthLocalStore? localStore,
+  })  : _authRepository = authRepository ?? AuthRepository(ApiClient()),
+        _localStore = localStore ?? DefaultAuthLocalStore();
 
   /// Authentication state
   bool get isAuthenticated => _isAuthenticated;
@@ -28,10 +73,10 @@ class AuthViewModel extends BaseViewModel {
     _isAuthenticated = true;
     _currentUser = user;
 
-    await LocalStorageService.storeSecure(AppConfig.accessTokenKey, token);
-    await LocalStorageService.setPreference('is_authenticated', true);
-    await LocalStorageService.setPreference('user_email', user.email);
-    await LocalStorageService.setPreference('user_id', user.id);
+    await _localStore.storeSecure(AppConfig.accessTokenKey, token);
+    await _localStore.setPreference('is_authenticated', true);
+    await _localStore.setPreference('user_email', user.email);
+    await _localStore.setPreference('user_id', user.id);
   }
 
   String _extractErrorMessage(dynamic error, String fallbackMessage) {
@@ -220,9 +265,8 @@ class AuthViewModel extends BaseViewModel {
 
             final profile = await _authRepository.updateProfile(payload);
             _currentUser = profile;
-            await LocalStorageService.setPreference(
-                'user_email', profile.email);
-            await LocalStorageService.setPreference('user_id', profile.id);
+            await _localStore.setPreference('user_email', profile.email);
+            await _localStore.setPreference('user_id', profile.id);
             return true;
           } catch (e) {
             setError(
@@ -313,11 +357,11 @@ class AuthViewModel extends BaseViewModel {
         _currentUser = null;
 
         // Clear stored authentication data
-        await LocalStorageService.deleteSecure(AppConfig.accessTokenKey);
-        await LocalStorageService.deleteSecure(AppConfig.refreshTokenKey);
-        await LocalStorageService.removePreference('is_authenticated');
-        await LocalStorageService.removePreference('user_email');
-        await LocalStorageService.removePreference('user_id');
+        await _localStore.deleteSecure(AppConfig.accessTokenKey);
+        await _localStore.deleteSecure(AppConfig.refreshTokenKey);
+        await _localStore.removePreference('is_authenticated');
+        await _localStore.removePreference('user_email');
+        await _localStore.removePreference('user_id');
       }
     }, showLoading: false);
   }
@@ -332,9 +376,8 @@ class AuthViewModel extends BaseViewModel {
           try {
             final profile = await _authRepository.getProfile();
             _currentUser = profile;
-            await LocalStorageService.setPreference(
-                'user_email', profile.email);
-            await LocalStorageService.setPreference('user_id', profile.id);
+            await _localStore.setPreference('user_email', profile.email);
+            await _localStore.setPreference('user_id', profile.id);
             return true;
           } catch (e) {
             String errorMessage = 'Failed to load profile.';
@@ -381,9 +424,8 @@ class AuthViewModel extends BaseViewModel {
 
             final profile = await _authRepository.updateProfile(payload);
             _currentUser = profile;
-            await LocalStorageService.setPreference(
-                'user_email', profile.email);
-            await LocalStorageService.setPreference('user_id', profile.id);
+            await _localStore.setPreference('user_email', profile.email);
+            await _localStore.setPreference('user_id', profile.id);
             return true;
           } catch (e) {
             String errorMessage = 'Failed to update profile.';
@@ -408,9 +450,7 @@ class AuthViewModel extends BaseViewModel {
         // Quick check: if no stored auth preference, skip everything
         bool isAuth = false;
         try {
-          isAuth =
-              LocalStorageService.getPreference<bool>('is_authenticated') ??
-                  false;
+          isAuth = _localStore.getPreference<bool>('is_authenticated') ?? false;
         } catch (e) {
           // If we can't read preferences, assume not authenticated
           _isAuthenticated = false;
@@ -430,9 +470,9 @@ class AuthViewModel extends BaseViewModel {
         String? userId;
 
         try {
-          token = await LocalStorageService.getSecure(AppConfig.accessTokenKey);
-          email = LocalStorageService.getPreference<String>('user_email');
-          userId = LocalStorageService.getPreference<String>('user_id');
+          token = await _localStore.getSecure(AppConfig.accessTokenKey);
+          email = _localStore.getPreference<String>('user_email');
+          userId = _localStore.getPreference<String>('user_id');
         } catch (e) {
           // If we can't read storage, assume not authenticated
           _isAuthenticated = false;
@@ -446,10 +486,10 @@ class AuthViewModel extends BaseViewModel {
           _currentUser = null;
           // Clear invalid data asynchronously to avoid blocking
           Future.microtask(() async {
-            await LocalStorageService.deleteSecure(AppConfig.accessTokenKey);
-            await LocalStorageService.removePreference('is_authenticated');
-            await LocalStorageService.removePreference('user_email');
-            await LocalStorageService.removePreference('user_id');
+            await _localStore.deleteSecure(AppConfig.accessTokenKey);
+            await _localStore.removePreference('is_authenticated');
+            await _localStore.removePreference('user_email');
+            await _localStore.removePreference('user_id');
           });
           return;
         }
@@ -475,10 +515,10 @@ class AuthViewModel extends BaseViewModel {
             _currentUser = null;
             // Clear invalid data asynchronously
             Future.microtask(() async {
-              await LocalStorageService.deleteSecure(AppConfig.accessTokenKey);
-              await LocalStorageService.removePreference('is_authenticated');
-              await LocalStorageService.removePreference('user_email');
-              await LocalStorageService.removePreference('user_id');
+              await _localStore.deleteSecure(AppConfig.accessTokenKey);
+              await _localStore.removePreference('is_authenticated');
+              await _localStore.removePreference('user_email');
+              await _localStore.removePreference('user_id');
             });
           }
         } catch (e) {
@@ -488,10 +528,10 @@ class AuthViewModel extends BaseViewModel {
           _currentUser = null;
           // Clear invalid data asynchronously
           Future.microtask(() async {
-            await LocalStorageService.deleteSecure(AppConfig.accessTokenKey);
-            await LocalStorageService.removePreference('is_authenticated');
-            await LocalStorageService.removePreference('user_email');
-            await LocalStorageService.removePreference('user_id');
+              await _localStore.deleteSecure(AppConfig.accessTokenKey);
+              await _localStore.removePreference('is_authenticated');
+              await _localStore.removePreference('user_email');
+              await _localStore.removePreference('user_id');
           });
         }
       } catch (e) {
