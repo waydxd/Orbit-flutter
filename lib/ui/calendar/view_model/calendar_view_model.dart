@@ -83,6 +83,19 @@ class CalendarViewModel extends BaseViewModel {
     });
   }
 
+  /// Re-fetch tasks without showing the full-screen loading spinner.
+  /// Intended for pull-to-refresh so the existing list stays visible.
+  Future<void> refreshTasks({required String userId, bool? completed}) async {
+    await executeAsync(() async {
+      final fetchedTasks = await _calendarRepository.getTasks(
+        userId: userId,
+        completed: completed,
+      );
+      _tasks = fetchedTasks;
+      notifyListeners();
+    }, showLoading: false);
+  }
+
   Future<void> fetchAll({required String userId}) async {
     await executeAsync(() async {
       try {

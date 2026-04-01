@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
+import '../../auth/view_model/auth_view_model.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../core/services/notification_service.dart';
@@ -16,6 +17,12 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   bool _showCompleted = true;
+
+  Future<void> _refreshTasks() async {
+    final userId = context.read<AuthViewModel>().currentUser?.id;
+    if (userId == null) return;
+    await context.read<CalendarViewModel>().refreshTasks(userId: userId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,13 +48,17 @@ class _TaskListPageState extends State<TaskListPage> {
                 children: [
                   _buildHeader(),
                   Expanded(
-                    child: viewModel.isLoading
+                    child: viewModel.isLoading && viewModel.tasks.isEmpty
                         ? const Center(child: CircularProgressIndicator())
-                        : Theme(
+                        : RefreshIndicator(
+                            onRefresh: _refreshTasks,
+                            color: const Color(0xFF8B80F0),
+                            child: Theme(
                             data: Theme.of(context).copyWith(
                               canvasColor: Colors.transparent,
                             ),
                             child: ReorderableListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 20),
                               itemCount: 1 + // summary
@@ -222,6 +233,7 @@ class _TaskListPageState extends State<TaskListPage> {
                               },
                             ),
                           ),
+                          ),
                   ),
                 ],
               ),
@@ -280,7 +292,16 @@ class _TaskListPageState extends State<TaskListPage> {
               ),
             ],
           ),
-          const Icon(Icons.menu_rounded, color: AppColors.black, size: 28),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _refreshTasks,
+                child: const Icon(Icons.refresh_rounded, color: AppColors.black, size: 26),
+              ),
+              const SizedBox(width: 15),
+              const Icon(Icons.menu_rounded, color: AppColors.black, size: 28),
+            ],
+          ),
         ],
       ),
     );
