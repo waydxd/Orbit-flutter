@@ -5,8 +5,8 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../settings/view/settings_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
-import '../../shared/widgets/card_stack_carousel.dart';
 import '../../shared/widgets/card_stack_item.dart';
+import '../widgets/upcoming_carousel.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -85,44 +85,35 @@ class _HomePageState extends State<HomePage> {
                   // 1. Swappable Cards (Upcoming Tasks/Events)
                   _buildSectionTitle('Upcoming'),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    height: 220,
-                    child: combinedUpcoming.isEmpty
-                        ? _buildEmptyStateCard('No upcoming items!')
-                        : CardStackCarousel(
-                            items: combinedUpcoming
-                                .take(5)
-                                .map((item) {
-                                  if (item is TaskModel) {
-                                    return CardStackItem.fromTask(
-                                      id: item.id,
-                                      title: item.title,
-                                      description: item.description,
-                                      dueDate: item.dueDate,
-                                    );
-                                  } else {
-                                    final event = item as EventModel;
-                                    return CardStackItem.fromEvent(
-                                      id: event.id,
-                                      title: event.title,
-                                      description: event.description,
-                                      startTime: event.startTime,
-                                    );
-                                  }
-                                })
-                                .toList(),
-                            initialIndex: 0,
-                            maxVisible: 3,
-                            cardWidth: MediaQuery.of(context).size.width * 0.75,
-                            cardHeight: 160,
-                            overlap: 0.45,
-                            spreadDeg: 40,
-                            autoAdvance: true,
-                            intervalMs: 5000,
-                            pauseOnHover: true,
-                            showDots: true,
-                          ),
-                  ),
+                  combinedUpcoming.isEmpty
+                      ? SizedBox(
+                          height: 220,
+                          child: _buildEmptyStateCard('No upcoming items!'),
+                        )
+                      : UpcomingCarousel(
+                          items: combinedUpcoming
+                              .take(5)
+                              .map((item) {
+                                if (item is TaskModel) {
+                                  return CardStackItem.fromTask(
+                                    id: item.id,
+                                    title: item.title,
+                                    description: item.description,
+                                    dueDate: item.dueDate,
+                                  );
+                                } else {
+                                  final event = item as EventModel;
+                                  return CardStackItem.fromEvent(
+                                    id: event.id,
+                                    title: event.title,
+                                    description: event.description,
+                                    startTime: event.startTime,
+                                  );
+                                }
+                              })
+                              .toList(),
+                          viewportFraction: 0.88,
+                        ),
 
                   const SizedBox(height: 30),
 

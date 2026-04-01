@@ -9,6 +9,9 @@ class EventModel extends BaseModel {
   final DateTime endTime;
   final String location;
   final List<String> hashtags;
+  final bool isRecurring;
+  final String recurrenceRule;
+  final String recurrenceException;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,6 +26,9 @@ class EventModel extends BaseModel {
     required this.createdAt,
     required this.updatedAt,
     this.hashtags = const [],
+    this.isRecurring = false,
+    this.recurrenceRule = '',
+    this.recurrenceException = '',
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +43,9 @@ class EventModel extends BaseModel {
       hashtags: json['hashtags'] != null
           ? List<String>.from(json['hashtags'] as List)
           : const [],
+      isRecurring: json['is_recurring'] as bool? ?? false,
+      recurrenceRule: json['recurrence_rule'] as String? ?? '',
+      recurrenceException: json['recurrence_exception'] as String? ?? '',
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
@@ -53,6 +62,9 @@ class EventModel extends BaseModel {
       'end_time': endTime.toUtc().toIso8601String(),
       'location': location,
       'hashtags': hashtags,
+      'is_recurring': isRecurring,
+      'recurrence_rule': recurrenceRule,
+      'recurrence_exception': recurrenceException,
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
     };
@@ -68,6 +80,9 @@ class EventModel extends BaseModel {
         endTime,
         location,
         hashtags,
+        isRecurring,
+        recurrenceRule,
+        recurrenceException,
         createdAt,
         updatedAt,
       ];
@@ -81,6 +96,9 @@ class EventModel extends BaseModel {
     DateTime? endTime,
     String? location,
     List<String>? hashtags,
+    bool? isRecurring,
+    String? recurrenceRule,
+    String? recurrenceException,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -93,6 +111,9 @@ class EventModel extends BaseModel {
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
       hashtags: hashtags ?? this.hashtags,
+      isRecurring: isRecurring ?? this.isRecurring,
+      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      recurrenceException: recurrenceException ?? this.recurrenceException,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

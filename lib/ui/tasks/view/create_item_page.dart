@@ -8,6 +8,7 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../core/widgets/modern_dropdown.dart';
 import '../../../data/models/event_model.dart';
+import '../../../data/utils/event_recurrence_utils.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/nlp_parse_result.dart';
 import '../../../data/models/hashtag_prediction.dart';
@@ -17,10 +18,12 @@ import '../../../data/services/location_service.dart';
 class _DateTimePickerSheet extends StatefulWidget {
   final DateTime initialDate;
   final Function(DateTime) onDateTimeChanged;
+  final bool dateOnly;
 
   const _DateTimePickerSheet({
     required this.initialDate,
     required this.onDateTimeChanged,
+    this.dateOnly = false,
   });
 
   @override
@@ -64,26 +67,36 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
                       style:
                           TextStyle(color: Colors.grey.shade600, fontSize: 16)),
                 ),
-                CupertinoSlidingSegmentedControl<int>(
-                  groupValue: _selectedTab,
-                  children: const {
-                    0: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('Date'),
+                if (widget.dateOnly)
+                  Text(
+                    'Date',
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ),
-                    1: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('Time'),
-                    ),
-                  },
-                  onValueChanged: (int? value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedTab = value;
-                      });
-                    }
-                  },
-                ),
+                  )
+                else
+                  CupertinoSlidingSegmentedControl<int>(
+                    groupValue: _selectedTab,
+                    children: const {
+                      0: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text('Date'),
+                      ),
+                      1: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text('Time'),
+                      ),
+                    },
+                    onValueChanged: (int? value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedTab = value;
+                        });
+                      }
+                    },
+                  ),
                 TextButton(
                   onPressed: () {
                     widget.onDateTimeChanged(_selectedDate);
@@ -99,7 +112,7 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
             ),
           ),
           Expanded(
-            child: _selectedTab == 0
+            child: widget.dateOnly || _selectedTab == 0
                 ? CupertinoDatePicker(
                     key: const ValueKey('date_picker'),
                     mode: CupertinoDatePickerMode.date,
@@ -165,10 +178,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+  final FocusNode _eventDetailsFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
+    _eventDetailsFocusNode.addListener(_onEventDetailsFocusChanged);
     if (widget.editEvent != null) {
       isEvent = true;
       _prefillFromEditEvent();
@@ -184,16 +199,39 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _detailsController.addListener(_onTextChanged);
   }
 
+  void _onEventDetailsFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _prefillFromEditEvent() {
     final event = widget.editEvent!;
     _nameController.text = event.title;
     _detailsController.text = event.description;
     _locationController.text = event.location;
     _startDate = event.startTime;
-    _startTime = TimeOfDay.fromDateTime(event.startTime);
     _endDate = event.endTime;
-    _endTime = TimeOfDay.fromDateTime(event.endTime);
+    _isAllDay = _inferAllDayFromStoredRange(event.startTime, event.endTime);
+    if (_isAllDay) {
+      _startTime = const TimeOfDay(hour: 0, minute: 0);
+      _endTime = const TimeOfDay(hour: 23, minute: 59);
+    } else {
+      _startTime = TimeOfDay.fromDateTime(event.startTime);
+      _endTime = TimeOfDay.fromDateTime(event.endTime);
+    }
     _selectedTags = List<String>.from(event.hashtags);
+    _selectedRepeat = EventRecurrenceUtils.toUiRepeat(
+      isRecurring: event.isRecurring,
+      recurrenceRule: event.recurrenceRule,
+    );
+  }
+
+  /// Heuristic: stored as local midnight → end-of-day (23:59).
+  bool _inferAllDayFromStoredRange(DateTime start, DateTime end) {
+    final startOfDay = start.hour == 0 &&
+        start.minute == 0 &&
+        start.second == 0;
+    final endOfDay = end.hour == 23 && end.minute == 59;
+    return startOfDay && endOfDay && !end.isBefore(start);
   }
 
   void _prefillFromParsedResult() {
@@ -225,6 +263,10 @@ class _CreateItemPageState extends State<CreateItemPage> {
       }
       _selectedPriority =
           (result.priority.isNotEmpty) ? result.priority : 'medium';
+      final taskRecurrence = result.recurrence;
+      _selectedTaskRepeat = (taskRecurrence == null || taskRecurrence.isEmpty)
+          ? 'Never'
+          : taskRecurrence;
     }
   }
 
@@ -235,10 +277,15 @@ class _CreateItemPageState extends State<CreateItemPage> {
     DateTime.now().add(const Duration(hours: 1)),
   );
 
+  bool _isAllDay = false;
+  TimeOfDay? _savedStartTimeBeforeAllDay;
+  TimeOfDay? _savedEndTimeBeforeAllDay;
+
   DateTime? _deadlineDate;
   TimeOfDay? _deadlineTime;
 
   String _selectedRepeat = 'Never';
+  String _selectedTaskRepeat = 'Never';
   String _selectedPriority = 'medium';
 
   // Hashtag state (used for events)
@@ -268,6 +315,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _nameController.dispose();
     _detailsController.dispose();
     _locationController.dispose();
+    _eventDetailsFocusNode.removeListener(_onEventDetailsFocusChanged);
+    _eventDetailsFocusNode.dispose();
     _tagInputController.dispose();
     _hashtagService.dispose();
     super.dispose();
@@ -284,6 +333,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     BuildContext context, {
     required DateTime initialDate,
     required ValueChanged<DateTime> onDateTimeChanged,
+    bool dateOnly = false,
   }) async {
     await showModalBottomSheet(
       context: context,
@@ -291,6 +341,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
       builder: (BuildContext builder) {
         return _DateTimePickerSheet(
           initialDate: initialDate,
+          dateOnly: dateOnly,
           onDateTimeChanged: onDateTimeChanged,
         );
       },
@@ -303,17 +354,30 @@ class _CreateItemPageState extends State<CreateItemPage> {
     await _showDateTimePicker(
       context,
       initialDate: initial,
+      dateOnly: _isAllDay,
       onDateTimeChanged: (DateTime newDateTime) {
         setState(() {
-          _startDate = newDateTime;
-          _startTime = TimeOfDay.fromDateTime(newDateTime);
+          if (_isAllDay) {
+            _startDate = newDateTime;
+            _startTime = const TimeOfDay(hour: 0, minute: 0);
+            final endDay =
+                DateTime(_endDate.year, _endDate.month, _endDate.day);
+            final startDay =
+                DateTime(_startDate.year, _startDate.month, _startDate.day);
+            if (endDay.isBefore(startDay)) {
+              _endDate = _startDate;
+            }
+          } else {
+            _startDate = newDateTime;
+            _startTime = TimeOfDay.fromDateTime(newDateTime);
 
-          final currentEnd = DateTime(_endDate.year, _endDate.month,
-              _endDate.day, _endTime.hour, _endTime.minute);
-          if (currentEnd.isBefore(newDateTime)) {
-            final newEnd = newDateTime.add(const Duration(hours: 1));
-            _endDate = newEnd;
-            _endTime = TimeOfDay.fromDateTime(newEnd);
+            final currentEnd = DateTime(_endDate.year, _endDate.month,
+                _endDate.day, _endTime.hour, _endTime.minute);
+            if (currentEnd.isBefore(newDateTime)) {
+              final newEnd = newDateTime.add(const Duration(hours: 1));
+              _endDate = newEnd;
+              _endTime = TimeOfDay.fromDateTime(newEnd);
+            }
           }
         });
       },
@@ -326,12 +390,296 @@ class _CreateItemPageState extends State<CreateItemPage> {
     await _showDateTimePicker(
       context,
       initialDate: initial,
+      dateOnly: _isAllDay,
       onDateTimeChanged: (DateTime newDateTime) {
         setState(() {
-          _endDate = newDateTime;
-          _endTime = TimeOfDay.fromDateTime(newDateTime);
+          if (_isAllDay) {
+            _endDate = newDateTime;
+            _endTime = const TimeOfDay(hour: 23, minute: 59);
+            final endDay =
+                DateTime(_endDate.year, _endDate.month, _endDate.day);
+            final startDay =
+                DateTime(_startDate.year, _startDate.month, _startDate.day);
+            if (endDay.isBefore(startDay)) {
+              _startDate = _endDate;
+            }
+          } else {
+            _endDate = newDateTime;
+            _endTime = TimeOfDay.fromDateTime(newDateTime);
+            final startDt = DateTime(
+              _startDate.year,
+              _startDate.month,
+              _startDate.day,
+              _startTime.hour,
+              _startTime.minute,
+            );
+            var endDt = DateTime(
+              _endDate.year,
+              _endDate.month,
+              _endDate.day,
+              _endTime.hour,
+              _endTime.minute,
+            );
+            if (!endDt.isAfter(startDt)) {
+              endDt = startDt.add(const Duration(hours: 1));
+              _endDate = endDt;
+              _endTime = TimeOfDay.fromDateTime(endDt);
+            }
+          }
         });
       },
+    );
+  }
+
+  void _onAllDayChanged(bool value) {
+    setState(() {
+      if (value) {
+        _savedStartTimeBeforeAllDay = _startTime;
+        _savedEndTimeBeforeAllDay = _endTime;
+        _isAllDay = true;
+        _startTime = const TimeOfDay(hour: 0, minute: 0);
+        _endTime = const TimeOfDay(hour: 23, minute: 59);
+        final startDay =
+            DateTime(_startDate.year, _startDate.month, _startDate.day);
+        final endDay = DateTime(_endDate.year, _endDate.month, _endDate.day);
+        if (endDay.isBefore(startDay)) {
+          _endDate = _startDate;
+        }
+      } else {
+        _isAllDay = false;
+        _startTime = _savedStartTimeBeforeAllDay ??
+            const TimeOfDay(hour: 9, minute: 0);
+        _endTime = _savedEndTimeBeforeAllDay ??
+            const TimeOfDay(hour: 10, minute: 0);
+        _savedStartTimeBeforeAllDay = null;
+        _savedEndTimeBeforeAllDay = null;
+        final startDt = DateTime(
+          _startDate.year,
+          _startDate.month,
+          _startDate.day,
+          _startTime.hour,
+          _startTime.minute,
+        );
+        var endDt = DateTime(
+          _endDate.year,
+          _endDate.month,
+          _endDate.day,
+          _endTime.hour,
+          _endTime.minute,
+        );
+        if (!endDt.isAfter(startDt)) {
+          endDt = startDt.add(const Duration(hours: 1));
+          _endDate = endDt;
+          _endTime = TimeOfDay.fromDateTime(endDt);
+        }
+      }
+    });
+  }
+
+  String _formatEventStartLabel() {
+    final dt = DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    if (_isAllDay) {
+      return DateFormat('MMM d, y').format(dt);
+    }
+    return DateFormat('MMM d, h:mm a').format(dt);
+  }
+
+  String _formatEventEndLabel() {
+    final dt = DateTime(
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+    if (_isAllDay) {
+      return DateFormat('MMM d, y').format(dt);
+    }
+    return DateFormat('MMM d, h:mm a').format(dt);
+  }
+
+  Widget _buildEventDateTimeSection() {
+    return Container(
+      decoration: _fieldDecoration(),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Text(
+                  'All-day',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                Switch.adaptive(
+                  value: _isAllDay,
+                  onChanged: _onAllDayChanged,
+                  activeThumbColor: const Color(0xFF6366F1),
+                  activeTrackColor:
+                      const Color(0xFF6366F1).withValues(alpha: 0.35),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.shade200),
+          GestureDetector(
+            onTap: _selectStartDateTime,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Text(
+                    'Starts',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _formatEventStartLabel(),
+                      style: const TextStyle(
+                        color: Color(0xFF1F2937),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.end,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
+                ],
+              ),
+            ),
+          ),
+          Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.shade200),
+          GestureDetector(
+            onTap: _selectEndDateTime,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Text(
+                    'Ends',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _formatEventEndLabel(),
+                      style: const TextStyle(
+                        color: Color(0xFF1F2937),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.end,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskTitleSection() {
+    return Container(
+      decoration: _fieldDecoration(),
+      clipBehavior: Clip.antiAlias,
+      child: TextField(
+        controller: _nameController,
+        decoration: InputDecoration(
+          hintText: 'Task name',
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskDeadlineSection() {
+    final hasDeadline = _deadlineDate != null && _deadlineTime != null;
+    final valueText = hasDeadline
+        ? DateFormat('MMM d, h:mm a').format(DateTime(
+            _deadlineDate!.year,
+            _deadlineDate!.month,
+            _deadlineDate!.day,
+            _deadlineTime!.hour,
+            _deadlineTime!.minute,
+          ))
+        : 'No deadline';
+
+    return Container(
+      decoration: _fieldDecoration(),
+      clipBehavior: Clip.antiAlias,
+      child: GestureDetector(
+        onTap: _selectDeadlineDateTime,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Text(
+                'Deadline',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  valueText,
+                  style: TextStyle(
+                    color: hasDeadline
+                        ? const Color(0xFF1F2937)
+                        : Colors.grey.shade500,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.end,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -375,21 +723,52 @@ class _CreateItemPageState extends State<CreateItemPage> {
     const uuid = Uuid();
 
     try {
-      if (isEvent) {
-        final start = DateTime(
-          _startDate.year,
-          _startDate.month,
-          _startDate.day,
-          _startTime.hour,
-          _startTime.minute,
-        );
-        final end = DateTime(
-          _endDate.year,
-          _endDate.month,
-          _endDate.day,
-          _endTime.hour,
-          _endTime.minute,
-        );
+        if (isEvent) {
+        final DateTime start;
+        final DateTime end;
+        if (_isAllDay) {
+          final startDay =
+              DateTime(_startDate.year, _startDate.month, _startDate.day);
+          var endDay = DateTime(
+            _endDate.year,
+            _endDate.month,
+            _endDate.day,
+            23,
+            59,
+            59,
+            999,
+          );
+          if (endDay.isBefore(startDay)) {
+            endDay = DateTime(
+              startDay.year,
+              startDay.month,
+              startDay.day,
+              23,
+              59,
+              59,
+              999,
+            );
+          }
+          start = startDay;
+          end = endDay;
+        } else {
+          start = DateTime(
+            _startDate.year,
+            _startDate.month,
+            _startDate.day,
+            _startTime.hour,
+            _startTime.minute,
+          );
+          end = DateTime(
+            _endDate.year,
+            _endDate.month,
+            _endDate.day,
+            _endTime.hour,
+            _endTime.minute,
+          );
+        }
+
+        final recur = EventRecurrenceUtils.fromUiRepeat(_selectedRepeat, start);
 
         if (widget.editEvent != null) {
           final event = widget.editEvent!.copyWith(
@@ -399,6 +778,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
             endTime: end,
             location: _locationController.text,
             hashtags: List<String>.from(_selectedTags),
+            isRecurring: recur.isRecurring,
+            recurrenceRule: recur.recurrenceRule,
+            recurrenceException: recur.recurrenceException,
             updatedAt: DateTime.now(),
           );
           await viewModel.updateEvent(event);
@@ -412,6 +794,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
             endTime: end,
             location: _locationController.text,
             hashtags: List<String>.from(_selectedTags),
+            isRecurring: recur.isRecurring,
+            recurrenceRule: recur.recurrenceRule,
+            recurrenceException: recur.recurrenceException,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -438,6 +823,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
           completed: false,
           priority: _selectedPriority,
           hashtags: List<String>.from(_selectedTags),
+          recurrence: _selectedTaskRepeat,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -483,22 +869,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              if (widget.editEvent == null) ...[
-                _buildToggle(),
-                const SizedBox(height: 30),
-              ] else ...[
-                const Text(
-                  'Edit Event',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 30),
-              ],
+              _buildTopBar(),
+              const SizedBox(height: 8),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -519,10 +891,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             icon: const Icon(
@@ -532,6 +905,21 @@ class _CreateItemPageState extends State<CreateItemPage> {
             ),
             onPressed: () => Navigator.pop(context),
           ),
+          Expanded(
+            child: Center(
+              child: widget.editEvent == null
+                  ? _buildToggle()
+                  : const Text(
+                      'Edit Event',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -584,45 +972,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildEventForm() {
     return Column(
       children: [
-        _buildTextField(_nameController, 'Event name'),
+        _buildEventTitleLocationSection(),
         const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectStartDateTime,
-                child: _buildTimeField(
-                  DateFormat('MMM d, h:mm a').format(DateTime(
-                      _startDate.year,
-                      _startDate.month,
-                      _startDate.day,
-                      _startTime.hour,
-                      _startTime.minute)),
-                  Icons.flag_outlined,
-                  title: 'Start',
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectEndDateTime,
-                child: _buildTimeField(
-                  DateFormat('MMM d, h:mm a').format(DateTime(
-                      _endDate.year,
-                      _endDate.month,
-                      _endDate.day,
-                      _endTime.hour,
-                      _endTime.minute)),
-                  Icons.play_arrow_outlined,
-                  title: 'End',
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _buildLocationField(),
+        _buildEventDateTimeSection(),
         const SizedBox(height: 20),
         ModernDropdownField<String>(
           label: 'Repeat',
@@ -635,9 +987,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
           },
         ),
         const SizedBox(height: 20),
-        _buildHashtagField(),
+        _buildEventHashtagField(),
         const SizedBox(height: 20),
-        _buildDetailsField(_detailsController),
+        _buildEventDetailsField(),
         const SizedBox(height: 20),
         _buildColorPicker(),
       ],
@@ -672,7 +1024,14 @@ class _CreateItemPageState extends State<CreateItemPage> {
     setState(() => _selectedTags.remove(tag));
   }
 
-  Widget _buildHashtagField() {
+  Widget _buildEventHashtagField() {
+    final sortedSuggestions = List<HashtagScore>.from(_predictedTags)
+      ..sort((a, b) => b.confidence.compareTo(a.confidence));
+    final visibleSuggestions = sortedSuggestions
+        .where((p) =>
+            !_selectedTags.contains(p.hashtag.replaceAll(RegExp(r'^#+'), '')))
+        .toList();
+
     return Container(
       decoration: _fieldDecoration(),
       padding: const EdgeInsets.all(16),
@@ -701,15 +1060,20 @@ class _CreateItemPageState extends State<CreateItemPage> {
                   ),
                 ),
               ],
-              const Spacer(),
-              TextButton(
-                onPressed: _predictHashtags,
-                child: const Text('Suggest'),
-              ),
             ],
           ),
           if (_selectedTags.isNotEmpty) ...[
             const SizedBox(height: 12),
+            Text(
+              'Added',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -747,71 +1111,91 @@ class _CreateItemPageState extends State<CreateItemPage> {
               }).toList(),
             ),
           ],
-          if (_predictedTags.isNotEmpty) ...[
-            const SizedBox(height: 12),
+          if (visibleSuggestions.isNotEmpty) ...[
+            const SizedBox(height: 16),
             Text(
-              'Suggestions',
+              'From your text',
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
               ),
             ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _predictedTags
-                  .where((p) => !_selectedTags
-                      .contains(p.hashtag.replaceAll(RegExp(r'^#+'), '')))
-                  .map((prediction) {
-                final pct = (prediction.confidence * 100).toStringAsFixed(0);
-                final displayTag = prediction.hashtag.startsWith('#')
-                    ? prediction.hashtag
-                    : '#${prediction.hashtag}';
-                return GestureDetector(
+            const SizedBox(height: 8),
+            ...visibleSuggestions.map((prediction) {
+              final pct =
+                  (prediction.confidence * 100).toStringAsFixed(0);
+              final displayTag = prediction.hashtag.startsWith('#')
+                  ? prediction.hashtag
+                  : '#${prediction.hashtag}';
+              final conf =
+                  prediction.confidence.clamp(0.0, 1.0);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GestureDetector(
                   onTap: () => _addTag(prediction.hashtag),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                        color:
+                            const Color(0xFF6366F1).withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          displayTag,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF6366F1),
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                displayTag,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '$pct%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.add_circle_outline,
+                              size: 18,
+                              color: const Color(0xFF6366F1)
+                                  .withValues(alpha: 0.75),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$pct%',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade500,
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: conf,
+                            minHeight: 5,
+                            backgroundColor: const Color(0xFF6366F1)
+                                .withValues(alpha: 0.1),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF6366F1),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.add_circle_outline,
-                          size: 14,
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.6),
                         ),
                       ],
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              );
+            }),
           ],
           const SizedBox(height: 10),
           Row(
@@ -878,25 +1262,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildTaskForm() {
     return Column(
       children: [
-        _buildTextField(_nameController, 'Task name'),
+        _buildTaskTitleSection(),
         const SizedBox(height: 20),
-        GestureDetector(
-          onTap: _selectDeadlineDateTime,
-          child: _buildTimeField(
-            _deadlineDate != null
-                ? DateFormat('MMM d, h:mm a').format(DateTime(
-                    _deadlineDate!.year,
-                    _deadlineDate!.month,
-                    _deadlineDate!.day,
-                    _deadlineTime!.hour,
-                    _deadlineTime!.minute))
-                : 'Deadline',
-            Icons.access_time_rounded,
-            title: 'Deadline',
-          ),
-        ),
-        const SizedBox(height: 20),
-        _buildHashtagField(),
+        _buildTaskDeadlineSection(),
         const SizedBox(height: 20),
         ModernDropdownField<String>(
           label: 'Priority',
@@ -910,173 +1278,172 @@ class _CreateItemPageState extends State<CreateItemPage> {
           },
         ),
         const SizedBox(height: 20),
-        _buildDetailsField(_detailsController),
+        ModernDropdownField<String>(
+          label: 'Repeat',
+          icon: Icons.repeat_rounded,
+          value: _selectedTaskRepeat,
+          displayStringForValue: (val) => val,
+          items: const ['Never', 'Daily', 'Weekly', 'Monthly'],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedTaskRepeat = val);
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildEventHashtagField(),
+        const SizedBox(height: 20),
+        _buildEventDetailsField(),
       ],
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint) {
+  Widget _buildEventTitleLocationSection() {
     return Container(
       decoration: _fieldDecoration(),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLocationField() {
-    final initialLocation = _locationController.text;
-    return Container(
-      decoration: _fieldDecoration(),
-      child: Autocomplete<String>(
-        initialValue: initialLocation.isNotEmpty
-            ? TextEditingValue(text: initialLocation)
-            : null,
-        optionsBuilder: (TextEditingValue textEditingValue) async {
-          if (textEditingValue.text.isEmpty) {
-            return const Iterable<String>.empty();
-          }
-          return await LocationService.getPlaceSuggestions(
-              textEditingValue.text);
-        },
-        onSelected: (String selection) {
-          _locationController.text = selection;
-        },
-        fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-          // Sync controllers
-          controller.addListener(() {
-            _locationController.text = controller.text;
-          });
-          return TextField(
-            controller: controller,
-            focusNode: focusNode,
-            onEditingComplete: onEditingComplete,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
             decoration: InputDecoration(
-              hintText: 'Location (Optional)',
+              hintText: 'Event name',
               hintStyle: TextStyle(color: Colors.grey.shade400),
-              prefixIcon:
-                  Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 16,
               ),
             ),
-          );
-        },
-        optionsViewBuilder: (context, onSelected, options) {
-          return Align(
-            alignment: Alignment.topLeft,
-            child: Material(
-              elevation: 4.0,
-              borderRadius: BorderRadius.circular(16),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: 200,
-                  maxWidth: MediaQuery.of(context).size.width - 48,
-                ),
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  shrinkWrap: true,
-                  itemCount: options.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final String option = options.elementAt(index);
-                    return ListTile(
-                      leading:
-                          const Icon(Icons.location_on, color: Colors.grey),
-                      title: Text(option),
-                      onTap: () {
-                        onSelected(option);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTimeField(String value, IconData icon, {String? title}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: _fieldDecoration(),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2CB9B0).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: const Color(0xFF2CB9B0), size: 20),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title != null) ...[
-                  Text(
-                    title,
-                    style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 2),
-                ],
-                Text(
-                  value,
-                  style: const TextStyle(
-                      color: Color(0xFF1F2937),
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+          Divider(
+            height: 1,
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey.shade200,
           ),
+          _buildLocationAutocompleteBody(),
         ],
       ),
     );
   }
 
-  Widget _buildDetailsField(TextEditingController controller) {
+  Widget _buildLocationAutocompleteBody() {
+    final initialLocation = _locationController.text;
+    return Autocomplete<String>(
+      initialValue: initialLocation.isNotEmpty
+          ? TextEditingValue(text: initialLocation)
+          : null,
+      optionsBuilder: (TextEditingValue textEditingValue) async {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<String>.empty();
+        }
+        return await LocationService.getPlaceSuggestions(textEditingValue.text);
+      },
+      onSelected: (String selection) {
+        _locationController.text = selection;
+      },
+      fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+        controller.addListener(() {
+          _locationController.text = controller.text;
+        });
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          onEditingComplete: onEditingComplete,
+          decoration: InputDecoration(
+            hintText: 'Location (Optional)',
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+            prefixIcon:
+                Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4.0,
+            borderRadius: BorderRadius.circular(16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: 200,
+                maxWidth: MediaQuery.of(context).size.width - 48,
+              ),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final String option = options.elementAt(index);
+                  return ListTile(
+                    leading:
+                        const Icon(Icons.location_on, color: Colors.grey),
+                    title: Text(option),
+                    onTap: () {
+                      onSelected(option);
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEventDetailsField() {
+    final focused = _eventDetailsFocusNode.hasFocus;
     return Container(
       height: 150,
-      decoration: _fieldDecoration(),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: focused ? const Color(0xFF6366F1) : Colors.grey.shade200,
+          width: focused ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          TextField(
-            controller: controller,
-            maxLines: null,
-            decoration: InputDecoration(
-              hintText: 'Details',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(20),
+          Positioned.fill(
+            child: TextField(
+              controller: _detailsController,
+              focusNode: _eventDetailsFocusNode,
+              expands: true,
+              maxLines: null,
+              minLines: null,
+              textAlignVertical: TextAlignVertical.top,
+              decoration: InputDecoration(
+                hintText: 'Details',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
+              ),
             ),
           ),
           Positioned(
             bottom: 12,
             right: 12,
-            child: Icon(
-              Icons.drag_handle_rounded,
-              color: Colors.grey.shade300,
-              size: 20,
+            child: IgnorePointer(
+              child: Icon(
+                Icons.drag_handle_rounded,
+                color: Colors.grey.shade300,
+                size: 20,
+              ),
             ),
           ),
         ],
