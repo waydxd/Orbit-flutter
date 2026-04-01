@@ -12,8 +12,8 @@ void main() async {
   await NotificationService().initialize();
 
   // Set environment
-  // EnvironmentConfig.setEnvironment(Environment.local);
-  EnvironmentConfig.setEnvironment(Environment.development);
+  EnvironmentConfig.setEnvironment(Environment.local);
+  // EnvironmentConfig.setEnvironment(Environment.development);
 
   // Initialize local storage
   await LocalStorageService.initialize();

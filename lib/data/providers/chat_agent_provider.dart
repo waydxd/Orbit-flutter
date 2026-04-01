@@ -11,8 +11,6 @@ import '../../utils/logger.dart';
 
 export '../models/chat_session.dart';
 
-
-
 /// Pending action info for UI display
 class PendingActionInfo {
   final String actionId;
@@ -255,6 +253,10 @@ class ChatAgentProvider extends ChangeNotifier {
         conversationId: conversationId,
       );
 
+      // Keep locally persisted action metadata/outcome messages when reloading history.
+      final cachedMessages = await _localRepository.getCachedAgentMessages(conversationId) ?? const <AgentChatMessage>[];
+      final mergedMessages = _mergeWithCachedMessages(messages, cachedMessages);
+
       // Also load conversation details to get pending actions
       final conversationDetail = await _repository.getConversationDetail(
         conversationId: conversationId,
@@ -273,14 +275,14 @@ class ChatAgentProvider extends ChangeNotifier {
       }
 
       _updateState(_state.copyWith(
-        messages: messages,
+        messages: mergedMessages,
         isLoadingHistory: false,
         isOfflineMode: false,
         currentPendingAction: pendingAction,
       ));
 
       // Update local cache with fresh data from backend
-      await _localRepository.cacheAgentMessages(conversationId, messages);
+      await _localRepository.cacheAgentMessages(conversationId, mergedMessages);
     } on AuthException catch (e) {
       _handleAuthError(e);
     } on NetworkException catch (e) {
@@ -433,14 +435,17 @@ class ChatAgentProvider extends ChangeNotifier {
       if (assistantReply.isNotEmpty) {
         // Attach action info to the message if there's a proposed action
         if (result.hasProposedAction && result.actionId != null) {
+          final actionSummary = _buildActionSummary(result.proposedActionSummary);
+          final actionType = _inferActionType(actionSummary);
+
           updatedMessages.add(AgentChatMessage.agentWithAction(
             id: result.messageId,
             conversationId: conversationId,
             content: assistantReply,
             agentType: AgentType.calendarAssistant,
             actionId: result.actionId!,
-            actionType: result.proposedActionSummary ?? 'create_event',
-            actionSummary: result.proposedActionSummary,
+            actionType: actionType,
+            actionSummary: actionSummary,
             actionStatus: 'pending',
           ));
         } else {
@@ -458,7 +463,7 @@ class ChatAgentProvider extends ChangeNotifier {
       if (result.hasProposedAction && result.actionId != null) {
         pendingAction = PendingActionInfo(
           actionId: result.actionId!,
-          type: result.proposedActionSummary ?? 'pending',
+          type: _inferActionType(_buildActionSummary(result.proposedActionSummary)),
           status: 'pending',
         );
       }
@@ -474,7 +479,9 @@ class ChatAgentProvider extends ChangeNotifier {
 
       Logger.infoWithTag(
         'ChatAgentProvider',
-        'Message sent and response received${pendingAction != null ? " with pending action" : ""}',
+        'Message sent and response received${pendingAction != null
+            ? " with pending action"
+            : ""}',
       );
     } on AuthException catch (e) {
       _removeLoadingAndSetError(e);
@@ -504,6 +511,48 @@ class ChatAgentProvider extends ChangeNotifier {
 
   /// Confirm an action by action ID (used in Agent mode for per-message actions)
   Future<void> confirmMessageAction(String actionId, {String? idempotencyKey}) async {
+    // 1) Prefer the key already stored in state for this action.
+    if (idempotencyKey == null && _state.currentPendingAction?.actionId == actionId) {
+      idempotencyKey = _state.currentPendingAction?.idempotencyKey;
+    }
+
+    // 2) Try action details endpoint.
+    if (idempotencyKey == null || idempotencyKey.isEmpty) {
+      try {
+        final actionDetail = await _repository.getAction(actionId: actionId);
+        idempotencyKey = actionDetail.idempotencyKey;
+      } catch (e) {
+        Logger.warningWithTag('ChatAgentProvider', 'Failed to fetch action details before confirm: $e');
+      }
+    }
+
+    // 3) Fallback to conversation pending_actions (often includes idempotency_key).
+    if ((idempotencyKey == null || idempotencyKey.isEmpty) && _state.currentConversationId != null) {
+      try {
+        final detail = await _repository.getConversationDetail(
+          conversationId: _state.currentConversationId!,
+        );
+        ConversationPendingAction? matched;
+        try {
+          matched = detail.pendingActions.firstWhere((a) => a.actionId == actionId);
+        } catch (_) {
+          matched = null;
+        }
+        idempotencyKey = matched?.idempotencyKey;
+      } catch (e) {
+        Logger.warningWithTag('ChatAgentProvider', 'Failed to fetch conversation details before confirm: $e');
+      }
+    }
+
+    // Do not fabricate idempotency keys; backend validates against stored key.
+    if (idempotencyKey == null || idempotencyKey.isEmpty) {
+      _updateState(_state.copyWith(
+        isConfirmingAction: false,
+        errorMessage: 'Unable to confirm action: missing idempotency key. Please refresh the conversation and try again.',
+      ));
+      return;
+    }
+
     _updateState(_state.copyWith(
       isConfirmingAction: true,
       clearError: true,
@@ -516,19 +565,21 @@ class ChatAgentProvider extends ChangeNotifier {
       );
 
       if (result.success) {
-        // Update the message with the action to show confirmed status
+        // Update the message with the action to show executed status
         final updatedMessages = _state.messages.map((m) {
           if (m.actionId == actionId) {
-            return m.copyWith(actionStatus: 'confirmed');
+            return m.copyWith(actionStatus: 'executed');
           }
           return m;
         }).toList();
 
-        // Add confirmation message to chat
+        // Add execution message to chat and persist it to local history
         final confirmMessage = AgentChatMessage.agent(
           id: _uuid.v4(),
           conversationId: _state.currentConversationId ?? '',
-          content: result.message.isNotEmpty ? result.message : 'Action confirmed successfully!',
+          content: result.message.isNotEmpty
+              ? result.message
+              : 'Action executed successfully. Let me know if you need anything else.',
           agentType: AgentType.calendarAssistant,
         );
 
@@ -923,5 +974,54 @@ class ChatAgentProvider extends ChangeNotifier {
     } catch (e) {
       Logger.warningWithTag('ChatAgentProvider', 'Failed to persist messages to cache: $e');
     }
+  }
+
+  List<AgentChatMessage> _mergeWithCachedMessages(
+    List<AgentChatMessage> remote,
+    List<AgentChatMessage> cached,
+  ) {
+    if (cached.isEmpty) return remote;
+
+    final cachedById = <String, AgentChatMessage>{
+      for (final m in cached) if (m.id.isNotEmpty) m.id: m,
+    };
+
+    final merged = remote.map((m) {
+      final local = cachedById[m.id];
+      if (local == null) return m;
+      return m.copyWith(
+        actionId: m.actionId ?? local.actionId,
+        actionType: m.actionType ?? local.actionType,
+        actionSummary: m.actionSummary ?? local.actionSummary,
+        actionStatus: m.actionStatus ?? local.actionStatus,
+      );
+    }).toList();
+
+    final remoteIds = merged.map((m) => m.id).toSet();
+    for (final local in cached) {
+      if (!remoteIds.contains(local.id)) {
+        merged.add(local);
+      }
+    }
+
+    return merged;
+  }
+
+  String _buildActionSummary(String? proposedActionSummary) {
+    final summary = proposedActionSummary?.trim();
+    if (summary != null && summary.isNotEmpty) {
+      return summary;
+    }
+    return 'Action';
+  }
+
+  String _inferActionType(String summary) {
+    final lower = summary.toLowerCase();
+    if (lower.startsWith('create')) return 'create_event';
+    if (lower.startsWith('update') || lower.startsWith('rearrange') || lower.startsWith('reschedule')) {
+      return 'update_event';
+    }
+    if (lower.startsWith('delete') || lower.startsWith('remove')) return 'delete_event';
+    return 'action';
   }
 }

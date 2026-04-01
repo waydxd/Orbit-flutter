@@ -5,6 +5,8 @@ import '../../../data/providers/chat_agent_provider.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/chat_exceptions.dart';
 import '../widgets/chat_widgets.dart';
+import '../../calendar/view_model/calendar_view_model.dart';
+import '../../auth/view_model/auth_view_model.dart';
 
 /// AI Chat Page integrated with Orbit-core chat and agent APIs
 ///
@@ -85,6 +87,11 @@ class _AiChatPageState extends State<AiChatPage> {
   void _handleActionConfirmed(String? eventId) {
     _showSnackBar('Event created successfully!');
     _scrollToBottom();
+    // Refresh the calendar view from the database since an event was created
+    final userId = context.read<AuthViewModel>().currentUser?.id;
+    if (userId != null) {
+      context.read<CalendarViewModel>().fetchAll(userId: userId);
+    }
   }
 
   void _handleActionCancelled() {
@@ -214,7 +221,8 @@ class _AiChatPageState extends State<AiChatPage> {
                 _messageController.clear();
                 _chatProvider.startNewConversation();
               },
-              onSelectConversation: (id) => _chatProvider.selectConversation(id),
+              onSelectConversation: (id) =>
+                  _chatProvider.selectConversation(id),
               onRenameConversation: _showRenameDialog,
               onDeleteConversation: _showDeleteConfirmation,
             ),
@@ -231,17 +239,8 @@ class _AiChatPageState extends State<AiChatPage> {
                         ? _buildMessagesList(provider)
                         : _buildWelcomeContent(),
                   ),
-                  // Pending action card for Agent mode
-                  if (provider.hasPendingAction)
-                    PendingActionCard(
-                      action: provider.currentPendingAction!,
-                      onConfirm: () => _chatProvider.confirmPendingAction(),
-                      onCancel: () => _chatProvider.cancelPendingAction(),
-                      onDismiss: () => _chatProvider.dismissPendingAction(),
-                      isConfirming: provider.isConfirmingAction,
-                      isCancelling: provider.isCancellingAction,
-                    ),
-                  _buildInputSection(provider.isLoading || provider.isProcessingAction),
+                  _buildInputSection(
+                      provider.isLoading || provider.isProcessingAction),
                 ],
               ),
             ),
@@ -254,9 +253,11 @@ class _AiChatPageState extends State<AiChatPage> {
   Widget _buildHeader(BuildContext context, {required bool hasMessages}) {
     String? currentTitle;
     if (_isInitialized && _chatProvider.currentConversationId != null) {
-      final currentConversation = _chatProvider.conversations.where(
-        (c) => c.sessionId == _chatProvider.currentConversationId,
-      ).firstOrNull;
+      final currentConversation = _chatProvider.conversations
+          .where(
+            (c) => c.sessionId == _chatProvider.currentConversationId,
+          )
+          .firstOrNull;
       currentTitle = currentConversation?.title;
     }
 
@@ -268,7 +269,8 @@ class _AiChatPageState extends State<AiChatPage> {
           Row(
             children: [
               IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFF6366F1), size: 28),
+                  icon: const Icon(Icons.close,
+                      color: Color(0xFF6366F1), size: 28),
                   onPressed: () => Navigator.of(context).pop(),
                   tooltip: 'Close Chat'),
             ],
@@ -279,7 +281,8 @@ class _AiChatPageState extends State<AiChatPage> {
               child: GestureDetector(
                 onTap: () => _showEditCurrentTitleDialog(),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -312,7 +315,8 @@ class _AiChatPageState extends State<AiChatPage> {
           // Right side button
           if (_isInitialized)
             IconButton(
-              icon: const Icon(Icons.history, color: Color(0xFF6366F1), size: 28),
+              icon:
+                  const Icon(Icons.history, color: Color(0xFF6366F1), size: 28),
               onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
               tooltip: 'Chat History',
             ),
@@ -324,9 +328,11 @@ class _AiChatPageState extends State<AiChatPage> {
   void _showEditCurrentTitleDialog() {
     if (_chatProvider.currentConversationId == null) return;
 
-    final currentConversation = _chatProvider.conversations.where(
-      (c) => c.sessionId == _chatProvider.currentConversationId,
-    ).firstOrNull;
+    final currentConversation = _chatProvider.conversations
+        .where(
+          (c) => c.sessionId == _chatProvider.currentConversationId,
+        )
+        .firstOrNull;
 
     if (currentConversation != null) {
       _showRenameDialog(currentConversation);
@@ -455,14 +461,16 @@ class _AiChatPageState extends State<AiChatPage> {
     if (message.hasAction) {
       if (message.hasPendingAction) {
         actionButtons = MessageActionButtons(
-          onConfirm: () => _chatProvider.confirmMessageAction(message.actionId!),
+          onConfirm: () =>
+              _chatProvider.confirmMessageAction(message.actionId!),
           onCancel: () => _chatProvider.cancelMessageAction(message.actionId!),
           isConfirming: _chatProvider.isConfirmingAction,
           isCancelling: _chatProvider.isCancellingAction,
           isDisabled: _chatProvider.isProcessingAction,
         );
       } else {
-        actionButtons = ActionStatusBadge(status: message.actionStatus ?? 'unknown');
+        actionButtons =
+            ActionStatusBadge(status: message.actionStatus ?? 'unknown');
       }
     }
 
@@ -482,7 +490,8 @@ class _AiChatPageState extends State<AiChatPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(27),
           border: Border.all(
-            color: isFocused ? const Color(0xFF6366F1) : const Color(0xFFE0E7FF),
+            color:
+                isFocused ? const Color(0xFF6366F1) : const Color(0xFFE0E7FF),
             width: 1.5,
           ),
         ),
@@ -543,7 +552,8 @@ class _AiChatPageState extends State<AiChatPage> {
       context: context,
       builder: (context) => RenameConversationDialog(
         conversation: conversation,
-        onRename: (id, newTitle) => _chatProvider.updateConversationTitle(id, newTitle),
+        onRename: (id, newTitle) =>
+            _chatProvider.updateConversationTitle(id, newTitle),
       ),
     );
   }
@@ -558,4 +568,3 @@ class _AiChatPageState extends State<AiChatPage> {
     );
   }
 }
-

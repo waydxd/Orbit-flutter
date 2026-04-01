@@ -115,7 +115,7 @@ class ChatRepository {
   /// POST /api/v1/chat/actions/{action_id}/confirm
   Future<ActionConfirmResponse> confirmAction({
     required String actionId,
-    String? idempotencyKey,
+    required String idempotencyKey,
   }) async {
     return _apiService.confirmAction(
       actionId: actionId,

@@ -763,14 +763,20 @@ class ChatApiService {
   /// Response (ConfirmActionResponse): { success, message, result?, operation_id? }
   Future<ActionConfirmResponse> confirmAction({
     required String actionId,
-    String? idempotencyKey,
+    required String idempotencyKey,
   }) async {
     try {
       final response = await _apiClient.post(
         '/chat/actions/$actionId/confirm',
         data: {
-          if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
+          'idempotency_key': idempotencyKey,
         },
+        options: Options(
+          headers: {
+            'Idempotency-Key': idempotencyKey,
+            'X-Idempotency-Key': idempotencyKey,
+          },
+        ),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

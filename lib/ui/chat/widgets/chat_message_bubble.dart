@@ -174,15 +174,16 @@ class ActionStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isConfirmed = status == 'confirmed';
-    final isCancelled = status == 'cancelled';
+    final normalized = status.toLowerCase();
+    final isExecuted = normalized == 'executed' || normalized == 'confirmed';
+    final isCancelled = normalized == 'cancelled' || normalized == 'canceled';
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isConfirmed
+          color: isExecuted
               ? const Color(0xFF10B981).withValues(alpha: 0.1)
               : isCancelled
                   ? const Color(0xFFF59E0B).withValues(alpha: 0.1)
@@ -193,13 +194,13 @@ class ActionStatusBadge extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              isConfirmed
+              isExecuted
                   ? Icons.check_circle_outline
                   : isCancelled
                       ? Icons.cancel_outlined
                       : Icons.timer_off_outlined,
               size: 14,
-              color: isConfirmed
+              color: isExecuted
                   ? const Color(0xFF10B981)
                   : isCancelled
                       ? const Color(0xFFF59E0B)
@@ -207,15 +208,15 @@ class ActionStatusBadge extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              isConfirmed
-                  ? 'Confirmed'
+              isExecuted
+                  ? 'Executed'
                   : isCancelled
                       ? 'Cancelled'
                       : 'Expired',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isConfirmed
+                color: isExecuted
                     ? const Color(0xFF10B981)
                     : isCancelled
                         ? const Color(0xFFF59E0B)
@@ -251,34 +252,6 @@ class MessageActionButtons extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Cancel button
-          OutlinedButton.icon(
-            onPressed: isDisabled ? null : onCancel,
-            icon: isCancelling
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF6B7280),
-                    ),
-                  )
-                : const Icon(Icons.close, size: 14),
-            label: const Text('Cancel'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF6B7280),
-              side: const BorderSide(color: Color(0xFFD1D5DB)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
           // Confirm button
           ElevatedButton.icon(
             onPressed: isDisabled ? null : onConfirm,
@@ -307,9 +280,36 @@ class MessageActionButtons extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          // Cancel button
+          OutlinedButton.icon(
+            onPressed: isDisabled ? null : onCancel,
+            icon: isCancelling
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF6B7280),
+                    ),
+                  )
+                : const Icon(Icons.close, size: 14),
+            label: const Text('Cancel'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF6B7280),
+              side: const BorderSide(color: Color(0xFFD1D5DB)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
-

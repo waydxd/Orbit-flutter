@@ -32,7 +32,9 @@ class EnvironmentConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.local:
-        return 'http://$_localHost:8080';
+        return 'http://192.168.99.192:8080';
+        // waydriod: 192.168.240.1
+        // mobile: 192.168.99.192
       case Environment.development:
         // Use the shared remote backend in development to match main branch behavior
         // If you want to target a local Orbit-core instance instead, update this
