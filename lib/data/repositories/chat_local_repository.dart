@@ -32,7 +32,8 @@ class ChatLocalRepository {
   }
 
   /// Cache messages locally for a session
-  Future<void> cacheMessages(String sessionId, List<ChatMessage> messages) async {
+  Future<void> cacheMessages(
+      String sessionId, List<ChatMessage> messages) async {
     await _ensureInitialized();
     final data = messages.map((m) => m.toJson()).toList();
     await _messagesBox!.put(sessionId, {'messages': data});
@@ -47,7 +48,7 @@ class ChatLocalRepository {
     try {
       final messages = data['messages'] as List?;
       if (messages == null) return null;
-      
+
       return messages
           .map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m)))
           .toList();
@@ -80,7 +81,7 @@ class ChatLocalRepository {
     try {
       final sessions = data['sessions'] as List?;
       if (sessions == null) return null;
-      
+
       return sessions
           .map((s) => ChatSession.fromJson(Map<String, dynamic>.from(s)))
           .toList();
@@ -106,14 +107,16 @@ class ChatLocalRepository {
   }
 
   /// Cache AgentChatMessage list for a conversation
-  Future<void> cacheAgentMessages(String conversationId, List<AgentChatMessage> messages) async {
+  Future<void> cacheAgentMessages(
+      String conversationId, List<AgentChatMessage> messages) async {
     await _ensureInitialized();
     final data = messages.map((m) => m.toJson()).toList();
     await _agentMessagesBox!.put(conversationId, {'messages': data});
   }
 
   /// Get cached AgentChatMessage list for a conversation
-  Future<List<AgentChatMessage>?> getCachedAgentMessages(String conversationId) async {
+  Future<List<AgentChatMessage>?> getCachedAgentMessages(
+      String conversationId) async {
     await _ensureInitialized();
     final data = _agentMessagesBox!.get(conversationId);
     if (data == null) return null;
@@ -152,4 +155,3 @@ class ChatLocalRepository {
     _isInitialized = false;
   }
 }
-

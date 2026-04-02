@@ -69,4 +69,3 @@ class ConflictException extends ApiException {
 class ActionExpiredException extends ApiException {
   ActionExpiredException(super.message, {super.statusCode});
 }
-

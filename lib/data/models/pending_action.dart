@@ -180,7 +180,9 @@ class PendingAction extends Equatable {
     required this.status,
     required this.version,
     required this.correlationId,
-    required this.createdAt, required this.updatedAt, this.agentMetadata = const {},
+    required this.createdAt,
+    required this.updatedAt,
+    this.agentMetadata = const {},
     this.errorMessage,
     this.expiresAt,
   });
@@ -410,4 +412,3 @@ class ChatMetrics {
     );
   }
 }
-

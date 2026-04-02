@@ -80,14 +80,18 @@ class ChatAgentState {
     return ChatAgentState(
       messages: messages ?? this.messages,
       conversations: conversations ?? this.conversations,
-      currentConversationId: clearConversationId ? null : (currentConversationId ?? this.currentConversationId),
+      currentConversationId: clearConversationId
+          ? null
+          : (currentConversationId ?? this.currentConversationId),
       isLoading: isLoading ?? this.isLoading,
       isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
       isOfflineMode: isOfflineMode ?? this.isOfflineMode,
       isServiceHealthy: isServiceHealthy ?? this.isServiceHealthy,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       lastError: clearError ? null : (lastError ?? this.lastError),
-      currentPendingAction: clearPendingAction ? null : (currentPendingAction ?? this.currentPendingAction),
+      currentPendingAction: clearPendingAction
+          ? null
+          : (currentPendingAction ?? this.currentPendingAction),
       isConfirmingAction: isConfirmingAction ?? this.isConfirmingAction,
       isCancellingAction: isCancellingAction ?? this.isCancellingAction,
     );
@@ -97,8 +101,10 @@ class ChatAgentState {
   bool get isAuthError => lastError is AuthException;
   bool get isNetworkError => lastError is NetworkException;
   bool get isServerError => lastError is ServerException;
-  bool get canRetry => lastError is NetworkException || lastError is ServerException;
-  bool get hasPendingAction => currentPendingAction != null && currentPendingAction!.isPending;
+  bool get canRetry =>
+      lastError is NetworkException || lastError is ServerException;
+  bool get hasPendingAction =>
+      currentPendingAction != null && currentPendingAction!.isPending;
   bool get isProcessingAction => isConfirmingAction || isCancellingAction;
 }
 
@@ -132,7 +138,6 @@ class ChatAgentProvider extends ChangeNotifier {
   bool get isServiceHealthy => _state.isServiceHealthy;
   String? get errorMessage => _state.errorMessage;
   bool get hasError => _state.hasError;
-
 
   // Pending action getters
   PendingActionInfo? get currentPendingAction => _state.currentPendingAction;
@@ -192,7 +197,8 @@ class ChatAgentProvider extends ChangeNotifier {
       _updateState(_state.copyWith(
         isServiceHealthy: health.isHealthy,
       ));
-      Logger.infoWithTag('ChatAgentProvider', 'Service health: ${health.status}');
+      Logger.infoWithTag(
+          'ChatAgentProvider', 'Service health: ${health.status}');
       return health.isHealthy;
     } catch (e) {
       _updateState(_state.copyWith(
@@ -210,14 +216,16 @@ class ChatAgentProvider extends ChangeNotifier {
   /// so local cache is the source of truth for the sidebar list.
   Future<void> loadConversations() async {
     try {
-      final cachedSessions = await _localRepository.getCachedSessions(_localSessionsKey);
+      final cachedSessions =
+          await _localRepository.getCachedSessions(_localSessionsKey);
       if (cachedSessions != null && cachedSessions.isNotEmpty) {
         _updateState(_state.copyWith(
           conversations: cachedSessions,
           isLoadingHistory: false,
           clearError: true,
         ));
-        Logger.infoWithTag('ChatAgentProvider', 'Loaded ${cachedSessions.length} conversations from cache');
+        Logger.infoWithTag('ChatAgentProvider',
+            'Loaded ${cachedSessions.length} conversations from cache');
       } else {
         _updateState(_state.copyWith(
           isLoadingHistory: false,
@@ -225,7 +233,8 @@ class ChatAgentProvider extends ChangeNotifier {
         ));
       }
     } catch (e) {
-      Logger.warningWithTag('ChatAgentProvider', 'Failed to load cached conversations: $e');
+      Logger.warningWithTag(
+          'ChatAgentProvider', 'Failed to load cached conversations: $e');
       _updateState(_state.copyWith(
         isLoadingHistory: false,
         clearError: true,
@@ -254,7 +263,9 @@ class ChatAgentProvider extends ChangeNotifier {
       );
 
       // Keep locally persisted action metadata/outcome messages when reloading history.
-      final cachedMessages = await _localRepository.getCachedAgentMessages(conversationId) ?? const <AgentChatMessage>[];
+      final cachedMessages =
+          await _localRepository.getCachedAgentMessages(conversationId) ??
+              const <AgentChatMessage>[];
       final mergedMessages = _mergeWithCachedMessages(messages, cachedMessages);
 
       // Also load conversation details to get pending actions
@@ -290,7 +301,8 @@ class ChatAgentProvider extends ChangeNotifier {
       await _loadCachedMessages(conversationId, e);
     } on NotFoundException catch (e) {
       // Conversation not found on backend — try local cache
-      final cached = await _localRepository.getCachedAgentMessages(conversationId);
+      final cached =
+          await _localRepository.getCachedAgentMessages(conversationId);
       if (cached != null && cached.isNotEmpty) {
         _updateState(_state.copyWith(
           messages: cached,
@@ -311,15 +323,18 @@ class ChatAgentProvider extends ChangeNotifier {
   }
 
   /// Helper: load messages from Hive cache when backend fails
-  Future<void> _loadCachedMessages(String conversationId, ApiException error) async {
-    final cached = await _localRepository.getCachedAgentMessages(conversationId);
+  Future<void> _loadCachedMessages(
+      String conversationId, ApiException error) async {
+    final cached =
+        await _localRepository.getCachedAgentMessages(conversationId);
     if (cached != null && cached.isNotEmpty) {
       _updateState(_state.copyWith(
         messages: cached,
         isLoadingHistory: false,
         isOfflineMode: error is NetworkException,
       ));
-      Logger.infoWithTag('ChatAgentProvider', 'Loaded ${cached.length} messages from cache for $conversationId');
+      Logger.infoWithTag('ChatAgentProvider',
+          'Loaded ${cached.length} messages from cache for $conversationId');
     } else {
       _updateState(_state.copyWith(
         isLoadingHistory: false,
@@ -363,7 +378,8 @@ class ChatAgentProvider extends ChangeNotifier {
           conversations: updatedConversations,
         ));
 
-        Logger.infoWithTag('ChatAgentProvider', 'Auto-created conversation: $conversationId');
+        Logger.infoWithTag(
+            'ChatAgentProvider', 'Auto-created conversation: $conversationId');
       } on AuthException catch (e) {
         _handleAuthError(e);
         return;
@@ -402,7 +418,8 @@ class ChatAgentProvider extends ChangeNotifier {
       _updateState(_state.copyWith(
         messages: _state.messages.where((m) => !m.isLoading).toList(),
         isLoading: false,
-        errorMessage: 'Cannot send messages in offline mode. Please check your connection.',
+        errorMessage:
+            'Cannot send messages in offline mode. Please check your connection.',
       ));
       return;
     }
@@ -428,14 +445,14 @@ class ChatAgentProvider extends ChangeNotifier {
       final assistantReply = result.reply;
 
       // Replace loading message
-      final updatedMessages = _state.messages
-          .where((m) => !m.isLoading)
-          .toList();
+      final updatedMessages =
+          _state.messages.where((m) => !m.isLoading).toList();
 
       if (assistantReply.isNotEmpty) {
         // Attach action info to the message if there's a proposed action
         if (result.hasProposedAction && result.actionId != null) {
-          final actionSummary = _buildActionSummary(result.proposedActionSummary);
+          final actionSummary =
+              _buildActionSummary(result.proposedActionSummary);
           final actionType = _inferActionType(actionSummary);
 
           updatedMessages.add(AgentChatMessage.agentWithAction(
@@ -463,7 +480,8 @@ class ChatAgentProvider extends ChangeNotifier {
       if (result.hasProposedAction && result.actionId != null) {
         pendingAction = PendingActionInfo(
           actionId: result.actionId!,
-          type: _inferActionType(_buildActionSummary(result.proposedActionSummary)),
+          type: _inferActionType(
+              _buildActionSummary(result.proposedActionSummary)),
           status: 'pending',
         );
       }
@@ -479,9 +497,7 @@ class ChatAgentProvider extends ChangeNotifier {
 
       Logger.infoWithTag(
         'ChatAgentProvider',
-        'Message sent and response received${pendingAction != null
-            ? " with pending action"
-            : ""}',
+        'Message sent and response received${pendingAction != null ? " with pending action" : ""}',
       );
     } on AuthException catch (e) {
       _removeLoadingAndSetError(e);
@@ -502,17 +518,21 @@ class ChatAgentProvider extends ChangeNotifier {
   Future<void> confirmPendingAction() async {
     final action = _state.currentPendingAction;
     if (action == null || !action.isPending) {
-      Logger.warningWithTag('ChatAgentProvider', 'No pending action to confirm');
+      Logger.warningWithTag(
+          'ChatAgentProvider', 'No pending action to confirm');
       return;
     }
 
-    await confirmMessageAction(action.actionId, idempotencyKey: action.idempotencyKey);
+    await confirmMessageAction(action.actionId,
+        idempotencyKey: action.idempotencyKey);
   }
 
   /// Confirm an action by action ID (used in Agent mode for per-message actions)
-  Future<void> confirmMessageAction(String actionId, {String? idempotencyKey}) async {
+  Future<void> confirmMessageAction(String actionId,
+      {String? idempotencyKey}) async {
     // 1) Prefer the key already stored in state for this action.
-    if (idempotencyKey == null && _state.currentPendingAction?.actionId == actionId) {
+    if (idempotencyKey == null &&
+        _state.currentPendingAction?.actionId == actionId) {
       idempotencyKey = _state.currentPendingAction?.idempotencyKey;
     }
 
@@ -522,25 +542,29 @@ class ChatAgentProvider extends ChangeNotifier {
         final actionDetail = await _repository.getAction(actionId: actionId);
         idempotencyKey = actionDetail.idempotencyKey;
       } catch (e) {
-        Logger.warningWithTag('ChatAgentProvider', 'Failed to fetch action details before confirm: $e');
+        Logger.warningWithTag('ChatAgentProvider',
+            'Failed to fetch action details before confirm: $e');
       }
     }
 
     // 3) Fallback to conversation pending_actions (often includes idempotency_key).
-    if ((idempotencyKey == null || idempotencyKey.isEmpty) && _state.currentConversationId != null) {
+    if ((idempotencyKey == null || idempotencyKey.isEmpty) &&
+        _state.currentConversationId != null) {
       try {
         final detail = await _repository.getConversationDetail(
           conversationId: _state.currentConversationId!,
         );
         ConversationPendingAction? matched;
         try {
-          matched = detail.pendingActions.firstWhere((a) => a.actionId == actionId);
+          matched =
+              detail.pendingActions.firstWhere((a) => a.actionId == actionId);
         } catch (_) {
           matched = null;
         }
         idempotencyKey = matched?.idempotencyKey;
       } catch (e) {
-        Logger.warningWithTag('ChatAgentProvider', 'Failed to fetch conversation details before confirm: $e');
+        Logger.warningWithTag('ChatAgentProvider',
+            'Failed to fetch conversation details before confirm: $e');
       }
     }
 
@@ -548,7 +572,8 @@ class ChatAgentProvider extends ChangeNotifier {
     if (idempotencyKey == null || idempotencyKey.isEmpty) {
       _updateState(_state.copyWith(
         isConfirmingAction: false,
-        errorMessage: 'Unable to confirm action: missing idempotency key. Please refresh the conversation and try again.',
+        errorMessage:
+            'Unable to confirm action: missing idempotency key. Please refresh the conversation and try again.',
       ));
       return;
     }
@@ -597,7 +622,8 @@ class ChatAgentProvider extends ChangeNotifier {
           await _persistMessages(_state.currentConversationId!);
         }
 
-        Logger.infoWithTag('ChatAgentProvider', 'Action confirmed successfully');
+        Logger.infoWithTag(
+            'ChatAgentProvider', 'Action confirmed successfully');
       } else {
         _updateState(_state.copyWith(
           isConfirmingAction: false,
@@ -697,7 +723,8 @@ class ChatAgentProvider extends ChangeNotifier {
           await _persistMessages(_state.currentConversationId!);
         }
 
-        Logger.infoWithTag('ChatAgentProvider', 'Action cancelled successfully');
+        Logger.infoWithTag(
+            'ChatAgentProvider', 'Action cancelled successfully');
       } else {
         _updateState(_state.copyWith(
           isCancellingAction: false,
@@ -750,9 +777,8 @@ class ChatAgentProvider extends ChangeNotifier {
 
   /// Remove loading message and set error state
   void _removeLoadingAndSetError(ApiException error) {
-    final messagesWithoutLoading = _state.messages
-        .where((m) => !m.isLoading)
-        .toList();
+    final messagesWithoutLoading =
+        _state.messages.where((m) => !m.isLoading).toList();
 
     _updateState(_state.copyWith(
       messages: messagesWithoutLoading,
@@ -791,9 +817,9 @@ class ChatAgentProvider extends ChangeNotifier {
     }
   }
 
-
   /// Update conversation title
-  Future<void> updateConversationTitle(String conversationId, String newTitle) async {
+  Future<void> updateConversationTitle(
+      String conversationId, String newTitle) async {
     try {
       final existingIndex = _state.conversations.indexWhere(
         (c) => c.sessionId == conversationId,
@@ -805,15 +831,18 @@ class ChatAgentProvider extends ChangeNotifier {
           updatedAt: DateTime.now(),
         );
 
-        final updatedConversations = List<ChatSession>.from(_state.conversations);
+        final updatedConversations =
+            List<ChatSession>.from(_state.conversations);
         updatedConversations[existingIndex] = updatedSession;
 
         _updateState(_state.copyWith(conversations: updatedConversations));
         await _persistSessions();
-        Logger.infoWithTag('ChatAgentProvider', 'Updated conversation title: $newTitle');
+        Logger.infoWithTag(
+            'ChatAgentProvider', 'Updated conversation title: $newTitle');
       }
     } catch (e) {
-      Logger.errorWithTag('ChatAgentProvider', 'Failed to update conversation title: $e');
+      Logger.errorWithTag(
+          'ChatAgentProvider', 'Failed to update conversation title: $e');
     }
   }
 
@@ -882,34 +911,41 @@ class ChatAgentProvider extends ChangeNotifier {
             conversationId: conversationId,
           );
           if (response.success) {
-            Logger.infoWithTag('ChatAgentProvider', 'Deleted conversation on backend: $conversationId');
+            Logger.infoWithTag('ChatAgentProvider',
+                'Deleted conversation on backend: $conversationId');
           } else {
-            Logger.warningWithTag('ChatAgentProvider', 'Backend delete returned: ${response.message}');
+            Logger.warningWithTag('ChatAgentProvider',
+                'Backend delete returned: ${response.message}');
           }
         } on NotFoundException {
           // Already deleted or doesn't exist - that's fine
-          Logger.infoWithTag('ChatAgentProvider', 'Conversation already deleted on backend: $conversationId');
+          Logger.infoWithTag('ChatAgentProvider',
+              'Conversation already deleted on backend: $conversationId');
         } on AuthException catch (e) {
           _handleAuthError(e);
           return;
         } on ApiException catch (e) {
-          Logger.warningWithTag('ChatAgentProvider', 'Backend delete failed: ${e.message}');
+          Logger.warningWithTag(
+              'ChatAgentProvider', 'Backend delete failed: ${e.message}');
           // Local state already updated, don't revert
         }
       }
 
-      Logger.infoWithTag('ChatAgentProvider', 'Deleted conversation: $conversationId');
+      Logger.infoWithTag(
+          'ChatAgentProvider', 'Deleted conversation: $conversationId');
 
       // Persist updated sessions and clean up cached messages
       await _persistSessions();
       await _localRepository.deleteCachedAgentMessages(conversationId);
     } catch (e) {
-      Logger.errorWithTag('ChatAgentProvider', 'Failed to delete conversation: $e');
+      Logger.errorWithTag(
+          'ChatAgentProvider', 'Failed to delete conversation: $e');
     }
   }
 
   /// Save conversation to local history for sidebar display
-  Future<void> _saveConversationToHistory(String conversationId, String userMessage, String? reply) async {
+  Future<void> _saveConversationToHistory(
+      String conversationId, String userMessage, String? reply) async {
     try {
       // Generate a title from the first message (truncated)
       final title = userMessage.length > 30
@@ -951,16 +987,19 @@ class ChatAgentProvider extends ChangeNotifier {
       await _persistSessions();
       await _persistMessages(conversationId);
     } catch (e) {
-      Logger.warningWithTag('ChatAgentProvider', 'Failed to save conversation to history: $e');
+      Logger.warningWithTag(
+          'ChatAgentProvider', 'Failed to save conversation to history: $e');
     }
   }
 
   /// Persist the current sessions list to Hive
   Future<void> _persistSessions() async {
     try {
-      await _localRepository.cacheSessions(_localSessionsKey, _state.conversations);
+      await _localRepository.cacheSessions(
+          _localSessionsKey, _state.conversations);
     } catch (e) {
-      Logger.warningWithTag('ChatAgentProvider', 'Failed to persist sessions to cache: $e');
+      Logger.warningWithTag(
+          'ChatAgentProvider', 'Failed to persist sessions to cache: $e');
     }
   }
 
@@ -972,7 +1011,8 @@ class ChatAgentProvider extends ChangeNotifier {
           .toList();
       await _localRepository.cacheAgentMessages(conversationId, messages);
     } catch (e) {
-      Logger.warningWithTag('ChatAgentProvider', 'Failed to persist messages to cache: $e');
+      Logger.warningWithTag(
+          'ChatAgentProvider', 'Failed to persist messages to cache: $e');
     }
   }
 
@@ -983,7 +1023,8 @@ class ChatAgentProvider extends ChangeNotifier {
     if (cached.isEmpty) return remote;
 
     final cachedById = <String, AgentChatMessage>{
-      for (final m in cached) if (m.id.isNotEmpty) m.id: m,
+      for (final m in cached)
+        if (m.id.isNotEmpty) m.id: m,
     };
 
     final merged = remote.map((m) {
@@ -1018,10 +1059,14 @@ class ChatAgentProvider extends ChangeNotifier {
   String _inferActionType(String summary) {
     final lower = summary.toLowerCase();
     if (lower.startsWith('create')) return 'create_event';
-    if (lower.startsWith('update') || lower.startsWith('rearrange') || lower.startsWith('reschedule')) {
+    if (lower.startsWith('update') ||
+        lower.startsWith('rearrange') ||
+        lower.startsWith('reschedule')) {
       return 'update_event';
     }
-    if (lower.startsWith('delete') || lower.startsWith('remove')) return 'delete_event';
+    if (lower.startsWith('delete') || lower.startsWith('remove')) {
+      return 'delete_event';
+    }
     return 'action';
   }
 }

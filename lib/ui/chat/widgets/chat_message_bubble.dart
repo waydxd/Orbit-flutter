@@ -8,7 +8,8 @@ class ChatMessageBubble extends StatelessWidget {
   final Widget? actionButtons;
 
   const ChatMessageBubble({
-    required this.message, super.key,
+    required this.message,
+    super.key,
     this.actionButtons,
   });
 
@@ -20,7 +21,8 @@ class ChatMessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -29,14 +31,15 @@ class ChatMessageBubble extends StatelessWidget {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
-                    color: isUser
-                        ? const Color(0xFF6366F1)
-                        : Colors.transparent,
+                    color:
+                        isUser ? const Color(0xFF6366F1) : Colors.transparent,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(20),
                       topRight: const Radius.circular(20),
@@ -169,7 +172,8 @@ class ActionStatusBadge extends StatelessWidget {
   final String status;
 
   const ActionStatusBadge({
-    required this.status, super.key,
+    required this.status,
+    super.key,
   });
 
   @override
@@ -239,7 +243,9 @@ class MessageActionButtons extends StatelessWidget {
   final bool isDisabled;
 
   const MessageActionButtons({
-    required this.onConfirm, required this.onCancel, super.key,
+    required this.onConfirm,
+    required this.onCancel,
+    super.key,
     this.isConfirming = false,
     this.isCancelling = false,
     this.isDisabled = false,

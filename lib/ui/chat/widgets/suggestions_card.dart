@@ -5,7 +5,8 @@ class SuggestionsCard extends StatelessWidget {
   final Function(String) onSuggestionTap;
 
   const SuggestionsCard({
-    required this.onSuggestionTap, super.key,
+    required this.onSuggestionTap,
+    super.key,
   });
 
   static const List<String> defaultSuggestions = [
@@ -83,7 +84,9 @@ class SuggestionChip extends StatelessWidget {
   final VoidCallback onTap;
 
   const SuggestionChip({
-    required this.label, required this.onTap, super.key,
+    required this.label,
+    required this.onTap,
+    super.key,
   });
 
   @override
@@ -111,4 +114,3 @@ class SuggestionChip extends StatelessWidget {
     );
   }
 }
-

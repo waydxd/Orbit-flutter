@@ -84,4 +84,3 @@ class ChatMessage extends Equatable {
         isStreaming,
       ];
 }
-

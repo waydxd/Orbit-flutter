@@ -56,4 +56,3 @@ class ChatAction extends Equatable {
   @override
   List<Object?> get props => [label, actionType, payload];
 }
-

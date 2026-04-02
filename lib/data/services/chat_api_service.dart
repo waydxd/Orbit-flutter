@@ -19,7 +19,8 @@ class ChatMessageResponse {
   ChatMessageResponse({
     required this.conversationId,
     required this.reply,
-    required this.correlationId, this.proposedActionSummary,
+    required this.correlationId,
+    this.proposedActionSummary,
     this.actionId,
     this.metadata,
     this.error,
@@ -44,7 +45,8 @@ class ChatMessageResponse {
   String get status => error == null ? 'sent' : 'failed';
   bool get isSuccess => error == null;
   bool get isFailed => status == 'failed';
-  bool get hasProposedAction => actionId != null && proposedActionSummary != null;
+  bool get hasProposedAction =>
+      actionId != null && proposedActionSummary != null;
 }
 
 /// Error model from backend ChatError schema
@@ -79,7 +81,10 @@ class ConversationMessage {
   ConversationMessage({
     required this.id,
     required this.conversationId,
-    required this.role, required this.content, required this.timestamp, this.userId,
+    required this.role,
+    required this.content,
+    required this.timestamp,
+    this.userId,
     this.metadata,
   });
 
@@ -122,7 +127,9 @@ class ConversationPendingAction {
 
   ConversationPendingAction({
     required this.actionId,
-    required this.type, required this.status, this.userId,
+    required this.type,
+    required this.status,
+    this.userId,
     this.conversationId,
     this.proposedAction,
     this.idempotencyKey,
@@ -191,7 +198,9 @@ class ConversationDetailResponse {
 
   ConversationDetailResponse({
     required this.conversationId,
-    required this.messages, required this.pendingActions, this.userId,
+    required this.messages,
+    required this.pendingActions,
+    this.userId,
     this.status = 'active',
   });
 
@@ -203,10 +212,12 @@ class ConversationDetailResponse {
       conversationId: json['conversation_id'] ?? '',
       userId: json['user_id'],
       messages: messagesList
-          .map((m) => ConversationMessage.fromJson(Map<String, dynamic>.from(m)))
+          .map(
+              (m) => ConversationMessage.fromJson(Map<String, dynamic>.from(m)))
           .toList(),
       pendingActions: actionsList
-          .map((a) => ConversationPendingAction.fromJson(Map<String, dynamic>.from(a)))
+          .map((a) =>
+              ConversationPendingAction.fromJson(Map<String, dynamic>.from(a)))
           .toList(),
       status: json['status'] ?? 'active',
     );
@@ -609,10 +620,13 @@ class ChatApiService {
         );
       }
 
-      return ChatHealthResponse(status: 'unhealthy', error: 'Unexpected status: ${response.statusCode}');
+      return ChatHealthResponse(
+          status: 'unhealthy',
+          error: 'Unexpected status: ${response.statusCode}');
     } on DioException catch (e) {
       // For health check, return unhealthy instead of throwing
-      Logger.warningWithTag('ChatApiService', 'Health check failed: ${e.message}');
+      Logger.warningWithTag(
+          'ChatApiService', 'Health check failed: ${e.message}');
       return ChatHealthResponse(status: 'unhealthy', error: e.message);
     }
   }
@@ -972,9 +986,7 @@ class ChatApiService {
       if (responseData['error'] is Map) {
         message = (responseData['error'] as Map)['message'] ?? message;
       } else {
-        message = responseData['message'] ??
-                  responseData['error'] ??
-                  message;
+        message = responseData['message'] ?? responseData['error'] ?? message;
       }
     }
 
@@ -1021,7 +1033,9 @@ class ChatApiService {
           errors = responseData['errors'] as Map<String, dynamic>?;
         }
         return ValidationException(
-          message.isNotEmpty ? message : 'Invalid request. Please check your input.',
+          message.isNotEmpty
+              ? message
+              : 'Invalid request. Please check your input.',
           statusCode: statusCode,
           errors: errors,
         );
@@ -1042,7 +1056,9 @@ class ChatApiService {
         );
       case 409:
         return ConflictException(
-          message.isNotEmpty ? message : 'Action already processed or not pending.',
+          message.isNotEmpty
+              ? message
+              : 'Action already processed or not pending.',
           statusCode: statusCode,
         );
       case 410:

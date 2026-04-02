@@ -113,4 +113,3 @@ class SmallOrbiAvatar extends StatelessWidget {
     );
   }
 }
-

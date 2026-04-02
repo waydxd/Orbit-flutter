@@ -70,4 +70,3 @@ class ChatSession extends Equatable {
         messageCount,
       ];
 }
-

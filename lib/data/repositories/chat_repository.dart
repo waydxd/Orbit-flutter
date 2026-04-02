@@ -84,14 +84,18 @@ class ChatRepository {
     return response.messages.map((msg) {
       if (msg.isUser) {
         return AgentChatMessage.user(
-          id: msg.id.isNotEmpty ? msg.id : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+          id: msg.id.isNotEmpty
+              ? msg.id
+              : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
           conversationId: conversationId,
           content: msg.content,
           timestamp: msg.timestamp,
         );
       } else {
         return AgentChatMessage.agent(
-          id: msg.id.isNotEmpty ? msg.id : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+          id: msg.id.isNotEmpty
+              ? msg.id
+              : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
           conversationId: conversationId,
           content: msg.content,
           agentType: AgentType.calendarAssistant,

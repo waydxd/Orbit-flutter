@@ -79,7 +79,6 @@ class ChatViewModel extends ChangeNotifier {
   String? get errorMessage => _provider.errorMessage;
   bool get hasError => _provider.hasError;
 
-
   // Pending actions
   PendingActionInfo? get currentPendingAction => _provider.currentPendingAction;
   bool get hasPendingAction => _provider.hasPendingAction;
@@ -96,7 +95,8 @@ class ChatViewModel extends ChangeNotifier {
   Future<bool> checkServiceHealth() => _provider.checkServiceHealth();
 
   /// Send a message
-  Future<void> sendMessage(String content, {AgentContextType context = AgentContextType.calendar}) =>
+  Future<void> sendMessage(String content,
+          {AgentContextType context = AgentContextType.calendar}) =>
       _provider.sendMessage(content, context: context);
 
   /// Load chat history for a conversation
@@ -131,7 +131,8 @@ class ChatViewModel extends ChangeNotifier {
       _provider.selectConversation(conversationId);
 
   /// Update conversation title
-  Future<void> updateConversationTitle(String conversationId, String newTitle) =>
+  Future<void> updateConversationTitle(
+          String conversationId, String newTitle) =>
       _provider.updateConversationTitle(conversationId, newTitle);
 
   /// Delete a conversation (soft delete on backend)
@@ -144,5 +145,3 @@ class ChatViewModel extends ChangeNotifier {
   /// Clear error state
   void clearError() => _provider.clearError();
 }
-
-

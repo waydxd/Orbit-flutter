@@ -134,7 +134,8 @@ class ChatbotProvider extends ChangeNotifier {
           await _localRepository.cacheMessages(sessionId, history);
         } on ChatbotException {
           // Try loading from cache
-          final cachedMessages = await _localRepository.getCachedMessages(sessionId);
+          final cachedMessages =
+              await _localRepository.getCachedMessages(sessionId);
           if (cachedMessages != null) {
             history = cachedMessages;
             _updateState(_state.copyWith(isOfflineMode: true));
@@ -227,13 +228,15 @@ class ChatbotProvider extends ChangeNotifier {
     ));
 
     // Cache user message
-    await _localRepository.addMessageToCache(_state.currentSessionId!, userMessage);
+    await _localRepository.addMessageToCache(
+        _state.currentSessionId!, userMessage);
 
     if (_state.isOfflineMode) {
       // In offline mode, show error and keep user message
       _updateState(_state.copyWith(
         isLoading: false,
-        error: 'Cannot send messages in offline mode. Please check your connection.',
+        error:
+            'Cannot send messages in offline mode. Please check your connection.',
       ));
       return;
     }
@@ -248,7 +251,8 @@ class ChatbotProvider extends ChangeNotifier {
 
       // If this was a temp session, update to the real conversation_id from backend
       String newSessionId = _state.currentSessionId!;
-      if (_state.currentSessionId!.startsWith('temp-') && response.sessionId.isNotEmpty) {
+      if (_state.currentSessionId!.startsWith('temp-') &&
+          response.sessionId.isNotEmpty) {
         newSessionId = response.sessionId;
         // Update user message with real session ID
         // final updatedUserMessage = userMessage.copyWith(sessionId: newSessionId);
@@ -272,7 +276,8 @@ class ChatbotProvider extends ChangeNotifier {
   }
 
   /// Send message with streaming response
-  Future<void> sendMessageStreaming(String content, {ChatContext? context}) async {
+  Future<void> sendMessageStreaming(String content,
+      {ChatContext? context}) async {
     if (_state.currentSessionId == null) {
       await initSession();
     }
@@ -311,14 +316,16 @@ class ChatbotProvider extends ChangeNotifier {
     ));
 
     // Cache user message
-    await _localRepository.addMessageToCache(_state.currentSessionId!, userMessage);
+    await _localRepository.addMessageToCache(
+        _state.currentSessionId!, userMessage);
 
     if (_state.isOfflineMode) {
       // Remove assistant placeholder and show error
       _updateState(_state.copyWith(
         messages: [..._state.messages]..removeLast(),
         isLoading: false,
-        error: 'Cannot send messages in offline mode. Please check your connection.',
+        error:
+            'Cannot send messages in offline mode. Please check your connection.',
       ));
       return;
     }
@@ -353,7 +360,8 @@ class ChatbotProvider extends ChangeNotifier {
         return m;
       }).toList();
 
-      await _localRepository.cacheMessages(_state.currentSessionId!, finalMessages);
+      await _localRepository.cacheMessages(
+          _state.currentSessionId!, finalMessages);
 
       _updateState(_state.copyWith(
         messages: finalMessages,
@@ -397,9 +405,8 @@ class ChatbotProvider extends ChangeNotifier {
       await _localRepository.removeCachedSession(userId, sessionId);
 
       // Update state
-      final updatedSessions = _state.sessions
-          .where((s) => s.sessionId != sessionId)
-          .toList();
+      final updatedSessions =
+          _state.sessions.where((s) => s.sessionId != sessionId).toList();
 
       if (_state.currentSessionId == sessionId) {
         _updateState(_state.copyWith(
@@ -432,4 +439,3 @@ class ChatbotProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

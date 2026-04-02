@@ -51,4 +51,3 @@ class ChatContext extends Equatable {
   @override
   List<Object?> get props => [currentDate, upcomingEvents, userPreferences];
 }
-

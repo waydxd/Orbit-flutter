@@ -70,7 +70,8 @@ class ChatbotService {
           actions: _parseActions(data),
         );
       }
-      throw ChatbotException('Failed to send message: ${response.statusMessage}');
+      throw ChatbotException(
+          'Failed to send message: ${response.statusMessage}');
     } on DioException catch (e) {
       throw ChatbotException(_handleDioError(e));
     }
@@ -128,11 +129,13 @@ class ChatbotService {
               );
             }
           } catch (e) {
-            _streamController!.addError(ChatbotException('Failed to parse stream data'));
+            _streamController!
+                .addError(ChatbotException('Failed to parse stream data'));
           }
         },
         onError: (error) {
-          _streamController!.addError(ChatbotException('WebSocket error: $error'));
+          _streamController!
+              .addError(ChatbotException('WebSocket error: $error'));
         },
         onDone: () {
           if (!_streamController!.isClosed) {
@@ -141,7 +144,8 @@ class ChatbotService {
         },
       );
     } catch (e) {
-      _streamController!.addError(ChatbotException('Failed to connect to stream: $e'));
+      _streamController!
+          .addError(ChatbotException('Failed to connect to stream: $e'));
     }
 
     return _streamController!.stream;
@@ -217,9 +221,12 @@ class ChatbotService {
   /// Delete a chat session
   Future<void> deleteSession(String sessionId) async {
     try {
-      final response = await _dio.delete('/api/v1/chat/conversations/$sessionId');
+      final response =
+          await _dio.delete('/api/v1/chat/conversations/$sessionId');
 
-      if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 404) {
+      if (response.statusCode != 200 &&
+          response.statusCode != 204 &&
+          response.statusCode != 404) {
         throw ChatbotException('Failed to delete session');
       }
     } on DioException catch (e) {
@@ -326,5 +333,3 @@ class ChatbotException implements Exception {
   @override
   String toString() => message;
 }
-
-

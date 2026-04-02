@@ -11,7 +11,13 @@ class ConversationDrawer extends StatelessWidget {
   final Function(String) onDeleteConversation;
 
   const ConversationDrawer({
-    required this.conversations, required this.currentConversationId, required this.onNewChat, required this.onSelectConversation, required this.onRenameConversation, required this.onDeleteConversation, super.key,
+    required this.conversations,
+    required this.currentConversationId,
+    required this.onNewChat,
+    required this.onSelectConversation,
+    required this.onRenameConversation,
+    required this.onDeleteConversation,
+    super.key,
   });
 
   @override
@@ -57,7 +63,8 @@ class ConversationDrawer extends StatelessWidget {
                       itemCount: conversations.length,
                       itemBuilder: (context, index) {
                         final conversation = conversations[index];
-                        final isSelected = currentConversationId == conversation.sessionId;
+                        final isSelected =
+                            currentConversationId == conversation.sessionId;
                         return ConversationTile(
                           conversation: conversation,
                           isSelected: isSelected,
@@ -66,7 +73,8 @@ class ConversationDrawer extends StatelessWidget {
                             Navigator.of(context).pop();
                           },
                           onRename: () => onRenameConversation(conversation),
-                          onDelete: () => onDeleteConversation(conversation.sessionId),
+                          onDelete: () =>
+                              onDeleteConversation(conversation.sessionId),
                         );
                       },
                     ),
@@ -122,7 +130,12 @@ class ConversationTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   const ConversationTile({
-    required this.conversation, required this.isSelected, required this.onTap, required this.onRename, required this.onDelete, super.key,
+    required this.conversation,
+    required this.isSelected,
+    required this.onTap,
+    required this.onRename,
+    required this.onDelete,
+    super.key,
   });
 
   @override
@@ -135,9 +148,7 @@ class ConversationTile extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF6366F1)
-              : const Color(0xFFF3F4F6),
+          color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -153,9 +164,7 @@ class ConversationTile extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          color: isSelected
-              ? const Color(0xFF6366F1)
-              : const Color(0xFF1F2937),
+          color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF1F2937),
         ),
       ),
       subtitle: Text(
@@ -233,7 +242,9 @@ class RenameConversationDialog extends StatelessWidget {
   final Function(String, String) onRename;
 
   const RenameConversationDialog({
-    required this.conversation, required this.onRename, super.key,
+    required this.conversation,
+    required this.onRename,
+    super.key,
   });
 
   @override
@@ -264,7 +275,8 @@ class RenameConversationDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         onSubmitted: (value) {
           if (value.trim().isNotEmpty) {
@@ -309,7 +321,9 @@ class DeleteConversationDialog extends StatelessWidget {
   final VoidCallback onDelete;
 
   const DeleteConversationDialog({
-    required this.conversationId, required this.onDelete, super.key,
+    required this.conversationId,
+    required this.onDelete,
+    super.key,
   });
 
   @override
@@ -336,4 +350,3 @@ class DeleteConversationDialog extends StatelessWidget {
     );
   }
 }
-
