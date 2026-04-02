@@ -1,70 +1,147 @@
-import 'package:dio/dio.dart';
-import '../services/api_client.dart';
+import '../services/chat_api_service.dart';
+import '../models/agent_chat_message.dart';
 import '../../utils/logger.dart';
 
+/// Repository for chat functionality
+///
+/// Wraps ChatApiService to provide a clean interface for the ChatAgentProvider.
+/// Handles API calls according to the Orbit-core chat API (chat.yaml).
 class ChatRepository {
-  final ApiClient _apiClient;
+  final ChatApiService _apiService;
 
-  ChatRepository(this._apiClient);
+  ChatRepository(this._apiService);
 
-  /// Extract error message from DioException or other exceptions
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException) {
-      // First, try to extract from response data (backend error format)
-      if (error.response?.data is Map<String, dynamic>) {
-        final data = error.response!.data as Map<String, dynamic>;
-        final errorMsg = data['error'] ?? data['message'];
-        if (errorMsg != null && errorMsg is String) {
-          return errorMsg;
-        }
-      }
-      // The ApiClient's _processError sets a user-friendly message in error.error
-      if (error.error is String) {
-        return error.error as String;
-      }
-      // Fallback to DioException's message property
-      if (error.message != null) {
-        return error.message!;
-      }
-      return 'An error occurred';
-    }
-    return error.toString();
+  /// Initialize the repository (no-op, for interface consistency)
+  Future<void> initialize() async {
+    // No initialization needed for now
+    Logger.infoWithTag('ChatRepository', 'Repository initialized');
   }
 
-  Future<Map<String, dynamic>> sendMessage({
-    required String message,
-    required String userId,
+  /// Check chat service health
+  ///
+  /// GET /api/v1/chat/health
+  /// Returns ChatHealthResponse with status and optional error
+  Future<ChatHealthResponse> checkHealth() async {
+    return _apiService.checkHealth();
+  }
+
+  /// Create a new conversation on the backend
+  ///
+  /// POST /api/v1/chat/conversations
+  /// Returns CreateConversationResponse with conversation_id and status
+  Future<CreateConversationResponse> createConversation() async {
+    return _apiService.createConversation();
+  }
+
+  /// Soft delete a conversation on the backend
+  ///
+  /// DELETE /api/v1/chat/conversations/{conversation_id}
+  /// Returns DeleteConversationResponse with success and message
+  Future<DeleteConversationResponse> deleteConversation({
+    required String conversationId,
+  }) async {
+    return _apiService.deleteConversation(conversationId: conversationId);
+  }
+
+  /// Send a chat message to the backend
+  ///
+  /// POST /api/v1/chat/messages
+  /// Returns ChatMessageResponse containing conversation_id, reply, and action info
+  Future<ChatMessageResponse> sendChatMessage({
+    required String content,
     String? conversationId,
     Map<String, dynamic>? context,
   }) async {
-    try {
-      final response = await _apiClient.post(
-        '/chat/messages',
-        data: {
-          'message': message,
-          'user_id': userId,
-          if (conversationId != null) 'conversation_id': conversationId,
-          if (context != null) 'context': context,
-        },
-      );
-      return response.data;
-    } catch (e) {
-      final errorMessage = _extractErrorMessage(e);
-      Logger.error('Failed to send message: $errorMessage', e);
-      throw Exception(errorMessage);
-    }
+    return _apiService.sendChatMessage(
+      content: content,
+      conversationId: conversationId,
+      context: context,
+    );
   }
 
-  Future<Map<String, dynamic>> getConversation(String conversationId) async {
-    try {
-      final response = await _apiClient.get(
-        '/chat/conversations/$conversationId',
-      );
-      return response.data;
-    } catch (e) {
-      final errorMessage = _extractErrorMessage(e);
-      Logger.error('Failed to get conversation: $errorMessage', e);
-      throw Exception(errorMessage);
-    }
+  /// Get conversation details including messages and pending actions
+  ///
+  /// GET /api/v1/chat/conversations/{conversation_id}
+  Future<ConversationDetailResponse> getConversationDetail({
+    required String conversationId,
+  }) async {
+    return _apiService.getConversation(
+      conversationId: conversationId,
+    );
+  }
+
+  /// Get chat history for a conversation and convert to AgentChatMessage list
+  ///
+  /// This uses the GET /api/v1/chat/conversations/{id} endpoint
+  /// and transforms the messages to AgentChatMessage format
+  Future<List<AgentChatMessage>> getChatHistory({
+    required String conversationId,
+  }) async {
+    final response = await _apiService.getConversation(
+      conversationId: conversationId,
+    );
+
+    return response.messages.map((msg) {
+      if (msg.isUser) {
+        return AgentChatMessage.user(
+          id: msg.id.isNotEmpty
+              ? msg.id
+              : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+          conversationId: conversationId,
+          content: msg.content,
+          timestamp: msg.timestamp,
+        );
+      } else {
+        return AgentChatMessage.agent(
+          id: msg.id.isNotEmpty
+              ? msg.id
+              : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+          conversationId: conversationId,
+          content: msg.content,
+          agentType: AgentType.calendarAssistant,
+          timestamp: msg.timestamp,
+        );
+      }
+    }).toList();
+  }
+
+  /// Get action details
+  ///
+  /// GET /api/v1/chat/actions/{action_id}
+  Future<ActionDetailResponse> getAction({
+    required String actionId,
+  }) async {
+    return _apiService.getAction(actionId: actionId);
+  }
+
+  /// Confirm a pending action
+  ///
+  /// POST /api/v1/chat/actions/{action_id}/confirm
+  Future<ActionConfirmResponse> confirmAction({
+    required String actionId,
+    required String idempotencyKey,
+  }) async {
+    return _apiService.confirmAction(
+      actionId: actionId,
+      idempotencyKey: idempotencyKey,
+    );
+  }
+
+  /// Cancel a pending action
+  ///
+  /// POST /api/v1/chat/actions/{action_id}/cancel
+  /// Returns true if successfully cancelled
+  Future<bool> cancelAction({
+    required String actionId,
+  }) async {
+    final response = await _apiService.cancelAction(actionId: actionId);
+    return response.success;
+  }
+
+  /// Get chat metrics
+  ///
+  /// GET /api/v1/chat/metrics
+  Future<ChatMetrics> getMetrics() async {
+    return _apiService.getMetrics();
   }
 }
