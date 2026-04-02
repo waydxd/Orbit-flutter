@@ -427,8 +427,6 @@ class ChatbotProvider extends ChangeNotifier {
     _updateState(_state.copyWith(clearError: true));
   }
 
-  void dispose() {
-    _localRepository.close();
   Future<void> retryConnection() async {
     _updateState(_state.copyWith(isOfflineMode: false, clearError: true));
     await loadSessions();
@@ -436,6 +434,7 @@ class ChatbotProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _localRepository.close();
     _service.dispose();
     super.dispose();
   }
