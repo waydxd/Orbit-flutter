@@ -253,11 +253,11 @@ class _AiChatPageState extends State<AiChatPage> {
   Widget _buildHeader(BuildContext context, {required bool hasMessages}) {
     String? currentTitle;
     if (_isInitialized && _chatProvider.currentConversationId != null) {
-      final currentConversation = _chatProvider.conversations
-          .where(
-            (c) => c.sessionId == _chatProvider.currentConversationId,
-          )
-          .firstOrNull;
+      final matchingConversations = _chatProvider.conversations.where(
+        (c) => c.sessionId == _chatProvider.currentConversationId,
+      );
+      final currentConversation =
+          matchingConversations.isNotEmpty ? matchingConversations.first : null;
       currentTitle = currentConversation?.title;
     }
 
