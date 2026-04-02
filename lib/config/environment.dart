@@ -60,7 +60,8 @@ class EnvironmentConfig {
   }
 
   static bool get isDebug =>
-      _environment == Environment.local || _environment == Environment.development;
+      _environment == Environment.local ||
+      _environment == Environment.development;
 
   static bool get isLocal => _environment == Environment.local;
   // static bool get isDebug => _environment != Environment.production;
