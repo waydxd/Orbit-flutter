@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/themes/app_theme.dart';
 import 'ui/core/view/main_navigation_shell.dart';
+import 'ui/core/widgets/orbit_animation.dart';
 import 'config/app_config.dart';
 import 'ui/auth/view_model/auth_view_model.dart';
 import 'ui/calendar/view_model/calendar_view_model.dart';
@@ -41,31 +44,59 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isInitialCheckComplete = false;
+  static const Duration _minimumSplashDuration = Duration(seconds: 2);
+
+  Timer? _minimumSplashTimer;
+  Completer<void>? _minimumSplashWaitCompleter;
 
   @override
   void initState() {
     super.initState();
-    // Schedule auth initialization after the first frame to avoid creating
-    // timers (e.g. Future.delayed) which can leave pending timers in widget
-    // tests. Using addPostFrameCallback does not create a test timer.
+    // Schedule auth after first frame. Minimum splash uses a Timer that is
+    // cancelled in dispose so widget tests do not end with a pending timer.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeAuth();
     });
   }
 
-  Future<void> _initializeAuth() async {
-    // Note: previous implementation used a small Future.delayed to ensure the
-    // widget was built; using addPostFrameCallback above serves the same
-    // purpose without creating timers that persist in tests.
+  @override
+  void dispose() {
+    _minimumSplashTimer?.cancel();
+    _minimumSplashTimer = null;
+    final wait = _minimumSplashWaitCompleter;
+    _minimumSplashWaitCompleter = null;
+    if (wait != null && !wait.isCompleted) {
+      wait.complete();
+    }
+    super.dispose();
+  }
 
+  Future<void> _waitRemainingMinimumSplash(Duration remaining) async {
+    if (remaining <= Duration.zero) return;
+    final completer = Completer<void>();
+    _minimumSplashWaitCompleter = completer;
+    _minimumSplashTimer = Timer(remaining, () {
+      _minimumSplashTimer = null;
+      _minimumSplashWaitCompleter = null;
+      if (!completer.isCompleted) completer.complete();
+    });
+    await completer.future;
+  }
+
+  Future<void> _initializeAuth() async {
     if (!mounted) return;
 
+    final startedAt = DateTime.now();
+
     try {
-      // Check authentication status with a timeout
-      await Provider.of<AuthViewModel>(
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      final calendarViewModel = Provider.of<CalendarViewModel>(
         context,
         listen: false,
-      ).checkAuthStatus().timeout(
+      );
+
+      // Check authentication status with a timeout
+      await authViewModel.checkAuthStatus().timeout(
         const Duration(seconds: 5),
         onTimeout: () {
           // If check takes too long, just proceed without authentication
@@ -73,10 +104,27 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return;
         },
       );
+
+      // Keep splash visible until initial calendar/task data is loaded.
+      if (authViewModel.isAuthenticated) {
+        final userId = authViewModel.currentUser?.id;
+        if (userId != null) {
+          await calendarViewModel.fetchAll(userId: userId).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () {
+              debugPrint('Initial data preload timed out, continuing app');
+            },
+          );
+        }
+      }
     } catch (e) {
       // If check fails, proceed without authentication
       debugPrint('Auth check failed: $e');
     } finally {
+      final elapsed = DateTime.now().difference(startedAt);
+      final remaining = _minimumSplashDuration - elapsed;
+      await _waitRemainingMinimumSplash(remaining);
+
       // Always set the flag to true to proceed to login page
       if (mounted) {
         setState(() {
@@ -134,41 +182,31 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Constants.spacingM),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: Constants.splashIconSize,
-                  color: Theme.of(context).colorScheme.primary,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(Constants.spacingM),
+              child: Transform.translate(
+                offset: const Offset(0, -24),
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OrbitAnimation(
+                      width: Constants.splashIconSize * 1.8,
+                      height: Constants.splashIconSize * 1.8,
+                      duration: _AuthWrapperState._minimumSplashDuration,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: Constants.spacingL),
-                Text(
-                  AppConfig.appName,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontWeight: Constants.fontWeightBold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: Constants.spacingS),
-                Text(
-                  'Intelligent Calendar & Planning',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSurface.withValues(
-                                  alpha: Constants.opacityHigh,
-                                ),
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: Constants.spacingXXL),
-                const CircularProgressIndicator(),
-              ],
+              ),
             ),
           ),
         ),

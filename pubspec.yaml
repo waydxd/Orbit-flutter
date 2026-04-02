@@ -81,6 +81,9 @@ dependencies:
   flutter_background_service: ^5.1.0
   flutter_timezone: ^5.0.1
 
+  # WebSocket for chat streaming
+  web_socket_channel: ^2.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -117,6 +120,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/images/
     - lib/assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see

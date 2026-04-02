@@ -42,12 +42,8 @@ class ModernDropdownField<T> extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: hasValue
-                ? AppColors.primary.withValues(alpha: 0.18)
-                : Colors.transparent,
-            width: 1.5,
-          ),
+          // Intentionally no purple outline/boundary.
+          border: Border.all(color: Colors.transparent, width: 0),
         ),
         child: Row(
           children: [
