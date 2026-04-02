@@ -5,8 +5,8 @@ enum Environment { local, development, staging, production }
 
 class EnvironmentConfig {
   const EnvironmentConfig._();
-  static Environment _environment = Environment.local;
-  // static Environment _environment = Environment.development;
+  // static Environment _environment = Environment.local;
+  static Environment _environment = Environment.development;
 
   static Environment get environment => _environment;
 
@@ -32,9 +32,7 @@ class EnvironmentConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.local:
-        return 'http://192.168.99.192:8080';
-        // waydriod: 192.168.240.1
-        // mobile: 192.168.99.192
+        return 'http://$_localHost:8080';
       case Environment.development:
         // Use the shared remote backend in development to match main branch behavior
         // If you want to target a local Orbit-core instance instead, update this
