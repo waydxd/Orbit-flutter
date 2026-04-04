@@ -58,15 +58,15 @@ class CalendarViewModel extends BaseViewModel {
     await executeAsync(() async {
       try {
         final now = DateTime.now();
-        final startOfDay = DateTime(now.year, now.month, now.day);
-        final endOfMonth = startOfDay.add(const Duration(days: 30));
+        final startOfRange = DateTime(now.year - 1, now.month, 1);
+        final endOfRange = startOfRange.add(const Duration(days: 3650));
 
         // Fetch events and tasks together – these are critical
         final results = await Future.wait([
           _calendarRepository.getEvents(
             userId: userId,
-            startTime: startOfDay,
-            endTime: endOfMonth,
+            startTime: startOfRange,
+            endTime: endOfRange,
           ),
           _calendarRepository.getTasks(userId: userId),
         ]);
@@ -108,9 +108,12 @@ class CalendarViewModel extends BaseViewModel {
   Future<AcceptSuggestionResponse?> acceptHabitSuggestion(
     String suggestionId, {
     String? userId,
+    int? years,
+    int? weeks,
   }) async {
     final response = await executeAsync(() async {
-      return await _calendarRepository.acceptHabitSuggestion(suggestionId);
+      return await _calendarRepository.acceptHabitSuggestion(suggestionId,
+          years: years, weeks: weeks);
     }, showLoading: false);
 
     if (response != null && response.success) {

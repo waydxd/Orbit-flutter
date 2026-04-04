@@ -988,11 +988,11 @@ class _CalendarPageState extends State<CalendarPage>
                   top: (startH - startHour) * _hourHeight + 10,
                   left: leftMargin,
                   right: 0,
-                  height: cardHeight.clamp(60.0, double.infinity),
+                  height: cardHeight.clamp(120.0, double.infinity),
                   child: HabitSuggestionTimetableCard(
                     suggestion: suggestion,
-                    onAccept: () =>
-                        _handleAcceptSuggestion(viewModel, suggestion.id),
+                    onAccept: (int years, int weeks) => _handleAcceptSuggestion(
+                        viewModel, suggestion.id, years, weeks),
                     onDismiss: () =>
                         _handleDismissSuggestion(viewModel, suggestion.id),
                   ),
@@ -1039,12 +1039,14 @@ class _CalendarPageState extends State<CalendarPage>
     );
   }
 
-  Future<void> _handleAcceptSuggestion(
-      CalendarViewModel viewModel, String suggestionId) async {
+  Future<void> _handleAcceptSuggestion(CalendarViewModel viewModel,
+      String suggestionId, int years, int weeks) async {
     final userId = context.read<AuthViewModel>().currentUser?.id;
     final response = await viewModel.acceptHabitSuggestion(
       suggestionId,
       userId: userId,
+      years: years,
+      weeks: weeks,
     );
     if (mounted) {
       if (response != null && response.success) {

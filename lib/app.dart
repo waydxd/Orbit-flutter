@@ -164,22 +164,6 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
-  void initState() {
-    super.initState();
-    _navigateToHome();
-  }
-
-  Future<void> _navigateToHome() async {
-    // Wait for 2 seconds to show splash, then navigate to home
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(

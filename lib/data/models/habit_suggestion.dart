@@ -13,6 +13,8 @@ class HabitSuggestion extends BaseModel {
   final DateTime createdAt;
   final DateTime expiresAt;
   final String message;
+  final DateTime? suggestedStartTime;
+  final DateTime? suggestedEndTime;
 
   const HabitSuggestion({
     required this.id,
@@ -26,6 +28,8 @@ class HabitSuggestion extends BaseModel {
     required this.message,
     this.description,
     this.location,
+    this.suggestedStartTime,
+    this.suggestedEndTime,
   });
 
   factory HabitSuggestion.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,12 @@ class HabitSuggestion extends BaseModel {
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       expiresAt: DateTime.parse(json['expires_at'] as String).toLocal(),
       message: json['message'] as String? ?? '',
+      suggestedStartTime: json['suggested_start_time'] != null
+          ? DateTime.parse(json['suggested_start_time'] as String).toLocal()
+          : null,
+      suggestedEndTime: json['suggested_end_time'] != null
+          ? DateTime.parse(json['suggested_end_time'] as String).toLocal()
+          : null,
     );
   }
 
@@ -58,6 +68,10 @@ class HabitSuggestion extends BaseModel {
       'created_at': createdAt.toUtc().toIso8601String(),
       'expires_at': expiresAt.toUtc().toIso8601String(),
       'message': message,
+      if (suggestedStartTime != null)
+        'suggested_start_time': suggestedStartTime!.toUtc().toIso8601String(),
+      if (suggestedEndTime != null)
+        'suggested_end_time': suggestedEndTime!.toUtc().toIso8601String(),
     };
   }
 
@@ -111,6 +125,11 @@ class HabitSuggestion extends BaseModel {
 
   /// Check if this suggestion matches a given date's day of week
   bool matchesDate(DateTime date) {
+    if (suggestedStartTime != null) {
+      return date.year == suggestedStartTime!.year &&
+          date.month == suggestedStartTime!.month &&
+          date.day == suggestedStartTime!.day;
+    }
     return date.weekday == dayOfWeekIndex;
   }
 
@@ -130,6 +149,8 @@ class HabitSuggestion extends BaseModel {
         createdAt,
         expiresAt,
         message,
+        suggestedStartTime,
+        suggestedEndTime,
       ];
 }
 

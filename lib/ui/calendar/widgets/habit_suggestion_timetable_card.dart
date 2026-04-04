@@ -5,7 +5,7 @@ import '../../../data/models/habit_suggestion.dart';
 /// Uses a dashed border and distinct colour to differentiate from regular events.
 class HabitSuggestionTimetableCard extends StatelessWidget {
   final HabitSuggestion suggestion;
-  final VoidCallback onAccept;
+  final void Function(int years, int weeks) onAccept;
   final VoidCallback onDismiss;
   final bool isProcessing;
 
@@ -59,15 +59,17 @@ class HabitSuggestionTimetableCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             // Subtitle / message
-            Text(
-              suggestion.message,
-              style: TextStyle(
-                color: Colors.amber.shade800,
-                fontSize: 10,
-                fontStyle: FontStyle.italic,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Text(
+                  suggestion.message,
+                  style: TextStyle(
+                    color: Colors.amber.shade800,
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 6),
             // Action buttons
@@ -75,25 +77,105 @@ class HabitSuggestionTimetableCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 _ActionChip(
-                  label: 'Dismiss',
-                  icon: Icons.close,
-                  color: Colors.grey.shade600,
-                  onTap: isProcessing ? null : onDismiss,
-                ),
-                const SizedBox(width: 8),
-                _ActionChip(
-                  label: 'Accept',
+                  label: 'Confirm',
                   icon: isProcessing ? null : Icons.check,
                   color: Colors.green.shade700,
                   filled: true,
                   isLoading: isProcessing,
-                  onTap: isProcessing ? null : onAccept,
+                  onTap: isProcessing
+                      ? null
+                      : () {
+                          _showRecurrenceDialog(context);
+                        },
+                ),
+                const SizedBox(width: 8),
+                _ActionChip(
+                  label: 'Cancel',
+                  icon: Icons.close,
+                  color: Colors.grey.shade600,
+                  onTap: isProcessing ? null : onDismiss,
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showRecurrenceDialog(BuildContext context) {
+    int years = 0;
+    int weeks = 0;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Recurring Event Duration'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('How long do you want to repeat this event?'),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: years,
+                          decoration: const InputDecoration(labelText: 'Years'),
+                          items: List.generate(11, (index) => index)
+                              .map((e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text('$e'),
+                                  ))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => years = val);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: weeks,
+                          decoration: const InputDecoration(labelText: 'Weeks'),
+                          items: List.generate(52, (index) => index)
+                              .map((e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text('$e'),
+                                  ))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => weeks = val);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    onAccept(years, weeks);
+                  },
+                  child: const Text('OK'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

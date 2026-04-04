@@ -215,7 +215,6 @@ class CalendarRepository {
     }
   }
 
-
   // ===== Habit Tracking Methods =====
 
   /// Get pending habit suggestions for the authenticated user.
@@ -238,7 +237,7 @@ class CalendarRepository {
           );
           return rawData
               .map((json) =>
-              HabitSuggestion.fromJson(json as Map<String, dynamic>))
+                  HabitSuggestion.fromJson(json as Map<String, dynamic>))
               .toList();
         }
       }
@@ -255,9 +254,17 @@ class CalendarRepository {
   }
 
   /// Accept a habit suggestion and create a recurring event.
-  Future<AcceptSuggestionResponse> acceptHabitSuggestion(String id) async {
+  Future<AcceptSuggestionResponse> acceptHabitSuggestion(String id,
+      {int? years, int? weeks}) async {
     try {
-      final response = await _apiClient.post('/habit/suggestions/$id/accept');
+      final Map<String, dynamic> data = {};
+      if (years != null) data['years'] = years;
+      if (weeks != null) data['weeks'] = weeks;
+
+      final response = await _apiClient.post(
+        '/habit/suggestions/$id/accept',
+        data: data.isNotEmpty ? data : null,
+      );
 
       Logger.infoWithTag(
         'CalendarRepository',

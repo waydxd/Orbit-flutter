@@ -426,10 +426,21 @@ class ChatAgentProvider extends ChangeNotifier {
 
     try {
       // Send message with the guaranteed conversation_id
+
+      final String systemTimezoneSuffix =
+          '\n\n[System_Timezone: ${DateTime.now().timeZoneName}, Local_Offset_Hours: ${(DateTime.now().timeZoneOffset.inMinutes / 60.0)}, Current_Local_Time: ${DateTime.now().toString()}]';
+
       final result = await _repository.sendChatMessage(
-        content: content,
+        content: '$content$systemTimezoneSuffix',
         conversationId: conversationId,
-        context: {'type': context.value},
+        context: {
+          'type': context.value,
+          'current_date': DateTime.now().toIso8601String(),
+          'timezone': DateTime.now().timeZoneName,
+          'timezone_offset_hours':
+              (DateTime.now().timeZoneOffset.inMinutes / 60.0),
+          'local_time': DateTime.now().toString(),
+        },
       );
 
       if (!result.isSuccess) {
