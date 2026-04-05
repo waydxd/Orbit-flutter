@@ -1,7 +1,6 @@
 /// Habit Tracking Feature Exports
 ///
 /// This file exports all habit tracking related classes for easy importing
-library;
 
 // Models
 export '../../data/models/habit_suggestion.dart';
