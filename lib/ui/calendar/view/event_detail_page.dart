@@ -2,266 +2,302 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/event_model.dart';
-import '../../../data/models/suggestion_model.dart';
-import '../../../data/view_models/suggestions_view_model.dart';
+import '../view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
-import '../widgets/ai_suggestions_section.dart';
+import '../../tasks/view/create_item_page.dart';
 
-/// Event Detail Page showing event information and AI-generated suggestions
-class EventDetailPage extends StatefulWidget {
+class EventDetailPage extends StatelessWidget {
   final EventModel event;
 
-  const EventDetailPage({super.key, required this.event});
+  const EventDetailPage({
+    required this.event,
+    super.key,
+  });
 
-  @override
-  State<EventDetailPage> createState() => _EventDetailPageState();
-}
-
-class _EventDetailPageState extends State<EventDetailPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Fetch AI suggestions when the page loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSuggestions();
-    });
-  }
-
-  void _fetchSuggestions() {
-    final suggestionsViewModel = context.read<SuggestionsViewModel>();
-    suggestionsViewModel.fetchSuggestions(event: widget.event);
+  String _inferCategory(EventModel e) {
+    final combined = '${e.title} ${e.description}'.toLowerCase();
+    if (combined.contains('work') ||
+        combined.contains('meeting') ||
+        combined.contains('sync') ||
+        combined.contains('office')) {
+      return 'Work';
+    }
+    if (combined.contains('study') ||
+        combined.contains('class') ||
+        combined.contains('lecture') ||
+        combined.contains('exam')) {
+      return 'Study';
+    }
+    if (combined.contains('gym') ||
+        combined.contains('exercise') ||
+        combined.contains('workout') ||
+        combined.contains('run')) {
+      return 'Exercise';
+    }
+    if (combined.contains('personal') ||
+        combined.contains('dinner') ||
+        combined.contains('lunch') ||
+        combined.contains('friend') ||
+        combined.contains('family')) {
+      return 'Personal';
+    }
+    return 'Event';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildEventHeader(),
-                const Divider(height: 1, thickness: 1, color: AppColors.grey200),
-                _buildEventDetails(),
-                const Divider(height: 1, thickness: 1, color: AppColors.grey200),
-                _buildAISuggestionsSection(),
-                const SizedBox(height: 100), // Bottom padding for FAB
-              ],
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: _buildRefreshFab(),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      expandedHeight: 200,
-      pinned: true,
-      backgroundColor: _getEventColor(widget.event.title),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.edit_outlined, color: Colors.white),
-          onPressed: () {
-            // TODO: Navigate to edit event
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          onPressed: () {
-            _showEventOptionsMenu();
-          },
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          widget.event.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
           ),
         ),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                _getEventColor(widget.event.title),
-                _getEventColor(widget.event.title).withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.event,
-              size: 60,
-              color: Colors.white24,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEventHeader() {
-    final dateFormat = DateFormat('EEEE, MMMM d, yyyy');
-    final timeFormat = DateFormat('h:mm a');
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Date
-          Row(
+        child: SafeArea(
+          child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _getEventColor(widget.event.title).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.calendar_today,
-                  color: _getEventColor(widget.event.title),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      dateFormat.format(widget.event.startTime),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new),
+                      color: AppColors.textPrimary,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    Expanded(
+                      child: Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${timeFormat.format(widget.event.startTime)} - ${timeFormat.format(widget.event.endTime)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.more_horiz),
+                      color: AppColors.textPrimary,
+                      onPressed: () => _showMoreOptions(context),
                     ),
                   ],
+                ),
+              ),
+
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Template image placeholder (1:1 ratio - replace with actual image later)
+                          // No top/left/right padding - image fits edge-to-edge in card
+                          AspectRatio(
+                            aspectRatio: 1,
+                            child: Container(
+                              color: AppColors.grey100,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 48,
+                                  color: AppColors.grey400,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Category tag (pill)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _inferCategory(event).toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Location section (if present)
+                                if (event.location.isNotEmpty) ...[
+                                  _buildSectionLabel('LOCATION'),
+                                  const SizedBox(height: 12),
+                                  _buildLocationRow(event.location),
+                                  const SizedBox(height: 24),
+                                ],
+
+                                // Date & Time section
+                                _buildSectionLabel('DATE & TIME'),
+                                const SizedBox(height: 12),
+                                _buildInfoRow(
+                                  icon: Icons.calendar_today_rounded,
+                                  text: _formatDate(event.startTime),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  icon: Icons.access_time_rounded,
+                                  text:
+                                      '${_formatTimeRange(event.startTime, event.endTime)} ${_formatDuration(event.startTime, event.endTime)}',
+                                ),
+                                const SizedBox(height: 24),
+                                _buildSectionLabel('DESCRIPTION'),
+                                const SizedBox(height: 12),
+                                Text(
+                                  event.description.isNotEmpty
+                                      ? event.description
+                                      : 'No description',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: event.description.isNotEmpty
+                                        ? AppColors.textSecondary
+                                        : AppColors.grey400,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEventDetails() {
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildLocationRow(String location) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.grey50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
         children: [
-          // Location
-          if (widget.event.location.isNotEmpty) ...[
-            _buildDetailRow(
-              icon: Icons.location_on_outlined,
-              title: 'Location',
-              content: widget.event.location,
-              iconColor: AppColors.secondary,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 16),
-          ],
-
-          // Description
-          if (widget.event.description.isNotEmpty) ...[
-            _buildDetailRow(
-              icon: Icons.description_outlined,
-              title: 'Description',
-              content: widget.event.description,
-              iconColor: AppColors.info,
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: AppColors.primary,
+              size: 24,
             ),
-          ],
-
-          // Empty state for no details
-          if (widget.event.location.isEmpty && widget.event.description.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 48,
-                      color: AppColors.grey300,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No additional details',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  location,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow({
+  Widget _buildInfoRow({
     required IconData icon,
-    required String title,
-    required String content,
-    required Color iconColor,
+    required String text,
+    String? subtitle,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
+        Icon(icon, color: AppColors.primary, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                content,
+                text,
                 style: const TextStyle(
                   fontSize: 15,
                   color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -269,88 +305,115 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
   }
 
-  Widget _buildAISuggestionsSection() {
-    return Consumer<SuggestionsViewModel>(
-      builder: (context, viewModel, child) {
-        return AISuggestionsSection(
-          event: widget.event,
-          suggestions: viewModel.suggestions,
-          isLoading: viewModel.isFetchingSuggestions,
-          error: viewModel.suggestionsError,
-          onRefresh: _fetchSuggestions,
-        );
-      },
-    );
+  String _formatDate(DateTime date) {
+    return DateFormat('EEEE, d MMMM yyyy').format(date);
   }
 
-  Widget _buildRefreshFab() {
-    return Consumer<SuggestionsViewModel>(
-      builder: (context, viewModel, child) {
-        return FloatingActionButton.extended(
-          onPressed: viewModel.isFetchingSuggestions
-              ? null
-              : () => viewModel.fetchSuggestions(
-                    event: widget.event,
-                    forceRefresh: true,
-                  ),
-          backgroundColor: viewModel.isFetchingSuggestions
-              ? AppColors.grey400
-              : AppColors.primary,
-          icon: viewModel.isFetchingSuggestions
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : const Icon(Icons.auto_awesome, color: Colors.white),
-          label: Text(
-            viewModel.isFetchingSuggestions
-                ? 'Analyzing...'
-                : 'Get AI Suggestions',
-            style: const TextStyle(color: Colors.white),
+  String _formatTimeRange(DateTime start, DateTime end) {
+    final timeFormatter = DateFormat('h:mm a');
+    if (start.year == end.year &&
+        start.month == end.month &&
+        start.day == end.day) {
+      return '${timeFormatter.format(start)} - ${timeFormatter.format(end)}';
+    } else {
+      final dateFormatter = DateFormat('d MMM');
+      return '${timeFormatter.format(start)} - ${dateFormatter.format(end)} ${timeFormatter.format(end)}';
+    }
+  }
+
+  String _formatDuration(DateTime start, DateTime end) {
+    final minutes = end.difference(start).inMinutes;
+    if (minutes < 60) {
+      return '($minutes min)';
+    }
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    return mins > 0 ? '($hours hr $mins min)' : '($hours hr)';
+  }
+
+  Future<void> _handleDelete(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Delete Event'),
+        content: const Text('Are you sure you want to delete this event?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
-        );
-      },
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
     );
+
+    if (confirm == true && context.mounted) {
+      try {
+        final viewModel =
+            Provider.of<CalendarViewModel>(context, listen: false);
+        await viewModel.deleteEvent(event.id);
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete event: $e')),
+          );
+        }
+      }
+    }
   }
 
-  void _showEventOptionsMenu() {
+  void _showMoreOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+      builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('Share Event'),
+              leading:
+                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              title: const Text('Edit',
+                  style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement share
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy_outlined),
-              title: const Text('Duplicate Event'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement duplicate
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateItemPage(
+                      initialIsEvent: true,
+                      editEvent: event,
+                    ),
+                  ),
+                ).then((result) {
+                  if (result == true && context.mounted) {
+                    Navigator.pop(context);
+                  }
+                });
               },
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('Delete Event',
+              title: const Text('Delete',
                   style: TextStyle(color: AppColors.error)),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement delete
+                _handleDelete(context);
               },
             ),
           ],
@@ -358,17 +421,4 @@ class _EventDetailPageState extends State<EventDetailPage> {
       ),
     );
   }
-
-  Color _getEventColor(String title) {
-    final lowerTitle = title.toLowerCase();
-    if (lowerTitle.contains('math')) return const Color(0xFF50C8AA);
-    if (lowerTitle.contains('english')) return const Color(0xFF8B80F0);
-    if (lowerTitle.contains('history')) return const Color(0xFF0096FF);
-    if (lowerTitle.contains('meeting')) return const Color(0xFFFF6B6B);
-    if (lowerTitle.contains('lunch') || lowerTitle.contains('dinner')) {
-      return const Color(0xFFFFB347);
-    }
-    return AppColors.primary;
-  }
 }
-

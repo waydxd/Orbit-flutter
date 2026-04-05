@@ -13,12 +13,41 @@ class AuthViewModel extends BaseViewModel {
   UserModel? _currentUser;
 
   AuthViewModel({AuthRepository? authRepository})
-    : _authRepository = authRepository ?? AuthRepository(ApiClient());
+      : _authRepository = authRepository ?? AuthRepository(ApiClient());
 
   /// Authentication state
   bool get isAuthenticated => _isAuthenticated;
   UserModel? get currentUser => _currentUser;
   String? get currentUserEmail => _currentUser?.email;
+  String? get currentUserDisplayName => _currentUser?.displayName;
+
+  Future<void> _persistAuthenticatedSession(
+    String token,
+    UserModel user,
+  ) async {
+    _isAuthenticated = true;
+    _currentUser = user;
+
+    await LocalStorageService.storeSecure(AppConfig.accessTokenKey, token);
+    await LocalStorageService.setPreference('is_authenticated', true);
+    await LocalStorageService.setPreference('user_email', user.email);
+    await LocalStorageService.setPreference('user_id', user.id);
+  }
+
+  String _extractErrorMessage(dynamic error, String fallbackMessage) {
+    if (error is Exception) {
+      return error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+    }
+    final message = error.toString();
+    return message.isEmpty ? fallbackMessage : message;
+  }
+
+  bool _isValidUsername(String username) {
+    if (username.length < 3 || username.length > 50) return false;
+    if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(username)) return false;
+    if (RegExp(r'[_-]{2,}').hasMatch(username)) return false;
+    return true;
+  }
 
   /// Login with email and password
   Future<bool> login(String email, String password) async {
@@ -28,8 +57,8 @@ class AuthViewModel extends BaseViewModel {
       return false;
     }
 
-    if (!Validators.isValidPassword(password)) {
-      setError('Password must be at least 8 characters long');
+    if (password.isEmpty) {
+      setError('Please enter your password');
       return false;
     }
 
@@ -38,29 +67,35 @@ class AuthViewModel extends BaseViewModel {
             final result = await _authRepository.login(email, password);
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
-
-            _isAuthenticated = true;
-            _currentUser = user;
-
-            // Store authentication state
-            await LocalStorageService.storeSecure(
-              AppConfig.accessTokenKey,
-              token,
-            );
-            await LocalStorageService.setPreference('is_authenticated', true);
-            await LocalStorageService.setPreference('user_email', user.email);
-            await LocalStorageService.setPreference('user_id', user.id);
+            await _persistAuthenticatedSession(token, user);
 
             return true;
           } catch (e) {
             _isAuthenticated = false;
             _currentUser = null;
+            setError(
+                _extractErrorMessage(e, 'Login failed. Please try again.'));
+            return false;
+          }
+        }) ??
+        false;
+  }
 
-            // Extract error message from exception
-            String errorMessage = 'Login failed. Please try again.';
+  /// Send registration OTP
+  Future<bool> sendRegistrationOTP(String email) async {
+    // Validate inputs
+    if (!Validators.isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            return await _authRepository.sendRegistrationOTP(email);
+          } catch (e) {
+            String errorMessage = 'Failed to send OTP. Please try again.';
             if (e is Exception) {
               final message = e.toString();
-              // Remove "Exception: " prefix if present
               errorMessage = message.replaceFirst(
                 RegExp(r'^Exception:\s*'),
                 '',
@@ -68,7 +103,6 @@ class AuthViewModel extends BaseViewModel {
             } else {
               errorMessage = e.toString();
             }
-
             setError(errorMessage);
             return false;
           }
@@ -81,6 +115,7 @@ class AuthViewModel extends BaseViewModel {
     String email,
     String password,
     String confirmPassword,
+    String otp,
   ) async {
     // Validate inputs
     if (!Validators.isValidEmail(email)) {
@@ -89,7 +124,7 @@ class AuthViewModel extends BaseViewModel {
     }
 
     if (!Validators.isValidPassword(password)) {
-      setError('Password must be at least 8 characters long');
+      setError(Validators.passwordRequirementError);
       return false;
     }
 
@@ -100,40 +135,163 @@ class AuthViewModel extends BaseViewModel {
 
     return await executeAsync<bool>(() async {
           try {
-            final result = await _authRepository.register(email, password);
+            final result = await _authRepository.register(email, password, otp);
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
-
-            _isAuthenticated = true;
-            _currentUser = user;
-
-            // Store authentication state
-            await LocalStorageService.storeSecure(
-              AppConfig.accessTokenKey,
-              token,
-            );
-            await LocalStorageService.setPreference('is_authenticated', true);
-            await LocalStorageService.setPreference('user_email', user.email);
-            await LocalStorageService.setPreference('user_id', user.id);
+            await _persistAuthenticatedSession(token, user);
 
             return true;
           } catch (e) {
             _isAuthenticated = false;
             _currentUser = null;
+            setError(
+              _extractErrorMessage(e, 'Registration failed. Please try again.'),
+            );
+            return false;
+          }
+        }) ??
+        false;
+  }
 
-            // Extract error message from exception
-            String errorMessage = 'Registration failed. Please try again.';
-            if (e is Exception) {
-              final message = e.toString();
-              // Remove "Exception: " prefix if present
-              errorMessage = message.replaceFirst(
-                RegExp(r'^Exception:\s*'),
+  Future<bool> completeRegistration({
+    required String email,
+    required String username,
+    required String password,
+    required String confirmPassword,
+    required String firstName,
+    required String lastName,
+    required String region,
+    required String timezone,
+    required String gender,
+    DateTime? birthDate,
+  }) async {
+    final trimmedEmail = email.trim();
+    final trimmedUsername = username.trim();
+
+    if (!Validators.isValidEmail(trimmedEmail)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    if (!_isValidUsername(trimmedUsername)) {
+      setError(
+        'Username must be 3-50 characters and use only letters, numbers, underscores, and hyphens',
+      );
+      return false;
+    }
+
+    if (!Validators.isValidPassword(password)) {
+      setError(Validators.passwordRequirementError);
+      return false;
+    }
+
+    if (password != confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final shouldRegister =
+                !(_isAuthenticated && _currentUser?.email == trimmedEmail);
+
+            if (shouldRegister) {
+              final result = await _authRepository.register(
+                trimmedEmail,
+                password,
                 '',
               );
+              final token = result['token'] as String;
+              final user = result['user'] as UserModel;
+              await _persistAuthenticatedSession(token, user);
+            }
+
+            final payload = <String, dynamic>{
+              'first_name': firstName.trim(),
+              'last_name': lastName.trim(),
+              'username': trimmedUsername,
+              'region': region.trim(),
+              'timezone': timezone.trim(),
+              'gender': gender.trim(),
+              'birth_date': birthDate == null
+                  ? ''
+                  : '${birthDate.year.toString().padLeft(4, '0')}-${birthDate.month.toString().padLeft(2, '0')}-${birthDate.day.toString().padLeft(2, '0')}',
+            };
+
+            final profile = await _authRepository.updateProfile(payload);
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            setError(
+              _extractErrorMessage(
+                e,
+                'Registration failed. Please try again.',
+              ),
+            );
+            return false;
+          }
+        }) ??
+        false;
+  }
+
+  /// Request Password Reset
+  Future<bool> requestPasswordReset(String email) async {
+    if (!Validators.isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            return await _authRepository.requestPasswordReset(email);
+          } catch (e) {
+            String errorMessage = 'Failed to request password reset.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
             } else {
               errorMessage = e.toString();
             }
+            setError(errorMessage);
+            return false;
+          }
+        }) ??
+        false;
+  }
 
+  /// Confirm Password Reset
+  Future<bool> confirmPasswordReset(
+      String token, String newPassword, String confirmPassword) async {
+    if (token.isEmpty || token.length != 6) {
+      setError('Please enter a valid 6-digit reset code');
+      return false;
+    }
+
+    if (!Validators.isValidPassword(newPassword)) {
+      setError(Validators.passwordRequirementError);
+      return false;
+    }
+
+    if (newPassword != confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            return await _authRepository.confirmPasswordReset(
+                token, newPassword);
+          } catch (e) {
+            String errorMessage = 'Failed to reset password.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
             setError(errorMessage);
             return false;
           }
@@ -164,6 +322,84 @@ class AuthViewModel extends BaseViewModel {
     }, showLoading: false);
   }
 
+  Future<bool> loadProfile() async {
+    if (!_isAuthenticated && _currentUser == null) {
+      setError('Please login again to view your profile');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final profile = await _authRepository.getProfile();
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            String errorMessage = 'Failed to load profile.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
+            setError(errorMessage);
+            return false;
+          }
+        }, showLoading: true) ??
+        false;
+  }
+
+  Future<bool> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String username,
+    required String region,
+    required String timezone,
+    required String gender,
+    DateTime? birthDate,
+  }) async {
+    if (!_isAuthenticated && _currentUser == null) {
+      setError('Please login again to update your profile');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final payload = <String, dynamic>{
+              'first_name': firstName.trim(),
+              'last_name': lastName.trim(),
+              'username': username.trim(),
+              'region': region.trim(),
+              'timezone': timezone.trim(),
+              'gender': gender.trim(),
+              'birth_date': birthDate == null
+                  ? ''
+                  : '${birthDate.year.toString().padLeft(4, '0')}-${birthDate.month.toString().padLeft(2, '0')}-${birthDate.day.toString().padLeft(2, '0')}',
+            };
+
+            final profile = await _authRepository.updateProfile(payload);
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            String errorMessage = 'Failed to update profile.';
+            if (e is Exception) {
+              errorMessage =
+                  e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            } else {
+              errorMessage = e.toString();
+            }
+            setError(errorMessage);
+            return false;
+          }
+        }) ??
+        false;
+  }
+
   /// Check if user is already authenticated
   Future<void> checkAuthStatus() async {
     // Use executeAsync but with showLoading false to avoid blocking UI
@@ -174,7 +410,7 @@ class AuthViewModel extends BaseViewModel {
         try {
           isAuth =
               LocalStorageService.getPreference<bool>('is_authenticated') ??
-              false;
+                  false;
         } catch (e) {
           // If we can't read preferences, assume not authenticated
           _isAuthenticated = false;

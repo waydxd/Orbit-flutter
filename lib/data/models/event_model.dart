@@ -8,6 +8,7 @@ class EventModel extends BaseModel {
   final DateTime startTime;
   final DateTime endTime;
   final String location;
+  final List<String> hashtags;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +22,7 @@ class EventModel extends BaseModel {
     required this.location,
     required this.createdAt,
     required this.updatedAt,
+    this.hashtags = const [],
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -29,11 +31,14 @@ class EventModel extends BaseModel {
       userId: json['user_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String? ?? '',
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
+      startTime: DateTime.parse(json['start_time'] as String).toLocal(),
+      endTime: DateTime.parse(json['end_time'] as String).toLocal(),
       location: json['location'] as String? ?? '',
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      hashtags: json['hashtags'] != null
+          ? List<String>.from(json['hashtags'] as List)
+          : const [],
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 
@@ -44,38 +49,28 @@ class EventModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'start_time': _formatDateTimeForApi(startTime),
-      'end_time': _formatDateTimeForApi(endTime),
+      'start_time': startTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
       'location': location,
-      'created_at': _formatDateTimeForApi(createdAt),
-      'updated_at': _formatDateTimeForApi(updatedAt),
+      'hashtags': hashtags,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
     };
-  }
-
-  /// Format DateTime to RFC3339 format expected by the backend
-  /// Converts to UTC and appends 'Z' suffix
-  static String _formatDateTimeForApi(DateTime dateTime) {
-    final utc = dateTime.toUtc();
-    return '${utc.year.toString().padLeft(4, '0')}-'
-        '${utc.month.toString().padLeft(2, '0')}-'
-        '${utc.day.toString().padLeft(2, '0')}T'
-        '${utc.hour.toString().padLeft(2, '0')}:'
-        '${utc.minute.toString().padLeft(2, '0')}:'
-        '${utc.second.toString().padLeft(2, '0')}Z';
   }
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    title,
-    description,
-    startTime,
-    endTime,
-    location,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        title,
+        description,
+        startTime,
+        endTime,
+        location,
+        hashtags,
+        createdAt,
+        updatedAt,
+      ];
 
   EventModel copyWith({
     String? id,
@@ -85,6 +80,7 @@ class EventModel extends BaseModel {
     DateTime? startTime,
     DateTime? endTime,
     String? location,
+    List<String>? hashtags,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -96,6 +92,7 @@ class EventModel extends BaseModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
+      hashtags: hashtags ?? this.hashtags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

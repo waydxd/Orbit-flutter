@@ -63,13 +63,43 @@ class AuthRepository {
     }
   }
 
-  /// Register a new user with email and password
+  /// Send registration OTP
+  Future<bool> sendRegistrationOTP(String email) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/send-registration-otp',
+        data: {'email': email},
+      );
+
+      if (response.statusCode == 200) {
+        Logger.infoWithTag(
+          'AuthRepository',
+          'Registration OTP sent to: $email',
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Failed to send OTP: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Register a new user with email, password, and OTP
   /// Returns a tuple of (token, user) on success
-  Future<Map<String, dynamic>> register(String email, String password) async {
+  Future<Map<String, dynamic>> register(
+    String email,
+    String password,
+    String otp,
+  ) async {
     try {
       final response = await _apiClient.post(
         '/auth/register',
-        data: {'email': email, 'password': password},
+        data: {'email': email, 'password': password, 'otp': otp},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -91,6 +121,58 @@ class AuthRepository {
       Logger.errorWithTag(
         'AuthRepository',
         'Registration failed: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Request password reset (Forgot Password)
+  Future<bool> requestPasswordReset(String email) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/password-reset-request',
+        data: {'email': email},
+      );
+
+      if (response.statusCode == 200) {
+        Logger.infoWithTag(
+          'AuthRepository',
+          'Password reset requested for: $email',
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Password reset request failed: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Confirm password reset
+  Future<bool> confirmPasswordReset(String token, String newPassword) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/password-reset-confirm',
+        data: {'token': token, 'password': newPassword},
+      );
+
+      if (response.statusCode == 200) {
+        Logger.infoWithTag(
+          'AuthRepository',
+          'Password reset successful',
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Password reset confirm failed: $errorMessage',
       );
       throw Exception(errorMessage);
     }
@@ -121,6 +203,48 @@ class AuthRepository {
     } catch (e) {
       Logger.errorWithTag('AuthRepository', 'Token verification failed: $e');
       return false;
+    }
+  }
+
+  /// Fetch the authenticated user's profile
+  Future<UserModel> getProfile() async {
+    try {
+      final response = await _apiClient.get('/profile');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        return UserModel.fromJson(data);
+      }
+
+      throw Exception('Invalid response from server');
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Failed to fetch profile: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Update the authenticated user's profile
+  Future<UserModel> updateProfile(Map<String, dynamic> payload) async {
+    try {
+      final response = await _apiClient.put('/profile', data: payload);
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        return UserModel.fromJson(data);
+      }
+
+      throw Exception('Invalid response from server');
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Failed to update profile: $errorMessage',
+      );
+      throw Exception(errorMessage);
     }
   }
 }

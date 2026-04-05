@@ -8,6 +8,7 @@ class TaskModel extends BaseModel {
   final DateTime? dueDate;
   final bool completed;
   final String priority;
+  final List<String> hashtags;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +22,7 @@ class TaskModel extends BaseModel {
     this.dueDate,
     this.completed = false,
     this.priority = 'medium',
+    this.hashtags = const [],
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,9 @@ class TaskModel extends BaseModel {
           : null,
       completed: json['completed'] as bool? ?? false,
       priority: json['priority'] as String? ?? 'medium',
+      hashtags: json['hashtags'] != null
+          ? List<String>.from(json['hashtags'] as List)
+          : const [],
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -46,26 +51,28 @@ class TaskModel extends BaseModel {
       'user_id': userId,
       'title': title,
       'description': description,
-      'due_date': dueDate?.toIso8601String(),
+      'due_date': dueDate?.toUtc().toIso8601String(),
       'completed': completed,
       'priority': priority,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'hashtags': hashtags,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
     };
   }
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    title,
-    description,
-    dueDate,
-    completed,
-    priority,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        title,
+        description,
+        dueDate,
+        completed,
+        priority,
+        hashtags,
+        createdAt,
+        updatedAt,
+      ];
 
   TaskModel copyWith({
     String? id,
@@ -75,6 +82,7 @@ class TaskModel extends BaseModel {
     DateTime? dueDate,
     bool? completed,
     String? priority,
+    List<String>? hashtags,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -86,6 +94,7 @@ class TaskModel extends BaseModel {
       dueDate: dueDate ?? this.dueDate,
       completed: completed ?? this.completed,
       priority: priority ?? this.priority,
+      hashtags: hashtags ?? this.hashtags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

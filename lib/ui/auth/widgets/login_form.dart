@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/auth_view_model.dart';
 import '../view/registration_page.dart';
+import '../view/forgot_password_page.dart';
 import '../../core/themes/app_colors.dart';
 import '../../../utils/validators.dart';
 import '../../../utils/constants.dart';
@@ -132,9 +133,6 @@ class _LoginFormState extends State<LoginForm> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
                   }
-                  if (!Validators.isValidPassword(value)) {
-                    return 'Password must be at least 8 characters long';
-                  }
                   return null;
                 },
               ),
@@ -229,10 +227,9 @@ class _LoginFormState extends State<LoginForm> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // TODO: Navigate to forgot password page
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Password reset coming soon!'),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordPage(),
                         ),
                       );
                     },
