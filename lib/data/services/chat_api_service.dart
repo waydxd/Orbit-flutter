@@ -98,8 +98,8 @@ class ConversationMessage {
     return ConversationMessage(
       id: json['id'] ?? '',
       conversationId: json['conversation_id'] ?? '',
-      userId: json['user_id'],
       role: json['role'] ?? 'user',
+      userId: json['user_id'],
       content: rawContent,
       metadata: json['metadata'] as Map<String, dynamic>?,
       timestamp: json['created_at'] != null

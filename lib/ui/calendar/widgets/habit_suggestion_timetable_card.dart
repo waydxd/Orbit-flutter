@@ -34,70 +34,68 @@ class HabitSuggestionTimetableCard extends StatelessWidget {
           color: Colors.amber.shade50.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header row
-            Row(
-              children: [
-                Icon(Icons.lightbulb, color: Colors.amber.shade700, size: 16),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    suggestion.title,
-                    style: TextStyle(
-                      color: Colors.amber.shade900,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  Icon(Icons.lightbulb, color: Colors.amber.shade700, size: 16),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      suggestion.title,
+                      style: TextStyle(
+                        color: Colors.amber.shade900,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            // Subtitle / message
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  suggestion.message,
-                  style: TextStyle(
-                    color: Colors.amber.shade800,
-                    fontSize: 10,
-                    fontStyle: FontStyle.italic,
-                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              // Subtitle / message
+              Text(
+                suggestion.message,
+                style: TextStyle(
+                  color: Colors.amber.shade800,
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            // Action buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _ActionChip(
-                  label: 'Confirm',
-                  icon: isProcessing ? null : Icons.check,
-                  color: Colors.green.shade700,
-                  filled: true,
-                  isLoading: isProcessing,
-                  onTap: isProcessing
-                      ? null
-                      : () {
-                          _showRecurrenceDialog(context);
-                        },
-                ),
-                const SizedBox(width: 8),
-                _ActionChip(
-                  label: 'Cancel',
-                  icon: Icons.close,
-                  color: Colors.grey.shade600,
-                  onTap: isProcessing ? null : onDismiss,
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 6),
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _ActionChip(
+                    label: 'Confirm',
+                    icon: isProcessing ? null : Icons.check,
+                    color: Colors.green.shade700,
+                    filled: true,
+                    isLoading: isProcessing,
+                    onTap: isProcessing
+                        ? null
+                        : () {
+                            _showRecurrenceDialog(context);
+                          },
+                  ),
+                  const SizedBox(width: 8),
+                  _ActionChip(
+                    label: 'Cancel',
+                    icon: Icons.close,
+                    color: Colors.grey.shade600,
+                    onTap: isProcessing ? null : onDismiss,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -172,6 +170,7 @@ class HabitSuggestionTimetableCard extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
               ],
+              actionsAlignment: MainAxisAlignment.spaceBetween,
             );
           },
         );

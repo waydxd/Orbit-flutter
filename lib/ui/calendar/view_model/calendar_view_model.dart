@@ -99,9 +99,52 @@ class CalendarViewModel extends BaseViewModel {
 
   /// Get habit suggestions that match a specific date (by day of week)
   List<HabitSuggestion> suggestionsForDay(DateTime date) {
-    return _habitSuggestions
-        .where((s) => s.matchesDate(date) && s.isValid)
-        .toList();
+    return _habitSuggestions.where((s) {
+      if (!s.isValid) return false;
+
+      // Find all matching events (same title, same duration, same time of day)
+      // durationMinutes and timeOfDay (minutes from midnight)
+      final matchingEvents = _events.where((e) {
+        if (e.title.trim().toLowerCase() != s.title.trim().toLowerCase()) {
+          return false;
+        }
+        final dMinutes = e.endTime.difference(e.startTime).inMinutes;
+        if (dMinutes != s.durationMinutes) {
+          return false;
+        }
+        final tOfDay = e.startTime.hour * 60 + e.startTime.minute;
+        if (tOfDay != s.timeOfDayMinutes) {
+          return false;
+        }
+        return true;
+      }).toList();
+
+      DateTime? latestDate;
+      if (matchingEvents.isNotEmpty) {
+        // Find latest event sorted by date
+        matchingEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
+        final latestEvent = matchingEvents.last;
+        latestDate = DateTime(
+          latestEvent.startTime.year,
+          latestEvent.startTime.month,
+          latestEvent.startTime.day,
+        ).add(const Duration(days: 7));
+      } else if (s.suggestedStartTime != null) {
+        latestDate = DateTime(
+          s.suggestedStartTime!.year,
+          s.suggestedStartTime!.month,
+          s.suggestedStartTime!.day,
+        );
+      }
+
+      if (latestDate != null) {
+        return date.year == latestDate.year &&
+            date.month == latestDate.month &&
+            date.day == latestDate.day;
+      }
+
+      return false;
+    }).toList();
   }
 
   /// Accept a habit suggestion

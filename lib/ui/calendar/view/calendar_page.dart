@@ -45,9 +45,6 @@ class _CalendarPageState extends State<CalendarPage>
   static const double _hourHeight = 80.0;
   static const double _minTaskListHeight = 220.0;
 
-  // Tracks suggestion IDs whose accept/dismiss call is in flight
-  final Set<String> _processingHabitSuggestions = {};
-
   @override
   void initState() {
     super.initState();
@@ -991,11 +988,9 @@ class _CalendarPageState extends State<CalendarPage>
                   top: (startH - startHour) * _hourHeight + 10,
                   left: leftMargin,
                   right: 0,
-                  height: cardHeight.clamp(120.0, double.infinity).toDouble(),
+                  height: cardHeight.clamp(120.0, double.infinity),
                   child: HabitSuggestionTimetableCard(
                     suggestion: suggestion,
-                    isProcessing:
-                        _processingHabitSuggestions.contains(suggestion.id),
                     onAccept: (int years, int weeks) => _handleAcceptSuggestion(
                         viewModel, suggestion.id, years, weeks),
                     onDismiss: () =>
@@ -1046,67 +1041,53 @@ class _CalendarPageState extends State<CalendarPage>
 
   Future<void> _handleAcceptSuggestion(CalendarViewModel viewModel,
       String suggestionId, int years, int weeks) async {
-    setState(() => _processingHabitSuggestions.add(suggestionId));
-    try {
-      final userId = context.read<AuthViewModel>().currentUser?.id;
-      final response = await viewModel.acceptHabitSuggestion(
-        suggestionId,
-        userId: userId,
-        years: years,
-        weeks: weeks,
-      );
-      if (mounted) {
-        if (response != null && response.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.message),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        } else if (viewModel.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${viewModel.error}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _processingHabitSuggestions.remove(suggestionId));
+    final userId = context.read<AuthViewModel>().currentUser?.id;
+    final response = await viewModel.acceptHabitSuggestion(
+      suggestionId,
+      userId: userId,
+      years: years,
+      weeks: weeks,
+    );
+    if (mounted) {
+      if (response != null && response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (viewModel.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${viewModel.error}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
 
   Future<void> _handleDismissSuggestion(
       CalendarViewModel viewModel, String suggestionId) async {
-    setState(() => _processingHabitSuggestions.add(suggestionId));
-    try {
-      final success = await viewModel.dismissHabitSuggestion(suggestionId);
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Suggestion dismissed'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        } else if (viewModel.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${viewModel.error}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _processingHabitSuggestions.remove(suggestionId));
+    final success = await viewModel.dismissHabitSuggestion(suggestionId);
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Suggestion dismissed'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (viewModel.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${viewModel.error}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }

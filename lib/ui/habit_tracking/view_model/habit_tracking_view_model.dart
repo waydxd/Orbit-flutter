@@ -39,7 +39,7 @@ class HabitTrackingViewModel extends BaseViewModel {
           years: years, weeks: weeks);
     });
 
-    if (response != null && response.success) {
+    if (response != null) {
       // Remove the accepted suggestion from the list
       _suggestions.removeWhere((s) => s.id == suggestionId);
       notifyListeners();
