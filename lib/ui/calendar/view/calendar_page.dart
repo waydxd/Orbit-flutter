@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
-import '../widgets/habit_suggestion_timetable_card.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import 'event_detail_page.dart';
@@ -976,29 +975,6 @@ class _CalendarPageState extends State<CalendarPage>
                 );
               }),
 
-              // Habit Suggestion Cards (inline at matching time slots)
-              ...viewModel.suggestionsForDay(date).map((suggestion) {
-                final double startH = suggestion.startHour;
-                final double duration = suggestion.endHour - startH;
-                // Ensure a minimum visible height
-                final double cardHeight =
-                    (duration > 0 ? duration : 0.5) * _hourHeight - 20;
-
-                return Positioned(
-                  top: (startH - startHour) * _hourHeight + 10,
-                  left: leftMargin,
-                  right: 0,
-                  height: cardHeight.clamp(120.0, double.infinity),
-                  child: HabitSuggestionTimetableCard(
-                    suggestion: suggestion,
-                    onAccept: (int years, int weeks) => _handleAcceptSuggestion(
-                        viewModel, suggestion.id, years, weeks),
-                    onDismiss: () =>
-                        _handleDismissSuggestion(viewModel, suggestion.id),
-                  ),
-                );
-              }),
-
               // Current Time Line (Rendered last to be on top)
               if (isToday)
                 Positioned(
@@ -1037,59 +1013,6 @@ class _CalendarPageState extends State<CalendarPage>
         ),
       ),
     );
-  }
-
-  Future<void> _handleAcceptSuggestion(CalendarViewModel viewModel,
-      String suggestionId, int years, int weeks) async {
-    final userId = context.read<AuthViewModel>().currentUser?.id;
-    final response = await viewModel.acceptHabitSuggestion(
-      suggestionId,
-      userId: userId,
-      years: years,
-      weeks: weeks,
-    );
-    if (mounted) {
-      if (response != null && response.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.message),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else if (viewModel.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${viewModel.error}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleDismissSuggestion(
-      CalendarViewModel viewModel, String suggestionId) async {
-    final success = await viewModel.dismissHabitSuggestion(suggestionId);
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Suggestion dismissed'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else if (viewModel.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${viewModel.error}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 
   Color _getEventColor(String title) {
