@@ -89,12 +89,18 @@ class ConversationMessage {
   });
 
   factory ConversationMessage.fromJson(Map<String, dynamic> json) {
+    String rawContent = json['content'] ?? '';
+    // Clean up any injected system timezone information
+    if (rawContent.contains('\n\n[System_Timezone:')) {
+      rawContent = rawContent.split('\n\n[System_Timezone:')[0];
+    }
+
     return ConversationMessage(
       id: json['id'] ?? '',
       conversationId: json['conversation_id'] ?? '',
-      userId: json['user_id'],
       role: json['role'] ?? 'user',
-      content: json['content'] ?? '',
+      userId: json['user_id'],
+      content: rawContent,
       metadata: json['metadata'] as Map<String, dynamic>?,
       timestamp: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
@@ -546,11 +552,17 @@ class ChatHistoryResponse {
   }
 
   static ChatMessage _mapApiMessageToChatMessage(Map<String, dynamic> json) {
+    String rawContent = json['content'] ?? '';
+    // Clean up any injected system timezone information
+    if (rawContent.contains('\n\n[System_Timezone:')) {
+      rawContent = rawContent.split('\n\n[System_Timezone:')[0];
+    }
+
     return ChatMessage(
       messageId: json['id'] ?? '',
       sessionId: json['conversation_id'] ?? '',
       role: json['role'] == 'user' ? MessageRole.user : MessageRole.assistant,
-      content: json['content'] ?? '',
+      content: rawContent,
       timestamp: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
