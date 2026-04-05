@@ -281,7 +281,8 @@ class _DashedBorderPainter extends CustomPainter {
       while (distance < metric.length) {
         final end = distance + dashWidth;
         canvas.drawPath(
-          metric.extractPath(distance, end.clamp(0.0, metric.length).toDouble()),
+          metric.extractPath(
+              distance, end.clamp(0.0, metric.length).toDouble()),
           paint,
         );
         distance = end + dashSpace;
