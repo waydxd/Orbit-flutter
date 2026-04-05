@@ -572,6 +572,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           return;
                         }
 
+                        // Ensure end time is after start time
+                        final startMinutes =
+                            startTime!.hour * 60 + startTime!.minute;
+                        final endMinutes =
+                            endTime!.hour * 60 + endTime!.minute;
+                        if (endMinutes <= startMinutes) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('End time must be after start time'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
                         // Create and add event
                         final event = CalendarEvent(
                           id: DateTime.now().millisecondsSinceEpoch.toString(),
