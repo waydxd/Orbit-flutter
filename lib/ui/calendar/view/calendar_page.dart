@@ -988,7 +988,7 @@ class _CalendarPageState extends State<CalendarPage>
                   top: (startH - startHour) * _hourHeight + 10,
                   left: leftMargin,
                   right: 0,
-                  height: cardHeight.clamp(120.0, double.infinity),
+                  height: cardHeight.clamp(120.0, double.infinity).toDouble(),
                   child: HabitSuggestionTimetableCard(
                     suggestion: suggestion,
                     onAccept: (int years, int weeks) => _handleAcceptSuggestion(
