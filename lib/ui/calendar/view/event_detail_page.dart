@@ -5,6 +5,7 @@ import '../../../data/models/event_model.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../tasks/view/create_item_page.dart';
+import 'event_suggestions_widget.dart';
 
 class EventDetailPage extends StatelessWidget {
   final EventModel event;
@@ -193,6 +194,8 @@ class EventDetailPage extends StatelessWidget {
                                     height: 1.5,
                                   ),
                                 ),
+                                const SizedBox(height: 24),
+                                EventSuggestionsWidget(event: event),
                               ],
                             ),
                           ),

@@ -142,7 +142,7 @@ class CalendarViewModel extends BaseViewModel {
             date.month == latestDate.month &&
             date.day == latestDate.day;
       }
-
+      
       return false;
     }).toList();
   }
