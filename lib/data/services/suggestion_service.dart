@@ -104,12 +104,12 @@ class OrbitSuggestionService {
   Future<List<Suggestion>> getDailySuggestions(
       String date, UserModel? user, List<EventModel> recentEvents,
       {bool forceRegenerate = false}) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final parsedDate = DateTime.parse(date);
+    final dateStr =
+        '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
     final eventsHash = _computeEventsHash(recentEvents);
 
     final prefs = await SharedPreferences.getInstance();
-    final dateStr = '${today.year}-${today.month}-${today.day}';
     final dailyCacheKey = 'daily_sug_data_$dateStr';
     final dailyHashKey = 'daily_sug_hash_$dateStr';
 
