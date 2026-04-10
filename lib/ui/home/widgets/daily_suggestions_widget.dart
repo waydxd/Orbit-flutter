@@ -87,8 +87,10 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
 
     if (todayEvents.isNotEmpty) {
       final List<List<Suggestion>> perEventResults = await Future.wait(
-        todayEvents.map((evt) => service.getSuggestionsForEvent(evt,
-            userId: user?.id ?? '', forceRegenerate: forceRegenerate)),
+        todayEvents.map((evt) => service
+            .getSuggestionsForEvent(evt,
+                userId: user?.id ?? '', forceRegenerate: forceRegenerate)
+            .catchError((_) => <Suggestion>[])),
       );
       final List<Suggestion> allEventSuggestions =
           perEventResults.expand((sugs) => sugs).toList();
