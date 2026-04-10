@@ -104,7 +104,14 @@ class OrbitSuggestionService {
   Future<List<Suggestion>> getDailySuggestions(
       String date, UserModel? user, List<EventModel> recentEvents,
       {bool forceRegenerate = false}) async {
-    final parsedDate = DateTime.parse(date);
+    DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(date);
+    } on FormatException {
+      Logger.errorWithTag(
+          'OrbitSuggestionService', 'Invalid date format: $date, falling back to today');
+      parsedDate = DateTime.now();
+    }
     final dateStr =
         '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
     final eventsHash = _computeEventsHash(recentEvents);
