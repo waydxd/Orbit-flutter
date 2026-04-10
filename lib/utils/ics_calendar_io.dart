@@ -205,7 +205,7 @@ EventModel parsedIcsToEventModel({
   final now = DateTime.now();
   final isRecurring = parsed.rrule.isNotEmpty;
   return EventModel(
-    id: Uuid().v4(),
+    id: const Uuid().v4(),
     userId: userId,
     title: parsed.summary.isEmpty ? 'Imported event' : parsed.summary,
     description: parsed.description,

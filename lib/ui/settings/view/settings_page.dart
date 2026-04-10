@@ -76,29 +76,29 @@ class SettingsPage extends StatelessWidget {
                             title: 'Notification',
                             onTap: () => _openNotificationSettings(context),
                           ),
-                          _DividerLine(),
+                          const _DividerLine(),
                           _SettingsTile(
                             icon: Icons.access_time_rounded,
                             title: 'Time & Date',
                             onTap: () => _openTimeDateSettings(context),
                           ),
-                          _DividerLine(),
+                          const _DividerLine(),
                           _SettingsTile(
                             icon: Icons.location_on_outlined,
                             title: 'GPS',
                             onTap: () => _openGpsSettings(context),
                           ),
-                          _DividerLine(),
-                          _SettingsTile(
+                          const _DividerLine(),
+                          const _SettingsTile(
                             icon: Icons.palette_outlined,
                             title: 'Appearance',
                           ),
-                          _DividerLine(),
-                          _SettingsTile(
+                          const _DividerLine(),
+                          const _SettingsTile(
                             icon: Icons.lock_outline_rounded,
                             title: 'Privacy',
                           ),
-                          _DividerLine(),
+                          const _DividerLine(),
                           _SettingsTile(
                             icon: Icons.event_note_rounded,
                             title: 'Import / Export calendar',

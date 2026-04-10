@@ -79,8 +79,9 @@ class IntegrationValidators {
 
   /// POST /integration/webhooks — body is arbitrary JSON object (may be empty).
   static String? validateWebhookPayload(Map<String, dynamic>? body) {
-    if (body == null)
+    if (body == null) {
       return 'Webhook body is required (use an empty object {}).';
+    }
     return null;
   }
 

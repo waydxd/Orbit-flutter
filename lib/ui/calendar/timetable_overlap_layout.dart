@@ -1,4 +1,5 @@
 /// Horizontal lane assignment for overlapping intervals in a day timetable.
+library;
 
 /// Result of [layoutTimetableSegmentsForDay] for one segment.
 class TimetableSegmentLaneLayout {

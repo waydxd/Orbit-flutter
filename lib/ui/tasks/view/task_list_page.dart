@@ -80,18 +80,24 @@ class _TaskListPageState extends State<TaskListPage> {
                                 onReorder: (oldIndex, newIndex) {
                                   // Skip reorder if involving summary or completed sections
                                   const summaryCardIndex = 0;
-                                  final pendingStartIndex = 1;
+                                  const pendingStartIndex = 1;
                                   final completedHeaderIndex =
                                       pendingStartIndex + pendingTasks.length;
                                   final completedStartIndex =
                                       completedHeaderIndex + 1;
 
                                   if (oldIndex == summaryCardIndex ||
-                                      newIndex == summaryCardIndex) return;
+                                      newIndex == summaryCardIndex) {
+                                    return;
+                                  }
                                   if (oldIndex == completedHeaderIndex ||
-                                      newIndex == completedHeaderIndex) return;
+                                      newIndex == completedHeaderIndex) {
+                                    return;
+                                  }
                                   if (oldIndex >= completedStartIndex ||
-                                      newIndex >= completedStartIndex) return;
+                                      newIndex >= completedStartIndex) {
+                                    return;
+                                  }
 
                                   // Adjust indices since index 0 is summary card
                                   final int oldTaskIndex =
@@ -125,7 +131,7 @@ class _TaskListPageState extends State<TaskListPage> {
                                   }
 
                                   // Pending tasks
-                                  final pendingStartIndex = 1;
+                                  const pendingStartIndex = 1;
                                   if (index >= pendingStartIndex &&
                                       index <
                                           pendingStartIndex +
@@ -553,8 +559,9 @@ class _TaskListPageState extends State<TaskListPage> {
           const SizedBox(width: 10),
           GestureDetector(
             onTap: () async {
+              final calendarVm = context.read<CalendarViewModel>();
               if (await _showRevertConfirmation(context)) {
-                _markTaskIncomplete(task.id, context.read<CalendarViewModel>());
+                _markTaskIncomplete(task.id, calendarVm);
               }
             },
             child: Container(
@@ -734,7 +741,7 @@ class _TaskListPageState extends State<TaskListPage> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(
                               color: AppColors.textSecondary,
@@ -852,7 +859,7 @@ class _TaskListPageState extends State<TaskListPage> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(
                               color: AppColors.textSecondary,
@@ -970,7 +977,7 @@ class _TaskListPageState extends State<TaskListPage> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(
                               color: AppColors.textSecondary,
