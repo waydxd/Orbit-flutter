@@ -4,6 +4,7 @@ import '../models/event_model.dart';
 import '../models/user_model.dart';
 import '../../generated/protos/suggestion.pbgrpc.dart';
 import '../../config/app_config.dart';
+import '../../config/environment.dart';
 import '../../data/services/local_storage_service.dart';
 import '../../utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,9 +20,13 @@ class OrbitSuggestionService {
 
   OrbitSuggestionService._internal() {
     _channel = ClientChannel(
-      'wayd.zapto.org',
-      port: 443,
-      options: const ChannelOptions(credentials: ChannelCredentials.secure()),
+      EnvironmentConfig.grpcHost,
+      port: EnvironmentConfig.grpcPort,
+      options: ChannelOptions(
+        credentials: EnvironmentConfig.grpcSecure
+            ? const ChannelCredentials.secure()
+            : const ChannelCredentials.insecure(),
+      ),
     );
     _stub = SuggestionServiceClient(_channel);
   }

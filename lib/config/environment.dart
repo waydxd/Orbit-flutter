@@ -59,6 +59,42 @@ class EnvironmentConfig {
     }
   }
 
+  /// gRPC host for suggestion service
+  static String get grpcHost {
+    switch (_environment) {
+      case Environment.local:
+        return _localHost;
+      case Environment.development:
+      case Environment.staging:
+      case Environment.production:
+        return 'wayd.zapto.org';
+    }
+  }
+
+  /// gRPC port for suggestion service
+  static int get grpcPort {
+    switch (_environment) {
+      case Environment.local:
+        return 50051;
+      case Environment.development:
+      case Environment.staging:
+      case Environment.production:
+        return 443;
+    }
+  }
+
+  /// Whether to use TLS for the gRPC channel
+  static bool get grpcSecure {
+    switch (_environment) {
+      case Environment.local:
+        return false;
+      case Environment.development:
+      case Environment.staging:
+      case Environment.production:
+        return true;
+    }
+  }
+
   static bool get isDebug =>
       _environment == Environment.local ||
       _environment == Environment.development;
