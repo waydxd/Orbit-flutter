@@ -103,6 +103,15 @@ class OrbitSuggestionService {
     } catch (e) {
       Logger.errorWithTag(
           'OrbitSuggestionService', 'Error calling getSuggestionsForEvent: $e');
+      
+      // Fallback to cache on error (e.g. Rate Limit 429)
+      final cachedData = prefs.getString(cacheKey);
+      if (cachedData != null) {
+        try {
+          final List<dynamic> strList = jsonDecode(cachedData);
+          return strList.map((e) => Suggestion.fromJson(e as String)).toList();
+        } catch (_) {}
+      }
       return [];
     }
   }
@@ -114,8 +123,7 @@ class OrbitSuggestionService {
     try {
       parsedDate = DateFormat('yyyy-MM-dd').parse(date);
     } on FormatException {
-      Logger.errorWithTag(
-          'OrbitSuggestionService',
+      Logger.errorWithTag('OrbitSuggestionService',
           'Invalid date format: $date. Expected format: yyyy-MM-dd. Falling back to today');
       parsedDate = DateTime.now();
     }
@@ -177,6 +185,15 @@ class OrbitSuggestionService {
     } catch (e) {
       Logger.errorWithTag(
           'OrbitSuggestionService', 'Error calling getDailySuggestions: $e');
+          
+      // Fallback to daily cache on error
+      final cachedData = prefs.getString(dailyCacheKey);
+      if (cachedData != null) {
+        try {
+          final List<dynamic> strList = jsonDecode(cachedData);
+          return strList.map((e) => Suggestion.fromJson(e as String)).toList();
+        } catch (_) {}
+      }
       return [];
     }
   }

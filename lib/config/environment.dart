@@ -75,7 +75,7 @@ class EnvironmentConfig {
   static int get grpcPort {
     switch (_environment) {
       case Environment.local:
-        return 50051;
+        return 50056;
       case Environment.development:
       case Environment.staging:
       case Environment.production:
