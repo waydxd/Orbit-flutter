@@ -103,7 +103,7 @@ class OrbitSuggestionService {
     } catch (e) {
       Logger.errorWithTag(
           'OrbitSuggestionService', 'Error calling getSuggestionsForEvent: $e');
-      
+
       // Fallback to cache on error (e.g. Rate Limit 429)
       final cachedData = prefs.getString(cacheKey);
       if (cachedData != null) {
@@ -185,7 +185,7 @@ class OrbitSuggestionService {
     } catch (e) {
       Logger.errorWithTag(
           'OrbitSuggestionService', 'Error calling getDailySuggestions: $e');
-          
+
       // Fallback to daily cache on error
       final cachedData = prefs.getString(dailyCacheKey);
       if (cachedData != null) {
