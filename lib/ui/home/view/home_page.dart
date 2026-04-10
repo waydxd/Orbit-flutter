@@ -6,7 +6,7 @@ import '../../settings/view/settings_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
 import 'package:intl/intl.dart';
-import '../widgets/daily_suggestions_widget.dart';
+import '../../home/widgets/daily_suggestions_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

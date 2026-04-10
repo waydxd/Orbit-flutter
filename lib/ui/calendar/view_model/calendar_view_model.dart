@@ -4,6 +4,7 @@ import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/habit_suggestion.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/suggestion_service.dart';
 import '../../../utils/logger.dart';
 
 class CalendarViewModel extends BaseViewModel {
@@ -128,7 +129,7 @@ class CalendarViewModel extends BaseViewModel {
           latestEvent.startTime.year,
           latestEvent.startTime.month,
           latestEvent.startTime.day,
-        ).add(const Duration(days: 7));
+        );
       } else if (s.suggestedStartTime != null) {
         latestDate = DateTime(
           s.suggestedStartTime!.year,
@@ -142,8 +143,8 @@ class CalendarViewModel extends BaseViewModel {
             date.month == latestDate.month &&
             date.day == latestDate.day;
       }
-      
-      return false;
+
+      return date.weekday == s.dayOfWeekIndex;
     }).toList();
   }
 
@@ -189,6 +190,13 @@ class CalendarViewModel extends BaseViewModel {
     final result = await executeAsync(() async {
       await _calendarRepository.createEvent(event);
       await fetchAll(userId: event.userId); // Refresh data after creation
+
+      // Start background trigger for generating new event suggestions
+      OrbitSuggestionService().getSuggestionsForEvent(event,
+          userId: event.userId, forceRegenerate: true);
+      // Clear daily cache so it regenerates on home page
+      OrbitSuggestionService().clearDailySuggestionsCache();
+
       return true;
     });
 
@@ -213,6 +221,13 @@ class CalendarViewModel extends BaseViewModel {
     final result = await executeAsync(() async {
       await _calendarRepository.updateEvent(event);
       await fetchAll(userId: event.userId); // Refresh data after update
+
+      // Start background trigger for regenerating event suggestions
+      OrbitSuggestionService().getSuggestionsForEvent(event,
+          userId: event.userId, forceRegenerate: true);
+      // Clear daily cache so it regenerates on home page
+      OrbitSuggestionService().clearDailySuggestionsCache();
+
       return true;
     });
     if (result == null && error != null) {

@@ -8,7 +8,6 @@ import 'ui/core/widgets/orbit_animation.dart';
 import 'config/app_config.dart';
 import 'ui/auth/view_model/auth_view_model.dart';
 import 'ui/calendar/view_model/calendar_view_model.dart';
-import 'data/view_models/suggestions_view_model.dart';
 import 'ui/auth/view/login_page.dart';
 import 'utils/constants.dart';
 
@@ -22,7 +21,6 @@ class OrbitApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => CalendarViewModel()),
-        ChangeNotifierProvider(create: (_) => SuggestionsViewModel()),
       ],
       child: MaterialApp(
         title: AppConfig.appName,

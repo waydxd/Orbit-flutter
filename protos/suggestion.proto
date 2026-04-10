@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package suggestion;
+
+option go_package = "github.com/user/orbit-suggestions/gen/suggestion";
+
+// SuggestionType categorises the kind of suggestion provided.
+enum SuggestionType {
+  SUGGESTION_TYPE_UNSPECIFIED = 0;
+  SUGGESTION_TYPE_TRANSPORTATION = 1;
+  SUGGESTION_TYPE_ATTIRE = 2;
+  SUGGESTION_TYPE_PREPARATION = 3;
+  SUGGESTION_TYPE_GENERAL = 4;
+}
+
+// EventRequest contains the metadata of a calendar event for which
+// the client is requesting AI-driven suggestions.
+message EventRequest {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  string description = 4;
+  string start_time = 5;
+  string end_time = 6;
+  string location = 7;
+  repeated string hashtags = 8;
+  string created_at = 9;
+  string updated_at = 10;
+
+  // Optional: the user's current location for routing suggestions.
+  string user_location = 11;
+}
+
+// UserRequest contains the user's profile information.
+message UserRequest {
+  string id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string username = 5;
+  string profile_picture = 6;
+  string region = 7;
+  string timezone = 8;
+  string gender = 9;
+  string birth_date = 10;
+  bool email_verified = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}
+
+// DailySuggestionRequest contains info for generating full day recommendations based on past info.
+message DailySuggestionRequest {
+  UserRequest user = 1;
+  string date = 2; // e.g. "2025-03-15"
+  // Previous recent events to infer user preferences/activities
+  repeated EventRequest recent_events = 3;
+}
+
+// Suggestion is a single actionable recommendation.
+message Suggestion {
+  SuggestionType type = 1;
+  string title = 2;
+  string description = 3;
+  // Arbitrary key-value metadata (e.g. route_url, temperature, etc.)
+  map<string, string> metadata = 4;
+}
+
+// SuggestionResponse wraps the list of suggestions returned to the client.
+message SuggestionResponse {
+  repeated Suggestion suggestions = 1;
+  // The event_id that was analyzed, echoed back for correlation.
+  string id = 2;
+}
+
+// DailySuggestionResponse wraps the list of suggestions for a day.
+message DailySuggestionResponse {
+  repeated Suggestion suggestions = 1;
+  string date = 2;
+}
+
+// SuggestionService is the gRPC service for AI-driven event suggestions.
+service SuggestionService {
+  // GetSuggestions analyzes an event and returns contextual suggestions.
+  rpc GetSuggestions(EventRequest) returns (SuggestionResponse);
+
+  // GetDailySuggestions analyzes past activities and returns daily suggestions.
+  rpc GetDailySuggestions(DailySuggestionRequest) returns (DailySuggestionResponse);
+}
