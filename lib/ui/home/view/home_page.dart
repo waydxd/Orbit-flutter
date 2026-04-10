@@ -87,28 +87,25 @@ class _HomePageState extends State<HomePage> {
                           child: _buildEmptyStateCard('No upcoming items!'),
                         )
                       : UpcomingCarousel(
-                          items: combinedUpcoming
-                              .take(5)
-                              .map((item) {
-                                if (item is TaskModel) {
-                                  return CardStackItem.fromTask(
-                                    id: item.id,
-                                    title: item.title,
-                                    description: item.description,
-                                    dueDate: item.dueDate,
-                                  );
-                                } else {
-                                  final event = item as EventModel;
-                                  return CardStackItem.fromEvent(
-                                    id: event.id,
-                                    title: event.title,
-                                    description: event.description,
-                                    startTime: event.startTime,
-                                    hashtags: event.hashtags,
-                                  );
-                                }
-                              })
-                              .toList(),
+                          items: combinedUpcoming.take(5).map((item) {
+                            if (item is TaskModel) {
+                              return CardStackItem.fromTask(
+                                id: item.id,
+                                title: item.title,
+                                description: item.description,
+                                dueDate: item.dueDate,
+                              );
+                            } else {
+                              final event = item as EventModel;
+                              return CardStackItem.fromEvent(
+                                id: event.id,
+                                title: event.title,
+                                description: event.description,
+                                startTime: event.startTime,
+                                hashtags: event.hashtags,
+                              );
+                            }
+                          }).toList(),
                           viewportFraction: 0.88,
                         ),
 

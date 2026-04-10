@@ -58,7 +58,8 @@ class IntegrationValidators {
   }
 
   /// Optional `start_time` / `end_time` for GET export (RFC3339).
-  static String? validateExportRfc3339Optional(String? value, String fieldName) {
+  static String? validateExportRfc3339Optional(
+      String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) return null;
     if (DateTime.tryParse(value.trim()) == null) {
       return '$fieldName must be a valid ISO-8601 / RFC3339 date-time.';
@@ -78,7 +79,8 @@ class IntegrationValidators {
 
   /// POST /integration/webhooks — body is arbitrary JSON object (may be empty).
   static String? validateWebhookPayload(Map<String, dynamic>? body) {
-    if (body == null) return 'Webhook body is required (use an empty object {}).';
+    if (body == null)
+      return 'Webhook body is required (use an empty object {}).';
     return null;
   }
 

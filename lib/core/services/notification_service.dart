@@ -47,8 +47,8 @@ class NotificationService {
 
     // Request iOS permissions explicitly after initialization
     if (Platform.isIOS) {
-      final iosImpl = flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
+      final iosImpl =
+          flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
               IOSFlutterLocalNotificationsPlugin>();
       await iosImpl?.requestPermissions(
         alert: true,
@@ -59,8 +59,8 @@ class NotificationService {
 
     // Android: Request SCHEDULE_EXACT_ALARM permission for Android 12+
     if (Platform.isAndroid) {
-      final androidImpl = flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
+      final androidImpl =
+          flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       await androidImpl?.requestNotificationsPermission();
     }

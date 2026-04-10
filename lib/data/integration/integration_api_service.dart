@@ -7,7 +7,8 @@ import 'integration_validators.dart';
 ///
 /// Use this instead of raw [ApiClient] for integration routes so payloads match OpenAPI.
 class IntegrationApiService {
-  IntegrationApiService({ApiClient? apiClient}) : _api = apiClient ?? ApiClient();
+  IntegrationApiService({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient();
 
   final ApiClient _api;
 
@@ -57,7 +58,8 @@ class IntegrationApiService {
   }
 
   /// POST /integration/external/disconnect
-  Future<Response<T>> postExternalDisconnect<T>({required String service}) async {
+  Future<Response<T>> postExternalDisconnect<T>(
+      {required String service}) async {
     _throwIfInvalid(
         IntegrationValidators.validateExternalDisconnect(service: service));
     return _api.post<T>(
@@ -80,8 +82,8 @@ class IntegrationApiService {
     _throwIfInvalid(IntegrationValidators.validateExportFormat(format));
     _throwIfInvalid(IntegrationValidators.validateExportRfc3339Optional(
         startTime, 'start_time'));
-    _throwIfInvalid(
-        IntegrationValidators.validateExportRfc3339Optional(endTime, 'end_time'));
+    _throwIfInvalid(IntegrationValidators.validateExportRfc3339Optional(
+        endTime, 'end_time'));
 
     final query = <String, dynamic>{'format': format.trim().toLowerCase()};
     if (startTime != null && startTime.trim().isNotEmpty) {

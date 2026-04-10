@@ -147,7 +147,8 @@ Professional and polished look, shallow depth of field, warm neutral tones.'''
   /// Requests a cover image URL for [event].
   Future<Txt2ImgCoverResult> requestCoverUrl(EventModel event) async {
     if (!EnvironmentConfig.shouldClientAttemptTxt2Img) {
-      Logger.debugWithTag('Txt2Img', 'Image generation disabled (TXT2IMG_USE_CORE_PROXY=false, no direct URL)');
+      Logger.debugWithTag('Txt2Img',
+          'Image generation disabled (TXT2IMG_USE_CORE_PROXY=false, no direct URL)');
       return Txt2ImgCoverResult.skipped();
     }
 
@@ -177,13 +178,16 @@ Professional and polished look, shallow depth of field, warm neutral tones.'''
 
       final data = _coerceMap(response.data);
       if (data == null) {
-        Logger.errorWithTag('Txt2Img', 'Success HTTP ${response.statusCode} but body is not a JSON object');
-        return Txt2ImgCoverResult.failure('Unexpected response from image service');
+        Logger.errorWithTag('Txt2Img',
+            'Success HTTP ${response.statusCode} but body is not a JSON object');
+        return Txt2ImgCoverResult.failure(
+            'Unexpected response from image service');
       }
 
       final imagesRaw = data['images'];
       if (imagesRaw is! List || imagesRaw.isEmpty) {
-        Logger.warningWithTag('Txt2Img', '200 response without images[] keys=${data.keys.toList()}');
+        Logger.warningWithTag('Txt2Img',
+            '200 response without images[] keys=${data.keys.toList()}');
         return Txt2ImgCoverResult.failure('No image returned');
       }
 

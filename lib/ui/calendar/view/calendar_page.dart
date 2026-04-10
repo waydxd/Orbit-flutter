@@ -698,9 +698,8 @@ class _CalendarPageState extends State<CalendarPage>
       cellMargin: isWeek
           ? const EdgeInsets.symmetric(horizontal: 6, vertical: 12)
           : const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-      cellPadding: isWeek
-          ? const EdgeInsets.symmetric(vertical: 4)
-          : EdgeInsets.zero,
+      cellPadding:
+          isWeek ? const EdgeInsets.symmetric(vertical: 4) : EdgeInsets.zero,
       tablePadding: isWeek
           ? const EdgeInsets.fromLTRB(0, 8, 0, 10)
           : const EdgeInsets.symmetric(vertical: 2),
@@ -717,7 +716,8 @@ class _CalendarPageState extends State<CalendarPage>
           ? const EdgeInsets.symmetric(vertical: 14)
           : const EdgeInsets.symmetric(vertical: 5),
       leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.primary),
-      rightChevronIcon: const Icon(Icons.chevron_right, color: AppColors.primary),
+      rightChevronIcon:
+          const Icon(Icons.chevron_right, color: AppColors.primary),
     );
 
     return TableCalendar(
@@ -760,8 +760,7 @@ class _CalendarPageState extends State<CalendarPage>
       calendarStyle: calendarStyle,
       // Custom builder for markers (dots)
       calendarBuilders: CalendarBuilders(
-        markerBuilder: (context, date, events) =>
-            _calendarMarkerLayout(events),
+        markerBuilder: (context, date, events) => _calendarMarkerLayout(events),
       ),
     );
   }
@@ -1186,12 +1185,10 @@ class _TimelineDayRow extends StatelessWidget {
               ...List.generate(segments.length, (i) {
                 final seg = segments[i];
                 final lay = laneLayouts[i];
-                final gapTotal =
-                    _kTimetableLaneGap * (lay.columnCount - 1);
-                final slotWidth =
-                    (usableWidth - gapTotal) / lay.columnCount;
-                final leftPx = leftMargin +
-                    lay.column * (slotWidth + _kTimetableLaneGap);
+                final gapTotal = _kTimetableLaneGap * (lay.columnCount - 1);
+                final slotWidth = (usableWidth - gapTotal) / lay.columnCount;
+                final leftPx =
+                    leftMargin + lay.column * (slotWidth + _kTimetableLaneGap);
                 final topPx =
                     (seg.start.difference(dayMidnight).inMinutes / 60.0) *
                             _kTimetableHourHeight +
@@ -1233,7 +1230,8 @@ class _TimelineDayRow extends StatelessWidget {
                 final startH = suggestion.startHour;
                 final duration = suggestion.endHour - startH;
                 final cardHeight =
-                    (duration > 0 ? duration : 0.5) * _kTimetableHourHeight - 20;
+                    (duration > 0 ? duration : 0.5) * _kTimetableHourHeight -
+                        20;
                 return Positioned(
                   top: startH * _kTimetableHourHeight + 10,
                   left: leftMargin,
@@ -1246,8 +1244,7 @@ class _TimelineDayRow extends StatelessWidget {
                       years,
                       weeks,
                     ),
-                    onDismiss: () =>
-                        onDismissHabitSuggestion(suggestion.id),
+                    onDismiss: () => onDismissHabitSuggestion(suggestion.id),
                   ),
                 );
               }),

@@ -237,9 +237,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
   /// Heuristic: stored as local midnight → end-of-day (23:59).
   bool _inferAllDayFromStoredRange(DateTime start, DateTime end) {
-    final startOfDay = start.hour == 0 &&
-        start.minute == 0 &&
-        start.second == 0;
+    final startOfDay =
+        start.hour == 0 && start.minute == 0 && start.second == 0;
     final endOfDay = end.hour == 23 && end.minute == 59;
     return startOfDay && endOfDay && !end.isBefore(start);
   }
@@ -584,10 +583,10 @@ class _CreateItemPageState extends State<CreateItemPage> {
         }
       } else {
         _isAllDay = false;
-        _startTime = _savedStartTimeBeforeAllDay ??
-            const TimeOfDay(hour: 9, minute: 0);
-        _endTime = _savedEndTimeBeforeAllDay ??
-            const TimeOfDay(hour: 10, minute: 0);
+        _startTime =
+            _savedStartTimeBeforeAllDay ?? const TimeOfDay(hour: 9, minute: 0);
+        _endTime =
+            _savedEndTimeBeforeAllDay ?? const TimeOfDay(hour: 10, minute: 0);
         _savedStartTimeBeforeAllDay = null;
         _savedEndTimeBeforeAllDay = null;
         final startDt = DateTime(
@@ -684,7 +683,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
               ],
             ),
           ),
-          Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.shade200),
+          Divider(
+              height: 1,
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey.shade200),
           GestureDetector(
             onTap: _selectStartDateTime,
             behavior: HitTestBehavior.opaque,
@@ -714,12 +717,17 @@ class _CreateItemPageState extends State<CreateItemPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
+                  Icon(Icons.chevron_right,
+                      color: Colors.grey.shade400, size: 22),
                 ],
               ),
             ),
           ),
-          Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.shade200),
+          Divider(
+              height: 1,
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey.shade200),
           GestureDetector(
             onTap: _selectEndDateTime,
             behavior: HitTestBehavior.opaque,
@@ -749,7 +757,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
+                  Icon(Icons.chevron_right,
+                      color: Colors.grey.shade400, size: 22),
                 ],
               ),
             ),
@@ -794,8 +803,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Future<void> _selectRepeatUntilDate() async {
     final startDay =
         DateTime(_startDate.year, _startDate.month, _startDate.day);
-    final initial =
-        _repeatUntilDate ?? startDay.add(const Duration(days: 30));
+    final initial = _repeatUntilDate ?? startDay.add(const Duration(days: 30));
     await _showDateTimePicker(
       context,
       initialDate: initial,
@@ -997,7 +1005,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     int? createdEventCount;
 
     try {
-        if (isEvent) {
+      if (isEvent) {
         final DateTime start;
         final DateTime end;
         if (_isAllDay) {
@@ -1043,8 +1051,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         }
 
         final freq = EventRecurrence.frequencyFromLabel(_repeatFrequencyLabel);
-        final startCal =
-            DateTime(start.year, start.month, start.day);
+        final startCal = DateTime(start.year, start.month, start.day);
         if (freq != RecurrenceFrequency.never) {
           if (_repeatUntilDate == null) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1700,8 +1707,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 itemBuilder: (BuildContext context, int index) {
                   final String option = options.elementAt(index);
                   return ListTile(
-                    leading:
-                        const Icon(Icons.location_on, color: Colors.grey),
+                    leading: const Icon(Icons.location_on, color: Colors.grey),
                     title: Text(option),
                     onTap: () {
                       onSelected(option);

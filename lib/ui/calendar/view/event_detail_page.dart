@@ -341,8 +341,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
   Future<void> _handleDelete(BuildContext context) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final viewModel =
-        Provider.of<CalendarViewModel>(context, listen: false);
+    final viewModel = Provider.of<CalendarViewModel>(context, listen: false);
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -529,8 +528,7 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
 
   Future<void> _bootstrap() async {
     try {
-      final fromServer =
-          await _calendarRepo.listEventImages(widget.event.id);
+      final fromServer = await _calendarRepo.listEventImages(widget.event.id);
       if (!mounted) return;
       if (fromServer.isNotEmpty) {
         setState(() {
@@ -714,8 +712,7 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
         );
       }
       try {
-        final fromServer =
-            await _calendarRepo.listEventImages(widget.event.id);
+        final fromServer = await _calendarRepo.listEventImages(widget.event.id);
         if (!mounted) return;
         if (fromServer.isNotEmpty) {
           setState(() => _displayUrls = _newestFirstUrls(fromServer));

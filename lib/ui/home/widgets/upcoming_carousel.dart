@@ -108,7 +108,8 @@ class _UpcomingCarouselState extends State<UpcomingCarousel> {
                     );
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                     child: _UpcomingCard(
                       item: widget.items[index],
                       height: cardHeight,

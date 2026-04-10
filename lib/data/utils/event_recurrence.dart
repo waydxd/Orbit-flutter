@@ -341,16 +341,14 @@ abstract final class EventRecurrence {
         final weekdays = parsed.byWeekdays.isEmpty
             ? <int>[event.startTime.weekday]
             : parsed.byWeekdays;
-        final startCal =
-            DateTime.utc(startD.year, startD.month, startD.day);
+        final startCal = DateTime.utc(startD.year, startD.month, startD.day);
         final dayCal = DateTime.utc(dayD.year, dayD.month, dayD.day);
         if (!weekdays.contains(dayCal.weekday)) return false;
         final startWeekMonday =
             startCal.subtract(Duration(days: startCal.weekday - 1));
         final dayWeekMonday =
             dayCal.subtract(Duration(days: dayCal.weekday - 1));
-        final weeks =
-            dayWeekMonday.difference(startWeekMonday).inDays ~/ 7;
+        final weeks = dayWeekMonday.difference(startWeekMonday).inDays ~/ 7;
         final weeklyOk = weeks >= 0 && weeks % interval == 0;
         return weeklyOk;
       case RecurrenceFrequency.monthly:

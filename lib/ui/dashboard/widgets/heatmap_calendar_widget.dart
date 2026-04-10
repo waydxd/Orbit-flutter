@@ -111,8 +111,7 @@ class HeatmapCalendarWidget extends StatelessWidget {
 
     if (record != null && record.totalDuration > 0 && maxMinutes > 0) {
       final dominantCategory = record.dominantCategory;
-      final baseColor =
-          hashtagDreamColor(dominantCategory ?? 'Other');
+      final baseColor = hashtagDreamColor(dominantCategory ?? 'Other');
 
       intensity = record.totalDuration / maxMinutes;
       // Clamp intensity between 0 and 1 just in case

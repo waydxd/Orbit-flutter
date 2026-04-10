@@ -58,7 +58,8 @@ void main() {
   });
 
   group('EventRecurrence.occursOnDay', () {
-    test('weekly expands from rule even when isRecurring is false (bad payload)',
+    test(
+        'weekly expands from rule even when isRecurring is false (bad payload)',
         () {
       final start = DateTime(2025, 6, 2, 10, 0);
       final enc = EventRecurrence.encode(

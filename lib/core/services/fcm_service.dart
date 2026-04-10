@@ -10,7 +10,8 @@ import '../../utils/logger.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  Logger.infoWithTag('FCM', 'Background message received: ${message.messageId}');
+  Logger.infoWithTag(
+      'FCM', 'Background message received: ${message.messageId}');
 }
 
 /// Manages Firebase Cloud Messaging lifecycle: token registration, foreground
@@ -232,9 +233,9 @@ class FcmService {
     if (!_hasDefaultFirebaseApp) return;
     try {
       final token = await _messaging.getToken().timeout(
-        _getTokenTimeout,
-        onTimeout: () => null,
-      );
+            _getTokenTimeout,
+            onTimeout: () => null,
+          );
       if (token != null) {
         await _apiClient!.delete('/fcm/token', data: {'token': token});
         Logger.infoWithTag('FCM', 'Token unregistered from backend');

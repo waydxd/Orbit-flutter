@@ -78,8 +78,7 @@ class CalendarViewModel extends BaseViewModel {
         _appSettings = appSettingsService ?? AppSettingsService() {
     final client = apiClient ?? ApiClient();
     _calendarRepository = calendarRepository ?? CalendarRepository(client);
-    _pushApi =
-        pushNotificationApiService ?? PushNotificationApiService(client);
+    _pushApi = pushNotificationApiService ?? PushNotificationApiService(client);
   }
 
   /// Registers (or refreshes) the server-side FCM reminder at 15 minutes before [event] start.
@@ -111,7 +110,8 @@ class CalendarViewModel extends BaseViewModel {
   Future<void> _scheduleTaskNotification(TaskModel task) async {
     if (task.dueDate == null || task.completed) return;
 
-    final notificationTime = task.dueDate!.subtract(const Duration(minutes: 30));
+    final notificationTime =
+        task.dueDate!.subtract(const Duration(minutes: 30));
     if (notificationTime.isBefore(DateTime.now())) return;
 
     // Use task id hash as notification id for easy lookup/cancellation later.

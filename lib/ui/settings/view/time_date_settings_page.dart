@@ -145,8 +145,8 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                       backgroundColor:
                                           Colors.white.withValues(alpha: 0.7),
                                       side: BorderSide(
-                                        color:
-                                            AppColors.grey300.withValues(alpha: 0.9),
+                                        color: AppColors.grey300
+                                            .withValues(alpha: 0.9),
                                       ),
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 14,
@@ -157,8 +157,8 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                     ),
                                     child: const Text(
                                       'Use system default',
-                                      style:
-                                          TextStyle(color: AppColors.textPrimary),
+                                      style: TextStyle(
+                                          color: AppColors.textPrimary),
                                     ),
                                   ),
                                 ),
@@ -269,4 +269,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-

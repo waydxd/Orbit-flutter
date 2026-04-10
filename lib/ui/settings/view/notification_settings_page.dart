@@ -287,4 +287,3 @@ class _HintCard extends StatelessWidget {
     );
   }
 }
-

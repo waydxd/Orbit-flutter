@@ -152,10 +152,12 @@ class _GpsSettingsPageState extends State<GpsSettingsPage> {
                             _StatusRow(
                               label: 'Permission',
                               value: _permissionLabel(_permission),
-                              valueColor: (_permission == LocationPermission.always ||
-                                      _permission == LocationPermission.whileInUse)
-                                  ? AppColors.success
-                                  : AppColors.error,
+                              valueColor:
+                                  (_permission == LocationPermission.always ||
+                                          _permission ==
+                                              LocationPermission.whileInUse)
+                                      ? AppColors.success
+                                      : AppColors.error,
                             ),
                             const SizedBox(height: 14),
                             Row(
@@ -171,8 +173,8 @@ class _GpsSettingsPageState extends State<GpsSettingsPage> {
                                       backgroundColor:
                                           Colors.white.withValues(alpha: 0.7),
                                       side: BorderSide(
-                                        color:
-                                            AppColors.grey300.withValues(alpha: 0.9),
+                                        color: AppColors.grey300
+                                            .withValues(alpha: 0.9),
                                       ),
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 14,
@@ -183,8 +185,8 @@ class _GpsSettingsPageState extends State<GpsSettingsPage> {
                                     ),
                                     child: const Text(
                                       'Refresh status',
-                                      style:
-                                          TextStyle(color: AppColors.textPrimary),
+                                      style: TextStyle(
+                                          color: AppColors.textPrimary),
                                     ),
                                   ),
                                 ),
@@ -363,4 +365,3 @@ class _StatusRow extends StatelessWidget {
     );
   }
 }
-

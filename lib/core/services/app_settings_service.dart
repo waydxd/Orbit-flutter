@@ -70,4 +70,3 @@ class AppSettingsService {
     await prefs.setBool(_keyGpsTrackingEnabled, enabled);
   }
 }
-

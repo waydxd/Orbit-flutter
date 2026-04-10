@@ -85,8 +85,7 @@ String? _lineValue(String block, String propPrefix) {
     if (colon <= 0) continue;
     final namePart = trimmed.substring(0, colon).toUpperCase();
     final value = trimmed.substring(colon + 1);
-    if (namePart == propPrefix ||
-        namePart.startsWith('$propPrefix;')) {
+    if (namePart == propPrefix || namePart.startsWith('$propPrefix;')) {
       return value.replaceAll('\\n', '\n').replaceAll('\\,', ',');
     }
   }

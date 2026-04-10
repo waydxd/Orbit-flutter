@@ -279,7 +279,8 @@ class CalendarRepository {
       }
       throw Exception('Failed to upload event image: ${response.statusCode}');
     } catch (e) {
-      Logger.errorWithTag('CalendarRepository', 'upload event image failed: $e');
+      Logger.errorWithTag(
+          'CalendarRepository', 'upload event image failed: $e');
       rethrow;
     }
   }

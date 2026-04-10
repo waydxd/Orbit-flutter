@@ -36,10 +36,7 @@ class EventModel extends BaseModel {
   static List<String> _parseImageUrls(dynamic v) {
     if (v == null) return const [];
     if (v is List) {
-      return v
-          .map((e) => e.toString())
-          .where((s) => s.isNotEmpty)
-          .toList();
+      return v.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
     }
     return const [];
   }
