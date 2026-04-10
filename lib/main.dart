@@ -44,7 +44,6 @@ void main() async {
     );
   }
 
-  // Set environment
   EnvironmentConfig.setEnvironment(Environment.development);
 
   // Initialize local storage

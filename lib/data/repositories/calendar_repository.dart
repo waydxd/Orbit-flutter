@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../models/event_model.dart';
+import '../models/habit_suggestion.dart';
 import '../models/task_model.dart';
 import '../services/api_client.dart';
 import '../services/txt2img_service.dart';
@@ -324,6 +325,103 @@ class CalendarRepository {
       }
     } catch (e) {
       Logger.errorWithTag('CalendarRepository', 'Failed to delete task: $e');
+      rethrow;
+    }
+  }
+
+  // ===== Habit Tracking Methods =====
+
+  /// Get pending habit suggestions for the authenticated user.
+  /// UserID is deduced from the bearer token on the backend.
+  Future<List<HabitSuggestion>> getHabitSuggestions() async {
+    try {
+      final response = await _apiClient.get('/habit/suggestions');
+
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'GET /habit/suggestions status: ${response.statusCode}',
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final dynamic rawData = response.data;
+        if (rawData is List) {
+          Logger.infoWithTag(
+            'CalendarRepository',
+            'Received ${rawData.length} habit suggestions',
+          );
+          return rawData
+              .map((json) =>
+                  HabitSuggestion.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      Logger.errorWithTag(
+        'CalendarRepository',
+        'Failed to get habit suggestions: $e',
+      );
+      // Return empty list instead of rethrowing so that the habit suggestions
+      // failure does not break the entire fetchAll (events + tasks + suggestions).
+      return [];
+    }
+  }
+
+  /// Accept a habit suggestion and create a recurring event.
+  Future<AcceptSuggestionResponse> acceptHabitSuggestion(String id,
+      {int? years, int? weeks}) async {
+    try {
+      final Map<String, dynamic> data = {};
+      if (years != null) data['years'] = years;
+      if (weeks != null) data['weeks'] = weeks;
+
+      final response = await _apiClient.post(
+        '/habit/suggestions/$id/accept',
+        data: data.isNotEmpty ? data : null,
+      );
+
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'POST /habit/suggestions/$id/accept status: ${response.statusCode}',
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return AcceptSuggestionResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+      }
+      throw Exception(
+        'Failed to accept habit suggestion: ${response.statusCode}',
+      );
+    } catch (e) {
+      Logger.errorWithTag(
+        'CalendarRepository',
+        'Failed to accept habit suggestion: $e',
+      );
+      rethrow;
+    }
+  }
+
+  /// Reject a habit suggestion.
+  Future<void> rejectHabitSuggestion(String id) async {
+    try {
+      final response = await _apiClient.post('/habit/suggestions/$id/reject');
+
+      Logger.infoWithTag(
+        'CalendarRepository',
+        'POST /habit/suggestions/$id/reject status: ${response.statusCode}',
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to reject habit suggestion: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      Logger.errorWithTag(
+        'CalendarRepository',
+        'Failed to reject habit suggestion: $e',
+      );
       rethrow;
     }
   }

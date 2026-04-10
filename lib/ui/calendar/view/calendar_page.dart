@@ -8,8 +8,10 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/themes/hashtag_palette.dart';
 import '../../../data/models/event_model.dart';
+import '../../../data/models/habit_suggestion.dart';
 import '../../../data/utils/event_recurrence.dart';
 import '../timetable_overlap_layout.dart';
+import '../widgets/habit_suggestion_timetable_card.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import 'event_detail_page.dart';
@@ -983,6 +985,63 @@ class _CalendarPageState extends State<CalendarPage>
     );
   }
 
+  Future<void> _handleAcceptHabitSuggestion(
+    CalendarViewModel viewModel,
+    String suggestionId,
+    int years,
+    int weeks,
+  ) async {
+    final userId = context.read<AuthViewModel>().currentUser?.id;
+    final response = await viewModel.acceptHabitSuggestion(
+      suggestionId,
+      userId: userId,
+      years: years,
+      weeks: weeks,
+    );
+    if (!mounted) return;
+    if (response != null && response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (viewModel.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${viewModel.error}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDismissHabitSuggestion(
+    CalendarViewModel viewModel,
+    String suggestionId,
+  ) async {
+    final success = await viewModel.dismissHabitSuggestion(suggestionId);
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Suggestion dismissed'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (viewModel.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${viewModel.error}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   Widget _buildTaskList(CalendarViewModel viewModel) {
     return Container(
       color: AppColors.grey50,
@@ -1039,6 +1098,12 @@ class _CalendarPageState extends State<CalendarPage>
                       child: _TimelineDayRow(
                         day: day,
                         events: viewModel.events,
+                        habitSuggestions: viewModel.suggestionsForDay(day),
+                        onAcceptHabitSuggestion: (id, years, weeks) =>
+                            _handleAcceptHabitSuggestion(
+                                viewModel, id, years, weeks),
+                        onDismissHabitSuggestion: (id) =>
+                            _handleDismissHabitSuggestion(viewModel, id),
                       ),
                     );
                   },
@@ -1056,10 +1121,17 @@ class _TimelineDayRow extends StatelessWidget {
   const _TimelineDayRow({
     required this.day,
     required this.events,
+    required this.habitSuggestions,
+    required this.onAcceptHabitSuggestion,
+    required this.onDismissHabitSuggestion,
   });
 
   final DateTime day;
   final List<EventModel> events;
+  final List<HabitSuggestion> habitSuggestions;
+  final void Function(String suggestionId, int years, int weeks)
+      onAcceptHabitSuggestion;
+  final void Function(String suggestionId) onDismissHabitSuggestion;
 
   @override
   Widget build(BuildContext context) {
@@ -1154,6 +1226,28 @@ class _TimelineDayRow extends StatelessWidget {
                         hashtags: seg.event.hashtags,
                       ),
                     ),
+                  ),
+                );
+              }),
+              ...habitSuggestions.map((suggestion) {
+                final startH = suggestion.startHour;
+                final duration = suggestion.endHour - startH;
+                final cardHeight =
+                    (duration > 0 ? duration : 0.5) * _kTimetableHourHeight - 20;
+                return Positioned(
+                  top: startH * _kTimetableHourHeight + 10,
+                  left: leftMargin,
+                  right: 0,
+                  height: cardHeight.clamp(120.0, double.infinity),
+                  child: HabitSuggestionTimetableCard(
+                    suggestion: suggestion,
+                    onAccept: (years, weeks) => onAcceptHabitSuggestion(
+                      suggestion.id,
+                      years,
+                      weeks,
+                    ),
+                    onDismiss: () =>
+                        onDismissHabitSuggestion(suggestion.id),
                   ),
                 );
               }),

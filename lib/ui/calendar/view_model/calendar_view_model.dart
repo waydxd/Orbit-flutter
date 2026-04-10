@@ -4,6 +4,7 @@ import '../../../core/services/notification_service.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
+import '../../../data/models/habit_suggestion.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/push_notification_api_service.dart';
 import '../../../utils/logger.dart';
@@ -51,6 +52,7 @@ class CalendarViewModel extends BaseViewModel {
 
   List<EventModel> _events = [];
   List<TaskModel> _tasks = [];
+  List<HabitSuggestion> _habitSuggestions = [];
 
   /// Last anchor used for a successful event list fetch (calendar focused month/year).
   DateTime? _lastEventFetchAnchor;
@@ -58,6 +60,13 @@ class CalendarViewModel extends BaseViewModel {
 
   List<EventModel> get events => _events;
   List<TaskModel> get tasks => _tasks;
+  List<HabitSuggestion> get habitSuggestions => _habitSuggestions;
+
+  /// Whether there are any pending habit suggestions
+  bool get hasHabitSuggestions => _habitSuggestions.isNotEmpty;
+
+  /// Number of pending habit suggestions
+  int get habitSuggestionsCount => _habitSuggestions.length;
 
   CalendarViewModel({
     CalendarRepository? calendarRepository,
@@ -186,6 +195,7 @@ class CalendarViewModel extends BaseViewModel {
             ? eventQueryRange(primary, fullYear: fullYearRange)
             : unionEventQueryRange(anchors, fullYear: fullYearRange);
 
+        // Fetch events and tasks together – these are critical
         final results = await Future.wait([
           _calendarRepository.getEvents(
             userId: userId,
@@ -198,10 +208,23 @@ class CalendarViewModel extends BaseViewModel {
         _tasks = results[1] as List<TaskModel>;
         _lastEventFetchAnchor = primary;
         _lastFetchFullYear = fullYearRange;
+
+        // Fetch habit suggestions separately so a failure here does not
+        // break the loading of events and tasks.
+        try {
+          _habitSuggestions = await _calendarRepository.getHabitSuggestions();
+        } catch (e) {
+          Logger.errorWithTag(
+            'CalendarViewModel',
+            'Failed to fetch habit suggestions (non-fatal): $e',
+          );
+          _habitSuggestions = [];
+        }
+
         notifyListeners();
         Logger.infoWithTag(
           'CalendarViewModel',
-          'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks',
+          'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks, ${_habitSuggestions.length} suggestions',
         );
 
         // Schedule notifications for tasks with due dates that aren't completed
@@ -238,12 +261,103 @@ class CalendarViewModel extends BaseViewModel {
     _tasks = results[1] as List<TaskModel>;
     _lastEventFetchAnchor = anchors.first;
     _lastFetchFullYear = fullYearRange;
+    try {
+      _habitSuggestions = await _calendarRepository.getHabitSuggestions();
+    } catch (e) {
+      Logger.errorWithTag(
+        'CalendarViewModel',
+        'Failed to fetch habit suggestions (non-fatal): $e',
+      );
+      _habitSuggestions = [];
+    }
     notifyListeners();
     for (final task in _tasks) {
       if (task.dueDate != null && !task.completed) {
         await _scheduleTaskNotification(task);
       }
     }
+  }
+
+  /// Get habit suggestions that match a specific date (by day of week)
+  List<HabitSuggestion> suggestionsForDay(DateTime date) {
+    return _habitSuggestions.where((s) {
+      if (!s.isValid) return false;
+
+      final matchingEvents = _events.where((e) {
+        if (e.title.trim().toLowerCase() != s.title.trim().toLowerCase()) {
+          return false;
+        }
+        final dMinutes = e.endTime.difference(e.startTime).inMinutes;
+        if (dMinutes != s.durationMinutes) {
+          return false;
+        }
+        final tOfDay = e.startTime.hour * 60 + e.startTime.minute;
+        if (tOfDay != s.timeOfDayMinutes) {
+          return false;
+        }
+        return true;
+      }).toList();
+
+      DateTime? latestDate;
+      if (matchingEvents.isNotEmpty) {
+        matchingEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
+        final latestEvent = matchingEvents.last;
+        latestDate = DateTime(
+          latestEvent.startTime.year,
+          latestEvent.startTime.month,
+          latestEvent.startTime.day,
+        ).add(const Duration(days: 7));
+      } else if (s.suggestedStartTime != null) {
+        latestDate = DateTime(
+          s.suggestedStartTime!.year,
+          s.suggestedStartTime!.month,
+          s.suggestedStartTime!.day,
+        );
+      }
+
+      if (latestDate != null) {
+        return date.year == latestDate.year &&
+            date.month == latestDate.month &&
+            date.day == latestDate.day;
+      }
+
+      return false;
+    }).toList();
+  }
+
+  Future<AcceptSuggestionResponse?> acceptHabitSuggestion(
+    String suggestionId, {
+    String? userId,
+    int? years,
+    int? weeks,
+  }) async {
+    final response = await executeAsync(() async {
+      return await _calendarRepository.acceptHabitSuggestion(suggestionId,
+          years: years, weeks: weeks);
+    }, showLoading: false);
+
+    if (response != null && response.success) {
+      _habitSuggestions.removeWhere((s) => s.id == suggestionId);
+      notifyListeners();
+      if (userId != null) {
+        await fetchAll(userId: userId);
+      }
+    }
+    return response;
+  }
+
+  Future<bool> dismissHabitSuggestion(String suggestionId) async {
+    final result = await executeAsync(() async {
+      await _calendarRepository.rejectHabitSuggestion(suggestionId);
+      return true;
+    }, showLoading: false);
+
+    if (result == true) {
+      _habitSuggestions.removeWhere((s) => s.id == suggestionId);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<EventModel> createEvent(EventModel event) async {

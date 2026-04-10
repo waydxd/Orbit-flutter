@@ -31,10 +31,6 @@ class _HomePageState extends State<HomePage> {
         child: SafeArea(
           child: Consumer<CalendarViewModel>(
             builder: (context, viewModel, child) {
-              if (viewModel.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
               // Prepare data
               final now = DateTime.now();
 

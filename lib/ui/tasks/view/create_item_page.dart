@@ -1591,6 +1591,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
               hintText: 'Event name',
               hintStyle: TextStyle(color: Colors.grey.shade400),
               border: InputBorder.none,
+              filled: true,
+              fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 16,
@@ -1748,6 +1750,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 hintText: 'Details',
                 hintStyle: TextStyle(color: Colors.grey.shade400),
                 border: InputBorder.none,
+                filled: true,
+                fillColor: Colors.white,
                 contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
               ),
             ),
