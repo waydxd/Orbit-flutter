@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../core/view_models/base_view_model.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../../data/models/event_model.dart';
@@ -192,10 +193,10 @@ class CalendarViewModel extends BaseViewModel {
       await fetchAll(userId: event.userId); // Refresh data after creation
 
       // Start background trigger for generating new event suggestions
-      OrbitSuggestionService().getSuggestionsForEvent(event,
-          userId: event.userId, forceRegenerate: true);
+      unawaited(OrbitSuggestionService().getSuggestionsForEvent(event,
+          userId: event.userId, forceRegenerate: true));
       // Clear daily cache so it regenerates on home page
-      OrbitSuggestionService().clearDailySuggestionsCache();
+      await OrbitSuggestionService().clearDailySuggestionsCache();
 
       return true;
     });
@@ -223,10 +224,10 @@ class CalendarViewModel extends BaseViewModel {
       await fetchAll(userId: event.userId); // Refresh data after update
 
       // Start background trigger for regenerating event suggestions
-      OrbitSuggestionService().getSuggestionsForEvent(event,
-          userId: event.userId, forceRegenerate: true);
+      unawaited(OrbitSuggestionService().getSuggestionsForEvent(event,
+          userId: event.userId, forceRegenerate: true));
       // Clear daily cache so it regenerates on home page
-      OrbitSuggestionService().clearDailySuggestionsCache();
+      await OrbitSuggestionService().clearDailySuggestionsCache();
 
       return true;
     });
