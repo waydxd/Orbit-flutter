@@ -86,12 +86,12 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
     final service = OrbitSuggestionService();
 
     if (todayEvents.isNotEmpty) {
-      final List<Suggestion> allEventSuggestions = [];
-      for (var evt in todayEvents) {
-        final sugs = await service.getSuggestionsForEvent(evt,
-            userId: user?.id ?? '', forceRegenerate: forceRegenerate);
-        allEventSuggestions.addAll(sugs);
-      }
+      final List<List<Suggestion>> perEventResults = await Future.wait(
+        todayEvents.map((evt) => service.getSuggestionsForEvent(evt,
+            userId: user?.id ?? '', forceRegenerate: forceRegenerate)),
+      );
+      final List<Suggestion> allEventSuggestions =
+          perEventResults.expand((sugs) => sugs).toList();
 
       // Deduplicate event suggestions based on title
       final uniqueEventSuggestions = <Suggestion>[];
