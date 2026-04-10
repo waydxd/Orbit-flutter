@@ -210,9 +210,7 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
             'Please wait a moment while AI builds your tips.',
             Icons.auto_awesome,
           );
-        } else if (snapshot.hasError ||
-            activeSuggestions == null ||
-            activeSuggestions.isEmpty) {
+        } else if (activeSuggestions == null || activeSuggestions.isEmpty) {
           content = _buildEmptyCard(
             'No suggestions available',
             'We don\'t have any tips for today yet.',
