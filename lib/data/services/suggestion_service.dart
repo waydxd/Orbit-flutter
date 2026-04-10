@@ -1,4 +1,5 @@
 import 'package:grpc/grpc.dart';
+import 'package:intl/intl.dart';
 import '../models/event_model.dart';
 import '../models/user_model.dart';
 import '../../generated/protos/suggestion.pbgrpc.dart';
@@ -109,11 +110,11 @@ class OrbitSuggestionService {
       parsedDate = DateTime.parse(date);
     } on FormatException {
       Logger.errorWithTag(
-          'OrbitSuggestionService', 'Invalid date format: $date, falling back to today');
+          'OrbitSuggestionService',
+          'Invalid date format: $date. Expected format: yyyy-MM-dd. Falling back to today');
       parsedDate = DateTime.now();
     }
-    final dateStr =
-        '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+    final dateStr = DateFormat('yyyy-MM-dd').format(parsedDate);
     final eventsHash = _computeEventsHash(recentEvents);
 
     final prefs = await SharedPreferences.getInstance();
