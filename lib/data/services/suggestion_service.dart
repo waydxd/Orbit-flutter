@@ -107,7 +107,7 @@ class OrbitSuggestionService {
       {bool forceRegenerate = false}) async {
     DateTime parsedDate;
     try {
-      parsedDate = DateTime.parse(date);
+      parsedDate = DateFormat('yyyy-MM-dd').parse(date);
     } on FormatException {
       Logger.errorWithTag(
           'OrbitSuggestionService',
