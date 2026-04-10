@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../models/daily_heatmap_record.dart';
 
 import '../../core/themes/app_colors.dart';
+import '../../core/themes/hashtag_palette.dart';
 
 class HeatmapCalendarWidget extends StatelessWidget {
   final List<DailyHeatmapRecord> records;
@@ -15,14 +16,6 @@ class HeatmapCalendarWidget extends StatelessWidget {
     required this.onPageChanged,
     super.key,
   });
-
-  static const Map<String, Color> categoryColors = {
-    'Work': Color(0xFF4A90D9), // Blue
-    'Study': Color(0xFF7B68EE), // Purple
-    'Exercise': Color(0xFF50C878), // Green
-    'Personal': Color(0xFFFFB347), // Orange
-    'Other': Color(0xFFB0BEC5), // Grey
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +112,7 @@ class HeatmapCalendarWidget extends StatelessWidget {
     if (record != null && record.totalDuration > 0 && maxMinutes > 0) {
       final dominantCategory = record.dominantCategory;
       final baseColor =
-          categoryColors[dominantCategory] ?? categoryColors['Other']!;
+          hashtagDreamColor(dominantCategory ?? 'Other');
 
       intensity = record.totalDuration / maxMinutes;
       // Clamp intensity between 0 and 1 just in case
@@ -196,8 +189,7 @@ class HeatmapCalendarWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ...record.categoryDurations.entries.map((entry) {
-                final color =
-                    categoryColors[entry.key] ?? categoryColors['Other']!;
+                final color = hashtagDreamColor(entry.key);
                 final hours = entry.value ~/ 60;
                 final minutes = entry.value % 60;
                 final durationStr = hours > 0
@@ -259,8 +251,7 @@ class HeatmapCalendarWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...record.categoryDurations.entries.map((entry) {
-                  final color =
-                      categoryColors[entry.key] ?? categoryColors['Other']!;
+                  final color = hashtagDreamColor(entry.key);
                   final percentage =
                       (entry.value / totalDuration * 100).toStringAsFixed(1);
 

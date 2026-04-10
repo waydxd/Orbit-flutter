@@ -7,13 +7,20 @@ import 'package:uuid/uuid.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../core/widgets/modern_dropdown.dart';
+import '../../core/widgets/hashtag_chip.dart';
 import '../../../data/models/event_model.dart';
-import '../../../data/utils/event_recurrence_utils.dart';
+import '../../../data/utils/event_recurrence.dart';
+import '../../../data/utils/event_recurrence_materialize.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/nlp_parse_result.dart';
 import '../../../data/models/hashtag_prediction.dart';
 import '../../../data/services/hashtag_service.dart';
 import '../../../data/services/location_service.dart';
+import '../../../data/services/travel_time_service.dart';
+import '../../../data/services/txt2img_service.dart';
+import '../../../data/utils/buffer_time_prior_event.dart';
+import '../../../config/environment.dart';
+import '../../../utils/logger.dart';
 
 class _DateTimePickerSheet extends StatefulWidget {
   final DateTime initialDate;
@@ -197,6 +204,10 @@ class _CreateItemPageState extends State<CreateItemPage> {
     // Auto-predict hashtags when text changes (event + task)
     _nameController.addListener(_onTextChanged);
     _detailsController.addListener(_onTextChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && isEvent) _scheduleBufferCheck();
+    });
   }
 
   void _onEventDetailsFocusChanged() {
@@ -219,10 +230,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
       _endTime = TimeOfDay.fromDateTime(event.endTime);
     }
     _selectedTags = List<String>.from(event.hashtags);
-    _selectedRepeat = EventRecurrenceUtils.toUiRepeat(
-      isRecurring: event.isRecurring,
-      recurrenceRule: event.recurrenceRule,
-    );
+    final pre = EventRecurrence.prefillFromEvent(event);
+    _repeatFrequencyLabel = pre.frequencyLabel;
+    _repeatUntilDate = pre.untilLocalDate;
   }
 
   /// Heuristic: stored as local midnight → end-of-day (23:59).
@@ -254,8 +264,25 @@ class _CreateItemPageState extends State<CreateItemPage> {
       }
 
       final recurrence = result.recurrence;
-      _selectedRepeat =
-          (recurrence == null || recurrence.isEmpty) ? 'Never' : recurrence;
+      if (recurrence == null || recurrence.isEmpty) {
+        _repeatFrequencyLabel = 'Never';
+        _repeatUntilDate = null;
+      } else {
+        final parts = EventRecurrence.tryParseRule(recurrence);
+        if (parts != null) {
+          _repeatFrequencyLabel =
+              EventRecurrence.labelFromFrequency(parts.frequency);
+          if (parts.untilUtc != null) {
+            final ul = parts.untilUtc!.toLocal();
+            _repeatUntilDate = DateTime(ul.year, ul.month, ul.day);
+          } else {
+            _repeatUntilDate = null;
+          }
+        } else {
+          _repeatFrequencyLabel = _mapNlpRecurrenceToLabel(recurrence);
+          _repeatUntilDate = null;
+        }
+      }
     } else {
       if (result.dueDate != null) {
         _deadlineDate = result.dueDate;
@@ -263,10 +290,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
       }
       _selectedPriority =
           (result.priority.isNotEmpty) ? result.priority : 'medium';
-      final taskRecurrence = result.recurrence;
-      _selectedTaskRepeat = (taskRecurrence == null || taskRecurrence.isEmpty)
-          ? 'Never'
-          : taskRecurrence;
     }
   }
 
@@ -284,8 +307,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
   DateTime? _deadlineDate;
   TimeOfDay? _deadlineTime;
 
-  String _selectedRepeat = 'Never';
-  String _selectedTaskRepeat = 'Never';
+  String _repeatFrequencyLabel = 'Never';
+  DateTime? _repeatUntilDate;
+
   String _selectedPriority = 'medium';
 
   // Hashtag state (used for events)
@@ -295,6 +319,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
   List<HashtagScore> _predictedTags = [];
   bool _isPredicting = false;
   Timer? _debounceTimer;
+
+  static const Duration _bufferMargin = Duration(minutes: 10);
+  String? _bufferWarningText;
+  bool _bufferCheckLoading = false;
+  Timer? _bufferDebounceTimer;
+  int _bufferCheckSeq = 0;
 
   final List<Color> eventColors = [
     const Color(0xFFE0E5EC), // The planet/moon one (placeholder)
@@ -310,6 +340,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _bufferDebounceTimer?.cancel();
     _nameController.removeListener(_onTextChanged);
     _detailsController.removeListener(_onTextChanged);
     _nameController.dispose();
@@ -327,6 +358,110 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       _predictHashtags();
     });
+  }
+
+  DateTime? _computeProposedEventStart() {
+    if (_isAllDay) return null;
+    return DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+  }
+
+  void _scheduleBufferCheck() {
+    if (!isEvent || !mounted) return;
+    _bufferDebounceTimer?.cancel();
+    _bufferDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) _runBufferTimeCheck();
+    });
+  }
+
+  Future<void> _runBufferTimeCheck() async {
+    if (!mounted || !isEvent) return;
+    final seq = ++_bufferCheckSeq;
+
+    void clearWarning() {
+      if (!mounted) return;
+      setState(() {
+        _bufferWarningText = null;
+        _bufferCheckLoading = false;
+      });
+    }
+
+    if (_isAllDay) {
+      clearWarning();
+      return;
+    }
+
+    final loc = _locationController.text.trim();
+    if (loc.isEmpty) {
+      clearWarning();
+      return;
+    }
+
+    final auth = Provider.of<AuthViewModel>(context, listen: false);
+    final userId = auth.currentUser?.id;
+    if (userId == null) {
+      clearWarning();
+      return;
+    }
+
+    final proposedStart = _computeProposedEventStart();
+    if (proposedStart == null) {
+      clearWarning();
+      return;
+    }
+
+    final vm = Provider.of<CalendarViewModel>(context, listen: false);
+    final prior = findPriorConsecutiveEvent(
+      events: vm.events,
+      currentUserId: userId,
+      proposedStart: proposedStart,
+      excludeEventId: widget.editEvent?.id,
+    );
+
+    if (prior == null || prior.location.trim().isEmpty) {
+      clearWarning();
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _bufferCheckLoading = true);
+
+    final travelSec = await TravelTimeService.drivingDurationSeconds(
+      originAddress: prior.location.trim(),
+      destinationAddress: loc,
+    );
+
+    if (!mounted || seq != _bufferCheckSeq) return;
+    setState(() => _bufferCheckLoading = false);
+
+    if (travelSec == null) {
+      if (mounted && seq == _bufferCheckSeq) {
+        setState(() => _bufferWarningText = null);
+      }
+      return;
+    }
+
+    final available = proposedStart.difference(prior.endTime);
+    final required = Duration(seconds: travelSec) + _bufferMargin;
+
+    if (!mounted || seq != _bufferCheckSeq) return;
+
+    if (available < required) {
+      final availMin = available.inMinutes;
+      final needMin = (required.inSeconds / 60).ceil();
+      setState(() {
+        _bufferWarningText =
+            'Only $availMin minutes after "${prior.title}" end. '
+            '$needMin minutes is needed.';
+      });
+    } else {
+      setState(() => _bufferWarningText = null);
+    }
   }
 
   Future<void> _showDateTimePicker(
@@ -382,6 +517,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         });
       },
     );
+    _scheduleBufferCheck();
   }
 
   Future<void> _selectEndDateTime() async {
@@ -429,6 +565,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         });
       },
     );
+    _scheduleBufferCheck();
   }
 
   void _onAllDayChanged(bool value) {
@@ -474,6 +611,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         }
       }
     });
+    _scheduleBufferCheck();
   }
 
   String _formatEventStartLabel() {
@@ -488,6 +626,17 @@ class _CreateItemPageState extends State<CreateItemPage> {
       return DateFormat('MMM d, y').format(dt);
     }
     return DateFormat('MMM d, h:mm a').format(dt);
+  }
+
+  String _mapNlpRecurrenceToLabel(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return 'Never';
+    final x = trimmed.toLowerCase();
+    if (x.contains('year')) return 'Yearly';
+    if (x.contains('month')) return 'Monthly';
+    if (x.contains('week')) return 'Weekly';
+    if (x.contains('day') || x == 'daily') return 'Daily';
+    return 'Never';
   }
 
   String _formatEventEndLabel() {
@@ -610,6 +759,130 @@ class _CreateItemPageState extends State<CreateItemPage> {
     );
   }
 
+  /// Generates and uploads the cover after the event is saved; does not block the UI.
+  void _scheduleEventCoverGenerationBackground({
+    required CalendarViewModel viewModel,
+    required EventModel created,
+    required String currentUserId,
+  }) {
+    unawaited((() async {
+      try {
+        final t2i = Txt2ImgService();
+        final cover = await t2i.requestCoverUrl(created);
+        if (cover.isSuccess && cover.url != null) {
+          await viewModel.attachEventCoverUrl(
+            eventId: created.id,
+            imageUrl: cover.url!,
+            userId: currentUserId,
+            declaredContentType: cover.contentType,
+          );
+        } else if (!cover.skipped && cover.errorMessage != null) {
+          Logger.warningWithTag(
+            'CreateItem',
+            'Background cover generation failed: ${cover.errorMessage}',
+          );
+        }
+      } catch (e, st) {
+        Logger.errorWithTag(
+          'CreateItem',
+          'Background cover attach failed: $e\n$st',
+        );
+      }
+    })());
+  }
+
+  Future<void> _selectRepeatUntilDate() async {
+    final startDay =
+        DateTime(_startDate.year, _startDate.month, _startDate.day);
+    final initial =
+        _repeatUntilDate ?? startDay.add(const Duration(days: 30));
+    await _showDateTimePicker(
+      context,
+      initialDate: initial,
+      dateOnly: true,
+      onDateTimeChanged: (DateTime d) {
+        setState(() {
+          _repeatUntilDate = DateTime(d.year, d.month, d.day);
+        });
+      },
+    );
+  }
+
+  Widget _buildRecurrenceSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ModernDropdownField<String>(
+          label: 'Repeat',
+          icon: Icons.repeat_rounded,
+          value: _repeatFrequencyLabel,
+          displayStringForValue: (val) => val,
+          items: const [
+            'Never',
+            'Daily',
+            'Weekly',
+            'Monthly',
+            'Yearly',
+          ],
+          onChanged: (val) {
+            if (val == null) return;
+            setState(() {
+              _repeatFrequencyLabel = val;
+              if (val == 'Never') {
+                _repeatUntilDate = null;
+              }
+            });
+          },
+        ),
+        if (_repeatFrequencyLabel != 'Never') ...[
+          const SizedBox(height: 8),
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: _selectRepeatUntilDate,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Text(
+                      'Repeat until',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _repeatUntilDate != null
+                            ? DateFormat('MMM d, y').format(_repeatUntilDate!)
+                            : 'Select date (required)',
+                        style: TextStyle(
+                          color: _repeatUntilDate != null
+                              ? const Color(0xFF1F2937)
+                              : Colors.grey.shade500,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                    Icon(Icons.chevron_right,
+                        color: Colors.grey.shade400, size: 22),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildTaskTitleSection() {
     return Container(
       decoration: _fieldDecoration(),
@@ -721,6 +994,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     }
 
     const uuid = Uuid();
+    int? createdEventCount;
 
     try {
         if (isEvent) {
@@ -768,7 +1042,41 @@ class _CreateItemPageState extends State<CreateItemPage> {
           );
         }
 
-        final recur = EventRecurrenceUtils.fromUiRepeat(_selectedRepeat, start);
+        final freq = EventRecurrence.frequencyFromLabel(_repeatFrequencyLabel);
+        final startCal =
+            DateTime(start.year, start.month, start.day);
+        if (freq != RecurrenceFrequency.never) {
+          if (_repeatUntilDate == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Choose a repeat end date'),
+              ),
+            );
+            return;
+          }
+          final untilCal = DateTime(
+            _repeatUntilDate!.year,
+            _repeatUntilDate!.month,
+            _repeatUntilDate!.day,
+          );
+          if (untilCal.isBefore(startCal)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Choose an end date on or after the event start date',
+                ),
+              ),
+            );
+            return;
+          }
+        }
+
+        final recur = EventRecurrence.encode(
+          frequency: freq,
+          startLocal: start,
+          endsNever: freq == RecurrenceFrequency.never,
+          untilLocalDate: _repeatUntilDate,
+        );
 
         if (widget.editEvent != null) {
           final event = widget.editEvent!.copyWith(
@@ -785,22 +1093,85 @@ class _CreateItemPageState extends State<CreateItemPage> {
           );
           await viewModel.updateEvent(event);
         } else {
-          final event = EventModel(
-            id: uuid.v4(),
-            userId: currentUserId,
-            title: _nameController.text,
-            description: _detailsController.text,
-            startTime: start,
-            endTime: end,
-            location: _locationController.text,
-            hashtags: List<String>.from(_selectedTags),
-            isRecurring: recur.isRecurring,
-            recurrenceRule: recur.recurrenceRule,
-            recurrenceException: recur.recurrenceException,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-          await viewModel.createEvent(event);
+          if (freq == RecurrenceFrequency.never) {
+            final event = EventModel(
+              id: uuid.v4(),
+              userId: currentUserId,
+              title: _nameController.text,
+              description: _detailsController.text,
+              startTime: start,
+              endTime: end,
+              location: _locationController.text,
+              hashtags: List<String>.from(_selectedTags),
+              isRecurring: recur.isRecurring,
+              recurrenceRule: recur.recurrenceRule,
+              recurrenceException: recur.recurrenceException,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+            final created = await viewModel.createEvent(event);
+            createdEventCount = 1;
+
+            if (EnvironmentConfig.shouldClientAttemptTxt2Img) {
+              _scheduleEventCoverGenerationBackground(
+                viewModel: viewModel,
+                created: created,
+                currentUserId: currentUserId,
+              );
+            }
+          } else {
+            final untilLocal = DateTime(
+              _repeatUntilDate!.year,
+              _repeatUntilDate!.month,
+              _repeatUntilDate!.day,
+            );
+            final slots = materializeRecurringOccurrences(
+              frequency: freq,
+              firstStart: start,
+              firstEnd: end,
+              untilLocalDate: untilLocal,
+            );
+            if (slots.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No occurrences in the chosen date range'),
+                ),
+              );
+              return;
+            }
+            final now = DateTime.now();
+            final events = <EventModel>[];
+            for (final slot in slots) {
+              events.add(
+                EventModel(
+                  id: uuid.v4(),
+                  userId: currentUserId,
+                  title: _nameController.text,
+                  description: _detailsController.text,
+                  startTime: slot.start,
+                  endTime: slot.end,
+                  location: _locationController.text,
+                  hashtags: List<String>.from(_selectedTags),
+                  isRecurring: false,
+                  recurrenceRule: '',
+                  recurrenceException: '',
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+              );
+            }
+            final createdList = await viewModel.createEvents(events);
+            createdEventCount = createdList.length;
+
+            if (EnvironmentConfig.shouldClientAttemptTxt2Img &&
+                createdList.isNotEmpty) {
+              _scheduleEventCoverGenerationBackground(
+                viewModel: viewModel,
+                created: createdList.first,
+                currentUserId: currentUserId,
+              );
+            }
+          }
         }
       } else {
         DateTime? deadline;
@@ -823,7 +1194,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
           completed: false,
           priority: _selectedPriority,
           hashtags: List<String>.from(_selectedTags),
-          recurrence: _selectedTaskRepeat,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -832,12 +1202,19 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
       if (mounted) {
         Navigator.pop(context, true);
+        String successMsg;
+        if (!isEvent) {
+          successMsg =
+              'Task ${widget.editEvent != null ? 'updated' : 'created'} successfully!';
+        } else if (widget.editEvent != null) {
+          successMsg = 'Event updated successfully!';
+        } else if (createdEventCount != null && createdEventCount > 1) {
+          successMsg = '$createdEventCount events created successfully!';
+        } else {
+          successMsg = 'Event created successfully!';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${isEvent ? 'Event' : 'Task'} ${widget.editEvent != null ? 'updated' : 'created'} successfully!',
-            ),
-          ),
+          SnackBar(content: Text(successMsg)),
         );
       }
     } catch (e) {
@@ -951,7 +1328,17 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
   Widget _buildToggleButton(String label, bool active) {
     return GestureDetector(
-      onTap: () => setState(() => isEvent = label == 'Event'),
+      onTap: () {
+        setState(() {
+          isEvent = label == 'Event';
+          if (!isEvent) {
+            _bufferWarningText = null;
+            _bufferCheckLoading = false;
+            _bufferDebounceTimer?.cancel();
+          }
+        });
+        if (isEvent) _scheduleBufferCheck();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
@@ -976,16 +1363,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         const SizedBox(height: 20),
         _buildEventDateTimeSection(),
         const SizedBox(height: 20),
-        ModernDropdownField<String>(
-          label: 'Repeat',
-          icon: Icons.repeat_rounded,
-          value: _selectedRepeat,
-          displayStringForValue: (val) => val,
-          items: const ['Never', 'Daily', 'Weekly', 'Monthly'],
-          onChanged: (val) {
-            if (val != null) setState(() => _selectedRepeat = val);
-          },
-        ),
+        _buildRecurrenceSection(),
         const SizedBox(height: 20),
         _buildEventHashtagField(),
         const SizedBox(height: 20),
@@ -1078,35 +1456,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
               spacing: 8,
               runSpacing: 8,
               children: _selectedTags.map((tag) {
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '#$tag',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () => _removeTag(tag),
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
+                return HashtagChipFilled(
+                  tag: tag,
+                  onRemove: () => _removeTag(tag),
                 );
               }).toList(),
             ),
@@ -1124,75 +1476,16 @@ class _CreateItemPageState extends State<CreateItemPage> {
             ),
             const SizedBox(height: 8),
             ...visibleSuggestions.map((prediction) {
-              final pct =
-                  (prediction.confidence * 100).toStringAsFixed(0);
               final displayTag = prediction.hashtag.startsWith('#')
                   ? prediction.hashtag
                   : '#${prediction.hashtag}';
-              final conf =
-                  prediction.confidence.clamp(0.0, 1.0);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: GestureDetector(
+                child: HashtagChipSuggestion(
+                  tag: prediction.hashtag,
+                  displayLabel: displayTag,
+                  confidence: prediction.confidence,
                   onTap: () => _addTag(prediction.hashtag),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color:
-                            const Color(0xFF6366F1).withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                displayTag,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF6366F1),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              '$pct%',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.add_circle_outline,
-                              size: 18,
-                              color: const Color(0xFF6366F1)
-                                  .withValues(alpha: 0.75),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: conf,
-                            minHeight: 5,
-                            backgroundColor: const Color(0xFF6366F1)
-                                .withValues(alpha: 0.1),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF6366F1),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               );
             }),
@@ -1278,17 +1571,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
           },
         ),
         const SizedBox(height: 20),
-        ModernDropdownField<String>(
-          label: 'Repeat',
-          icon: Icons.repeat_rounded,
-          value: _selectedTaskRepeat,
-          displayStringForValue: (val) => val,
-          items: const ['Never', 'Daily', 'Weekly', 'Monthly'],
-          onChanged: (val) {
-            if (val != null) setState(() => _selectedTaskRepeat = val);
-          },
-        ),
-        const SizedBox(height: 20),
         _buildEventHashtagField(),
         const SizedBox(height: 20),
         _buildEventDetailsField(),
@@ -1322,6 +1604,39 @@ class _CreateItemPageState extends State<CreateItemPage> {
             color: Colors.grey.shade200,
           ),
           _buildLocationAutocompleteBody(),
+          if (_bufferCheckLoading)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: const Color(0xFF6366F1).withValues(alpha: 0.6),
+              ),
+            ),
+          if (_bufferWarningText != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.amber.shade800,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _bufferWarningText!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.35,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -1341,10 +1656,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
       },
       onSelected: (String selection) {
         _locationController.text = selection;
+        _scheduleBufferCheck();
       },
       fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
         controller.addListener(() {
           _locationController.text = controller.text;
+          if (isEvent) _scheduleBufferCheck();
         });
         return TextField(
           controller: controller,

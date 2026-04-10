@@ -46,6 +46,10 @@ linked_*.ds
 unlinked.ds
 unlinked_spec.ds
 
+# Firebase (generate with FlutterFire CLI; do not commit secrets)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # Android related
 **/android/**/gradle-wrapper.jar
 .gradle/

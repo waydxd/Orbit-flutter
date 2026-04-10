@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
 import '../../config/environment.dart';
 import '../../utils/logger.dart';
+import 'auth_token_service.dart';
 import 'local_storage_service.dart';
 
 /// HTTP API client for backend communication
@@ -49,6 +50,11 @@ class ApiClient {
         },
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
+            final path = error.requestOptions.path;
+            if (path.endsWith('fcm/token')) {
+              handler.next(error);
+              return;
+            }
             final refreshed = await _handleTokenRefresh();
             if (refreshed) {
               // Retry the original request with new token
@@ -81,7 +87,7 @@ class ApiClient {
 
   /// Add authentication token to request headers
   Future<void> _addAuthToken(RequestOptions options) async {
-    final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey);
+    final token = await AuthTokenService.getAccessToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -94,8 +100,7 @@ class ApiClient {
       while (_isRefreshing) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
-      return await LocalStorageService.getSecure(AppConfig.accessTokenKey) !=
-          null;
+      return await AuthTokenService.getAccessToken() != null;
     }
 
     _isRefreshing = true;

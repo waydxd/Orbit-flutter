@@ -9,8 +9,6 @@ class TaskModel extends BaseModel {
   final bool completed;
   final String priority;
   final List<String> hashtags;
-  /// UI labels: Never, Daily, Weekly, Monthly
-  final String recurrence;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,7 +23,6 @@ class TaskModel extends BaseModel {
     this.completed = false,
     this.priority = 'medium',
     this.hashtags = const [],
-    this.recurrence = 'Never',
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -42,7 +39,6 @@ class TaskModel extends BaseModel {
       hashtags: json['hashtags'] != null
           ? List<String>.from(json['hashtags'] as List)
           : const [],
-      recurrence: json['recurrence'] as String? ?? 'Never',
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -59,7 +55,6 @@ class TaskModel extends BaseModel {
       'completed': completed,
       'priority': priority,
       'hashtags': hashtags,
-      'recurrence': recurrence,
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
     };
@@ -75,7 +70,6 @@ class TaskModel extends BaseModel {
         completed,
         priority,
         hashtags,
-        recurrence,
         createdAt,
         updatedAt,
       ];
@@ -89,7 +83,6 @@ class TaskModel extends BaseModel {
     bool? completed,
     String? priority,
     List<String>? hashtags,
-    String? recurrence,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -102,7 +95,6 @@ class TaskModel extends BaseModel {
       completed: completed ?? this.completed,
       priority: priority ?? this.priority,
       hashtags: hashtags ?? this.hashtags,
-      recurrence: recurrence ?? this.recurrence,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -19,17 +20,31 @@ class FcmService {
   factory FcmService() => _instance;
   FcmService._internal();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
   ApiClient? _apiClient;
 
+  static const Duration _getTokenTimeout = Duration(seconds: 10);
+
+  static bool get _hasDefaultFirebaseApp => Firebase.apps.isNotEmpty;
+
+  /// Only use after confirming [_hasDefaultFirebaseApp].
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
+
   /// Initialize FCM. Call once at app startup after Firebase.initializeApp().
   /// [apiClient] is used to register the device token with the backend.
   Future<void> initialize({ApiClient? apiClient}) async {
     if (_initialized) return;
+    if (!_hasDefaultFirebaseApp) {
+      Logger.warningWithTag(
+        'FCM',
+        'Skipping FCM init: no default Firebase app',
+      );
+      return;
+    }
+
     _apiClient = apiClient;
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -39,12 +54,14 @@ class FcmService {
     await _registerToken();
     _listenForTokenRefresh();
     _listenForForegroundMessages();
+    _listenForNotificationOpen();
 
     _initialized = true;
     Logger.infoWithTag('FCM', 'FCM service initialized');
   }
 
   Future<void> _requestPermissions() async {
+    if (!_hasDefaultFirebaseApp) return;
     final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -93,9 +110,49 @@ class FcmService {
     Logger.debugWithTag('FCM', 'Notification tapped: ${response.payload}');
   }
 
+  void _logOpenedFromMessage(RemoteMessage message, String source) {
+    Logger.infoWithTag(
+      'FCM',
+      'Opened from push ($source): id=${message.messageId} data=${message.data}',
+    );
+  }
+
+  void _listenForNotificationOpen() {
+    if (!_hasDefaultFirebaseApp) return;
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _logOpenedFromMessage(message, 'background');
+    });
+    _messaging.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        _logOpenedFromMessage(message, 'terminated');
+      }
+    });
+  }
+
+  /// Re-fetch the FCM token and POST it to the backend. Call after login or
+  /// when restoring a session so registration succeeds once a JWT is available.
+  /// Safe to call when Firebase is not initialized (no-op).
+  Future<void> registerTokenWithBackend() async {
+    if (!_hasDefaultFirebaseApp) {
+      Logger.debugWithTag(
+        'FCM',
+        'registerTokenWithBackend: no Firebase app, skipping',
+      );
+      return;
+    }
+    await _registerToken();
+  }
+
   Future<void> _registerToken() async {
+    if (!_hasDefaultFirebaseApp) return;
     try {
-      final token = await _messaging.getToken();
+      final token = await _messaging.getToken().timeout(
+        _getTokenTimeout,
+        onTimeout: () {
+          Logger.warningWithTag('FCM', 'getToken timed out');
+          return null;
+        },
+      );
       if (token != null) {
         Logger.infoWithTag('FCM', 'Token obtained (length=${token.length})');
         await _sendTokenToBackend(token);
@@ -106,6 +163,7 @@ class FcmService {
   }
 
   void _listenForTokenRefresh() {
+    if (!_hasDefaultFirebaseApp) return;
     _messaging.onTokenRefresh.listen((newToken) async {
       Logger.infoWithTag('FCM', 'Token refreshed');
       await _sendTokenToBackend(newToken);
@@ -113,6 +171,7 @@ class FcmService {
   }
 
   void _listenForForegroundMessages() {
+    if (!_hasDefaultFirebaseApp) return;
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       Logger.debugWithTag('FCM', 'Foreground message: ${message.messageId}');
       _showLocalNotification(message);
@@ -136,8 +195,16 @@ class FcmService {
       iOS: iosDetails,
     );
 
+    final id = message.messageId != null
+        ? message.messageId!.hashCode
+        : Object.hash(
+            message.sentTime?.millisecondsSinceEpoch,
+            message.notification?.title,
+            message.notification?.body,
+          );
+
     await _localNotifications.show(
-      id: message.hashCode,
+      id: id,
       title: notification.title ?? 'Orbit',
       body: notification.body ?? '',
       notificationDetails: details,
@@ -162,8 +229,12 @@ class FcmService {
   /// Unregister the current device token from the backend (e.g. on logout).
   Future<void> unregisterToken() async {
     if (_apiClient == null) return;
+    if (!_hasDefaultFirebaseApp) return;
     try {
-      final token = await _messaging.getToken();
+      final token = await _messaging.getToken().timeout(
+        _getTokenTimeout,
+        onTimeout: () => null,
+      );
       if (token != null) {
         await _apiClient!.delete('/fcm/token', data: {'token': token});
         Logger.infoWithTag('FCM', 'Token unregistered from backend');

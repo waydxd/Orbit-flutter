@@ -54,4 +54,5 @@ For iOS: Ensure CocoaPods is installed (`pod install` in `ios/` folder).
   - `HUGGING_FACE_API_KEY` – Hugging Face API key for text classification.
   - Example: `flutter run --dart-define=HUGGING_FACE_API_KEY=your_key`
   - Note: NLP parse endpoints use the JWT Bearer token from login (Orbit-core); no separate token needed.
+- **AI event covers (Orbit-txt2img):** By default the app uses the same **origin** as the API and calls **`POST /api/v1/image/text-to-image`** on Orbit-core (core proxies to the Node service). `Txt2ImgService` uses a **host-only** Dio `baseUrl` plus the full path `/api/v1/image/text-to-image` so URI resolution does not strip `/api/v1` (see `lib/config/environment.dart`). To call the middleware **directly** instead: `--dart-define=TXT2IMG_BASE_URL=http://10.0.2.2:8080` (Android emulator) or your reachable host. To disable client-side cover requests without a direct URL: `--dart-define=TXT2IMG_USE_CORE_PROXY=false`.
 

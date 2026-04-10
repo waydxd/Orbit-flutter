@@ -34,7 +34,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = context.read<AuthViewModel>().currentUser?.id;
       if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
+        context.read<CalendarViewModel>().fetchAll(
+              userId: userId,
+              eventRangeAnchor: DateTime.now(),
+            );
       }
     });
   }

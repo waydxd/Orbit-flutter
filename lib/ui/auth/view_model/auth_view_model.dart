@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import '../../core/view_models/base_view_model.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/auth_token_service.dart';
 import '../../../data/services/local_storage_service.dart';
 import '../../../config/app_config.dart';
+import '../../../utils/logger.dart';
 import '../../../utils/validators.dart';
 
 /// Authentication state management
@@ -42,6 +47,17 @@ class AuthViewModel extends BaseViewModel {
     return message.isEmpty ? fallbackMessage : message;
   }
 
+  /// FCM token registration must not block or fail auth; runs after session is stored.
+  void _scheduleFcmTokenRegistration() {
+    unawaited(
+      FcmService()
+          .registerTokenWithBackend()
+          .catchError((Object e, StackTrace st) {
+        Logger.debugWithTag('FCM', 'Background token registration failed: $e');
+      }),
+    );
+  }
+
   bool _isValidUsername(String username) {
     if (username.length < 3 || username.length > 50) return false;
     if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(username)) return false;
@@ -68,6 +84,7 @@ class AuthViewModel extends BaseViewModel {
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
             await _persistAuthenticatedSession(token, user);
+            _scheduleFcmTokenRegistration();
 
             return true;
           } catch (e) {
@@ -139,6 +156,7 @@ class AuthViewModel extends BaseViewModel {
             final token = result['token'] as String;
             final user = result['user'] as UserModel;
             await _persistAuthenticatedSession(token, user);
+            _scheduleFcmTokenRegistration();
 
             return true;
           } catch (e) {
@@ -223,6 +241,7 @@ class AuthViewModel extends BaseViewModel {
             await LocalStorageService.setPreference(
                 'user_email', profile.email);
             await LocalStorageService.setPreference('user_id', profile.id);
+            _scheduleFcmTokenRegistration();
             return true;
           } catch (e) {
             setError(
@@ -308,17 +327,21 @@ class AuthViewModel extends BaseViewModel {
       } catch (e) {
         // Even if logout API fails, clear local state
         // This ensures user can still logout if there's a network issue
-      } finally {
-        _isAuthenticated = false;
-        _currentUser = null;
-
-        // Clear stored authentication data
-        await LocalStorageService.deleteSecure(AppConfig.accessTokenKey);
-        await LocalStorageService.deleteSecure(AppConfig.refreshTokenKey);
-        await LocalStorageService.removePreference('is_authenticated');
-        await LocalStorageService.removePreference('user_email');
-        await LocalStorageService.removePreference('user_id');
       }
+      try {
+        // Requires JWT; must run before clearing tokens
+        await FcmService().unregisterToken();
+      } catch (e) {
+        // Best-effort: proceed with local logout
+      }
+      _isAuthenticated = false;
+      _currentUser = null;
+
+      await LocalStorageService.deleteSecure(AppConfig.accessTokenKey);
+      await LocalStorageService.deleteSecure(AppConfig.refreshTokenKey);
+      await LocalStorageService.removePreference('is_authenticated');
+      await LocalStorageService.removePreference('user_email');
+      await LocalStorageService.removePreference('user_id');
     }, showLoading: false);
   }
 
@@ -430,7 +453,7 @@ class AuthViewModel extends BaseViewModel {
         String? userId;
 
         try {
-          token = await LocalStorageService.getSecure(AppConfig.accessTokenKey);
+          token = await AuthTokenService.getAccessToken();
           email = LocalStorageService.getPreference<String>('user_email');
           userId = LocalStorageService.getPreference<String>('user_id');
         } catch (e) {
@@ -469,6 +492,16 @@ class AuthViewModel extends BaseViewModel {
           if (isValid) {
             _isAuthenticated = true;
             _currentUser = UserModel(id: userId, email: email);
+            unawaited(
+              FcmService()
+                  .registerTokenWithBackend()
+                  .catchError((Object e, StackTrace st) {
+                Logger.debugWithTag(
+                  'FCM',
+                  'Token registration after session restore failed: $e',
+                );
+              }),
+            );
           } else {
             // Token is invalid, clear authentication state
             _isAuthenticated = false;

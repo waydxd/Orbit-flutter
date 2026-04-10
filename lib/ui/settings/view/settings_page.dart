@@ -5,6 +5,10 @@ import '../../auth/view_model/auth_view_model.dart';
 import '../../auth/view/login_page.dart';
 import '../../core/themes/app_colors.dart';
 import '../../profile/view/profile_page.dart';
+import 'calendar_import_export_page.dart';
+import 'gps_settings_page.dart';
+import 'notification_settings_page.dart';
+import 'time_date_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -65,16 +69,24 @@ class SettingsPage extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 18),
-                      const _SettingsGroup(
+                      _SettingsGroup(
                         children: [
                           _SettingsTile(
                             icon: Icons.notifications_none_rounded,
                             title: 'Notification',
+                            onTap: () => _openNotificationSettings(context),
                           ),
                           _DividerLine(),
                           _SettingsTile(
                             icon: Icons.access_time_rounded,
                             title: 'Time & Date',
+                            onTap: () => _openTimeDateSettings(context),
+                          ),
+                          _DividerLine(),
+                          _SettingsTile(
+                            icon: Icons.location_on_outlined,
+                            title: 'GPS',
+                            onTap: () => _openGpsSettings(context),
                           ),
                           _DividerLine(),
                           _SettingsTile(
@@ -85,6 +97,12 @@ class SettingsPage extends StatelessWidget {
                           _SettingsTile(
                             icon: Icons.lock_outline_rounded,
                             title: 'Privacy',
+                          ),
+                          _DividerLine(),
+                          _SettingsTile(
+                            icon: Icons.event_note_rounded,
+                            title: 'Import / Export calendar',
+                            onTap: () => _openCalendarImportExport(context),
                           ),
                         ],
                       ),
@@ -104,6 +122,32 @@ class SettingsPage extends StatelessWidget {
   void _openProfilePage(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const ProfilePage()),
+    );
+  }
+
+  void _openNotificationSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const NotificationSettingsPage()),
+    );
+  }
+
+  void _openTimeDateSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const TimeDateSettingsPage()),
+    );
+  }
+
+  void _openGpsSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const GpsSettingsPage()),
+    );
+  }
+
+  void _openCalendarImportExport(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CalendarImportExportPage(),
+      ),
     );
   }
 }

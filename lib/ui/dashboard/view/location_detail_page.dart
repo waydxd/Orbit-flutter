@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/themes/hashtag_palette.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/event_model.dart';
 
@@ -310,13 +311,24 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
   // ── Event card ────────────────────────────────────────────────────────
 
   Widget _buildEventCard(EventModel event) {
+    final accent = accentForEventDisplay(
+      title: event.title,
+      hashtags: event.hashtags,
+    );
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.grey200, width: 0.5),
+        border: Border.all(
+          color: Color.alphaBlend(
+            accent.withValues(alpha: 0.35),
+            AppColors.grey200,
+          ),
+          width: 0.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -333,23 +345,23 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
             width: 52,
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
                 Text(
                   DateFormat('MMM').format(event.startTime).toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: accent,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
                   ),
                 ),
                 Text(
                   DateFormat('d').format(event.startTime),
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: accent,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),

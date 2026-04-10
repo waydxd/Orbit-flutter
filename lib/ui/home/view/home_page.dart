@@ -108,6 +108,7 @@ class _HomePageState extends State<HomePage> {
                                     title: event.title,
                                     description: event.description,
                                     startTime: event.startTime,
+                                    hashtags: event.hashtags,
                                   );
                                 }
                               })

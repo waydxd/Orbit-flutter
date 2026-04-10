@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../config/app_config.dart';
 import '../../utils/logger.dart';
-import 'local_storage_service.dart';
+import 'auth_token_service.dart';
 
 /// Service for natural language processing using Hugging Face API
 /// Classifies text as task or event and extracts relevant entities
@@ -182,9 +182,8 @@ class NlpService {
     try {
       Logger.debugWithTag('NLP', 'Parsing event: "$text"');
 
-      final token =
-          await LocalStorageService.getSecure(AppConfig.accessTokenKey);
-      if (token == null || token.isEmpty) {
+      final token = await AuthTokenService.getAccessToken();
+      if (token == null) {
         throw NlpServiceException(
           'Please sign in to use NLP parsing.',
           isRetryable: false,
@@ -247,9 +246,8 @@ class NlpService {
     try {
       Logger.debugWithTag('NLP', 'Parsing task: "$text"');
 
-      final token =
-          await LocalStorageService.getSecure(AppConfig.accessTokenKey);
-      if (token == null || token.isEmpty) {
+      final token = await AuthTokenService.getAccessToken();
+      if (token == null) {
         throw NlpServiceException(
           'Please sign in to use NLP parsing.',
           isRetryable: false,

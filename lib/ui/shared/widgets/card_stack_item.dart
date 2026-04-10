@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/themes/hashtag_palette.dart';
+
 /// Data model for a card in the card stack carousel.
 class CardStackItem {
   final String id;
@@ -49,15 +51,21 @@ class CardStackItem {
     required String title,
     String? description,
     DateTime? startTime,
+    List<String> hashtags = const [],
   }) {
+    final accent = accentForEventDisplay(title: title, hashtags: hashtags);
+    final tagLabel = hashtags.isNotEmpty
+        ? '#${stripLeadingHashtagForDisplay(hashtags.first)}'
+        : 'Event';
+
     return CardStackItem(
       id: id,
       title: title,
       description: description,
       dateTime: startTime,
       isTask: false,
-      tag: 'Event',
-      tagColor: const Color(0xFF8B80F0),
+      tag: tagLabel,
+      tagColor: accent,
     );
   }
 }

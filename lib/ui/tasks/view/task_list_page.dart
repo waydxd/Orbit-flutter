@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/widgets/hashtag_chip.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/task_model.dart';
@@ -17,6 +18,8 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   bool _showCompleted = true;
+  /// `null` = all priorities; otherwise matches [TaskModel.priority] case-insensitively.
+  String? _priorityFilter;
 
   Future<void> _refreshTasks() async {
     final userId = context.read<AuthViewModel>().currentUser?.id;
@@ -37,10 +40,14 @@ class _TaskListPageState extends State<TaskListPage> {
         ),
         child: Consumer<CalendarViewModel>(
           builder: (context, viewModel, child) {
+            final filteredTasks = viewModel.tasks.where((t) {
+              if (_priorityFilter == null) return true;
+              return t.priority.toLowerCase() == _priorityFilter!.toLowerCase();
+            }).toList();
             final pendingTasks =
-                viewModel.tasks.where((t) => !t.completed).toList();
+                filteredTasks.where((t) => !t.completed).toList();
             final completedTasks =
-                viewModel.tasks.where((t) => t.completed).toList();
+                filteredTasks.where((t) => t.completed).toList();
 
             return SafeArea(
               child: Column(
@@ -260,49 +267,114 @@ class _TaskListPageState extends State<TaskListPage> {
   }
 
   Widget _buildHeader() {
+    final filterActive = _priorityFilter != null;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.filter_list_rounded, color: AppColors.black),
-              const SizedBox(width: 15),
-              Stack(
-                children: [
-                  const Icon(
-                    Icons.notifications_outlined,
-                    color: AppColors.black,
-                    size: 28,
-                  ),
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF8B80F0),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          IconButton(
+            tooltip: 'Filter by priority',
+            onPressed: () => _showPriorityFilterSheet(context),
+            icon: Icon(
+              Icons.filter_list_rounded,
+              color: filterActive ? const Color(0xFF8B80F0) : AppColors.black,
+              size: 28,
+            ),
           ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _refreshTasks,
-                child: const Icon(Icons.refresh_rounded, color: AppColors.black, size: 26),
-              ),
-              const SizedBox(width: 15),
-              const Icon(Icons.menu_rounded, color: AppColors.black, size: 28),
-            ],
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: _refreshTasks,
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.black,
+              size: 26,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPriorityFilterSheet(BuildContext context) {
+    const options = <(String label, String? value)>[
+      ('All priorities', null),
+      ('Urgent', 'urgent'),
+      ('High', 'high'),
+      ('Medium', 'medium'),
+      ('Low', 'low'),
+    ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 20,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.grey400.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text(
+                    'Filter by priority',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...options.map((opt) {
+                  final selected = _priorityFilter == opt.$2;
+                  return ListTile(
+                    title: Text(
+                      opt.$1,
+                      style: TextStyle(
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        color: selected
+                            ? const Color(0xFF8B80F0)
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    trailing: selected
+                        ? const Icon(Icons.check_rounded, color: Color(0xFF8B80F0))
+                        : null,
+                    onTap: () {
+                      setState(() => _priorityFilter = opt.$2);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1011,22 +1083,9 @@ class _TaskItemWidgetState extends State<TaskItemWidget> {
                       spacing: 4,
                       runSpacing: 2,
                       children: [
-                        ...widget.task.hashtags.take(3).map((tag) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: widget.color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '#$tag',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.color,
-                                ),
-                              ),
-                            )),
+                        ...widget.task.hashtags
+                            .take(3)
+                            .map((tag) => HashtagChipCompact(tag: tag)),
                         if (widget.task.hashtags.length > 3)
                           Text(
                             '+${widget.task.hashtags.length - 3}',
