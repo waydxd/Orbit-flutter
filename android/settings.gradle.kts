@@ -19,7 +19,7 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.13.2" apply false // Do not upgrade to AGP 9 until flutter supports it
-    id("org.jetbrains.kotlin.android") version "2.3.10" apply false
+    id("org.jetbrains.kotlin.android") version "2.3.20" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
