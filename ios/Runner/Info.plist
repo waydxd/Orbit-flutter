@@ -55,6 +55,11 @@
 	<array>
 		<string>location</string>
 		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Orbit needs photo access to set a custom image for your event.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Orbit needs camera access to take a photo for your event cover.</string>
 </dict>
 </plist>

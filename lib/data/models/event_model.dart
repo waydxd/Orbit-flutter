@@ -9,6 +9,10 @@ class EventModel extends BaseModel {
   final DateTime endTime;
   final String location;
   final List<String> hashtags;
+  final bool isRecurring;
+  final String recurrenceRule;
+  final String recurrenceException;
+  final List<String> imageUrls;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,7 +27,36 @@ class EventModel extends BaseModel {
     required this.createdAt,
     required this.updatedAt,
     this.hashtags = const [],
+    this.isRecurring = false,
+    this.recurrenceRule = '',
+    this.recurrenceException = '',
+    this.imageUrls = const [],
   });
+
+  static List<String> _parseImageUrls(dynamic v) {
+    if (v == null) return const [];
+    if (v is List) {
+      return v.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    }
+    return const [];
+  }
+
+  static bool _jsonBool(dynamic v) {
+    if (v == null) return false;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      return s == 'true' || s == '1';
+    }
+    return false;
+  }
+
+  static String _jsonString(dynamic v) {
+    if (v == null) return '';
+    if (v is String) return v;
+    return v.toString();
+  }
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
@@ -37,6 +70,13 @@ class EventModel extends BaseModel {
       hashtags: json['hashtags'] != null
           ? List<String>.from(json['hashtags'] as List)
           : const [],
+      isRecurring: _jsonBool(json['is_recurring'] ?? json['isRecurring']),
+      recurrenceRule:
+          _jsonString(json['recurrence_rule'] ?? json['recurrenceRule']),
+      recurrenceException: _jsonString(
+        json['recurrence_exception'] ?? json['recurrenceException'],
+      ),
+      imageUrls: _parseImageUrls(json['image_url']),
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
@@ -53,6 +93,10 @@ class EventModel extends BaseModel {
       'end_time': endTime.toUtc().toIso8601String(),
       'location': location,
       'hashtags': hashtags,
+      'is_recurring': isRecurring,
+      'recurrence_rule': recurrenceRule,
+      'recurrence_exception': recurrenceException,
+      if (imageUrls.isNotEmpty) 'image_url': imageUrls,
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
     };
@@ -68,6 +112,10 @@ class EventModel extends BaseModel {
         endTime,
         location,
         hashtags,
+        isRecurring,
+        recurrenceRule,
+        recurrenceException,
+        imageUrls,
         createdAt,
         updatedAt,
       ];
@@ -81,6 +129,10 @@ class EventModel extends BaseModel {
     DateTime? endTime,
     String? location,
     List<String>? hashtags,
+    bool? isRecurring,
+    String? recurrenceRule,
+    String? recurrenceException,
+    List<String>? imageUrls,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -93,6 +145,10 @@ class EventModel extends BaseModel {
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
       hashtags: hashtags ?? this.hashtags,
+      isRecurring: isRecurring ?? this.isRecurring,
+      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      recurrenceException: recurrenceException ?? this.recurrenceException,
+      imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

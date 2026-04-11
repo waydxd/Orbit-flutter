@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'background_task.dart';
@@ -22,6 +23,31 @@ class LocationTrackingService {
   Future<bool> _requestPermissions(BuildContext context) async {
     bool serviceEnabled;
     LocationPermission permission;
+
+    // Android 13+: foreground service notification requires notification permission.
+    // If notifications are blocked, starting a foreground service can crash with
+    // CannotPostForegroundServiceNotificationException.
+    final notificationStatus = await Permission.notification.status;
+    if (notificationStatus.isDenied) {
+      final result = await Permission.notification.request();
+      if (!result.isGranted) {
+        if (!context.mounted) return false;
+        _showErrorDialog(
+          context,
+          'Notification permission is required to run location tracking in the background.',
+          isPermanent: result.isPermanentlyDenied,
+        );
+        return false;
+      }
+    } else if (notificationStatus.isPermanentlyDenied) {
+      if (!context.mounted) return false;
+      _showErrorDialog(
+        context,
+        'Notification permission is blocked. Please open app settings and enable notifications to run location tracking.',
+        isPermanent: true,
+      );
+      return false;
+    }
 
     // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -99,10 +125,27 @@ class LocationTrackingService {
   Future<void> _initBackgroundService() async {
     final service = FlutterBackgroundService();
 
+    // Android 8+: foreground service notification must use an existing channel.
+    // Also ensure we have a valid small icon (ic_bg_service_small) in res/drawable.
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'orbit_location_channel',
+      'Orbit Location Service',
+      description: 'Background location tracking for Orbit.',
+      importance: Importance.low,
+    );
+
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
-        autoStart: true,
+        autoStart: false,
         isForegroundMode: true,
         notificationChannelId: 'orbit_location_channel',
         initialNotificationTitle: 'Orbit Location Service',

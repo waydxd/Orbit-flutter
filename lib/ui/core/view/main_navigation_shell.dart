@@ -35,7 +35,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       if (!mounted) return;
       final userId = context.read<AuthViewModel>().currentUser?.id;
       if (userId != null) {
-        context.read<CalendarViewModel>().fetchAll(userId: userId);
+        context.read<CalendarViewModel>().fetchAll(
+              userId: userId,
+              eventRangeAnchor: DateTime.now(),
+            );
       }
     });
   }

@@ -5,6 +5,8 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../settings/view/settings_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
+import '../../shared/widgets/card_stack_item.dart';
+import '../widgets/upcoming_carousel.dart';
 import 'package:intl/intl.dart';
 import '../../home/widgets/daily_suggestions_widget.dart';
 
@@ -16,14 +18,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final PageController _pageController = PageController(viewportFraction: 0.85);
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,21 +82,33 @@ class _HomePageState extends State<HomePage> {
                   // 1. Swappable Cards (Upcoming Tasks/Events)
                   _buildSectionTitle('Upcoming'),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    height: 160,
-                    child: combinedUpcoming.isEmpty
-                        ? _buildEmptyStateCard('No upcoming items!')
-                        : PageView.builder(
-                            controller: _pageController,
-                            itemCount: combinedUpcoming.length > 5
-                                ? 5
-                                : combinedUpcoming.length,
-                            itemBuilder: (context, index) {
-                              final item = combinedUpcoming[index];
-                              return _buildUpcomingCard(item);
-                            },
-                          ),
-                  ),
+                  combinedUpcoming.isEmpty
+                      ? SizedBox(
+                          height: 220,
+                          child: _buildEmptyStateCard('No upcoming items!'),
+                        )
+                      : UpcomingCarousel(
+                          items: combinedUpcoming.take(5).map((item) {
+                            if (item is TaskModel) {
+                              return CardStackItem.fromTask(
+                                id: item.id,
+                                title: item.title,
+                                description: item.description,
+                                dueDate: item.dueDate,
+                              );
+                            } else {
+                              final event = item as EventModel;
+                              return CardStackItem.fromEvent(
+                                id: event.id,
+                                title: event.title,
+                                description: event.description,
+                                startTime: event.startTime,
+                                hashtags: event.hashtags,
+                              );
+                            }
+                          }).toList(),
+                          viewportFraction: 0.88,
+                        ),
 
                   const SizedBox(height: 30),
 
@@ -193,86 +199,6 @@ class _HomePageState extends State<HomePage> {
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-      ),
-    );
-  }
-
-  Widget _buildUpcomingCard(dynamic item) {
-    final bool isTask = item is TaskModel;
-    final String typeLabel = isTask ? 'Task' : 'Event';
-    final DateTime? date =
-        isTask ? item.dueDate : (item as EventModel).startTime;
-    final Color typeColor =
-        isTask ? AppColors.primary : const Color(0xFF8B80F0);
-    return Container(
-      margin: const EdgeInsets.only(right: 15, bottom: 10),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: typeColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  typeLabel,
-                  style: TextStyle(
-                    color: typeColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              if (date != null)
-                Text(
-                  DateFormat('MMM d, h:mm a').format(date),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            item.title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            item.description.isNotEmpty ? item.description : 'No description',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }

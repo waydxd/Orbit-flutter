@@ -66,6 +66,10 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^21.0.0
 
+  # Firebase (Push Notifications via FCM)
+  firebase_core: ^3.12.1
+  firebase_messaging: ^15.2.4
+
   # Image & Camera
   image_picker: ^1.1.2
   camera: ^0.12.0
@@ -76,10 +80,13 @@ dependencies:
   # Utils
   uuid: ^4.5.1
   path_provider: ^2.1.4
+  file_picker: ^8.1.7
+  share_plus: ^10.1.4
   equatable: ^2.0.5
   json_annotation: ^4.9.0
   flutter_background_service: ^5.1.0
   flutter_timezone: ^5.0.1
+  timezone: ^0.11.0
 
   # WebSocket for chat streaming
   web_socket_channel: ^2.4.0

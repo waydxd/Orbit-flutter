@@ -1,19 +1,65 @@
 import 'dart:async';
 import '../../core/view_models/base_view_model.dart';
+import '../../core/themes/hashtag_palette.dart' show stableHashtagHash;
+import '../../../core/services/app_settings_service.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/habit_suggestion.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/push_notification_api_service.dart';
 import '../../../data/services/suggestion_service.dart';
 import '../../../utils/logger.dart';
 
+/// Visible event query window: month of [anchor] ±7 days, or full [anchor].year ±7 days.
+(DateTime start, DateTime end) eventQueryRange(DateTime anchor,
+    {bool fullYear = false}) {
+  if (fullYear) {
+    final y = anchor.year;
+    final start = DateTime(y, 1, 1).subtract(const Duration(days: 7));
+    final end = DateTime(y, 12, 31, 23, 59, 59).add(const Duration(days: 7));
+    return (start, end);
+  }
+  final y = anchor.year;
+  final m = anchor.month;
+  final first = DateTime(y, m, 1);
+  final last = DateTime(y, m + 1, 0, 23, 59, 59);
+  final start = first.subtract(const Duration(days: 7));
+  final end = last.add(const Duration(days: 7));
+  return (start, end);
+}
+
+/// Union of [eventQueryRange] for each anchor (widest start .. widest end).
+(DateTime start, DateTime end) unionEventQueryRange(
+  Iterable<DateTime> anchors, {
+  bool fullYear = false,
+}) {
+  DateTime? minStart;
+  DateTime? maxEnd;
+  for (final a in anchors) {
+    final (s, e) = eventQueryRange(a, fullYear: fullYear);
+    final ms = minStart;
+    final me = maxEnd;
+    minStart = ms == null || s.isBefore(ms) ? s : ms;
+    maxEnd = me == null || e.isAfter(me) ? e : me;
+  }
+  return (minStart!, maxEnd!);
+}
+
 class CalendarViewModel extends BaseViewModel {
-  final CalendarRepository _calendarRepository;
+  late final CalendarRepository _calendarRepository;
+  late final PushNotificationApiService _pushApi;
+  final NotificationService _notificationService;
+  final AppSettingsService _appSettings;
 
   List<EventModel> _events = [];
   List<TaskModel> _tasks = [];
   List<HabitSuggestion> _habitSuggestions = [];
+
+  /// Last anchor used for a successful event list fetch (calendar focused month/year).
+  DateTime? _lastEventFetchAnchor;
+  bool _lastFetchFullYear = false;
 
   List<EventModel> get events => _events;
   List<TaskModel> get tasks => _tasks;
@@ -25,9 +71,78 @@ class CalendarViewModel extends BaseViewModel {
   /// Number of pending habit suggestions
   int get habitSuggestionsCount => _habitSuggestions.length;
 
-  CalendarViewModel({CalendarRepository? calendarRepository})
-      : _calendarRepository =
-            calendarRepository ?? CalendarRepository(ApiClient());
+  CalendarViewModel({
+    CalendarRepository? calendarRepository,
+    NotificationService? notificationService,
+    ApiClient? apiClient,
+    PushNotificationApiService? pushNotificationApiService,
+    AppSettingsService? appSettingsService,
+  })  : _notificationService = notificationService ?? NotificationService(),
+        _appSettings = appSettingsService ?? AppSettingsService() {
+    final client = apiClient ?? ApiClient();
+    _calendarRepository = calendarRepository ?? CalendarRepository(client);
+    _pushApi = pushNotificationApiService ?? PushNotificationApiService(client);
+  }
+
+  /// Registers (or refreshes) the server-side FCM reminder at 15 minutes before [event] start.
+  Future<void> _syncServerEventReminder(EventModel event) async {
+    if (!await _appSettings.getEventNotificationsEnabled()) {
+      await _pushApi.unsubscribeFromEvent(event.id);
+      return;
+    }
+    final reminderUtc =
+        event.startTime.toUtc().subtract(const Duration(minutes: 15));
+    if (!reminderUtc.isAfter(DateTime.now().toUtc())) {
+      await _pushApi.unsubscribeFromEvent(event.id);
+      return;
+    }
+    await _pushApi.unsubscribeFromEvent(event.id);
+    final loc = event.location.trim();
+    await _pushApi.subscribeToEvent(
+      event.id,
+      eventStartAt: event.startTime,
+      location: loc.isNotEmpty ? loc : null,
+    );
+  }
+
+  Future<void> _removeServerEventReminder(String eventId) async {
+    await _pushApi.unsubscribeFromEvent(eventId);
+  }
+
+  // Schedule a notification 30 minutes before the task's due date.
+  Future<void> _scheduleTaskNotification(TaskModel task) async {
+    if (!await _appSettings.getTaskNotificationsEnabled()) return;
+    if (task.dueDate == null || task.completed) return;
+
+    final notificationTime =
+        task.dueDate!.subtract(const Duration(minutes: 30));
+    if (notificationTime.isBefore(DateTime.now())) return;
+
+    // Use a stable FNV-1a hash so the ID survives app restarts.
+    final notificationId = stableHashtagHash(task.id);
+
+    await _notificationService.scheduleNotification(
+      id: notificationId,
+      title: 'Task Due Soon',
+      body: '"${task.title}" is due in 30 minutes',
+      scheduledTime: notificationTime,
+    );
+
+    Logger.infoWithTag(
+      'CalendarViewModel',
+      'Scheduled notification for task ${task.id} at $notificationTime',
+    );
+  }
+
+  // Cancel notification for a task.
+  Future<void> _cancelTaskNotification(String taskId) async {
+    final notificationId = stableHashtagHash(taskId);
+    await _notificationService.cancelNotification(notificationId);
+    Logger.infoWithTag(
+      'CalendarViewModel',
+      'Cancelled notification for task $taskId',
+    );
+  }
 
   Future<void> fetchEvents({
     required String userId,
@@ -56,24 +171,47 @@ class CalendarViewModel extends BaseViewModel {
     });
   }
 
-  Future<void> fetchAll({required String userId}) async {
+  /// Re-fetch tasks without showing the full-screen loading spinner.
+  /// Intended for pull-to-refresh so the existing list stays visible.
+  Future<void> refreshTasks({required String userId, bool? completed}) async {
+    await executeAsync(() async {
+      final fetchedTasks = await _calendarRepository.getTasks(
+        userId: userId,
+        completed: completed,
+      );
+      _tasks = fetchedTasks;
+      notifyListeners();
+    }, showLoading: false);
+  }
+
+  Future<void> fetchAll({
+    required String userId,
+    DateTime? eventRangeAnchor,
+    List<DateTime> mergeEventAnchors = const [],
+    bool fullYearRange = false,
+    bool showLoading = true,
+  }) async {
     await executeAsync(() async {
       try {
-        final now = DateTime.now();
-        final startOfRange = DateTime(now.year - 1, now.month, 1);
-        final endOfRange = startOfRange.add(const Duration(days: 3650));
+        final primary = eventRangeAnchor ?? DateTime.now();
+        final anchors = <DateTime>[primary, ...mergeEventAnchors];
+        final (rangeStart, rangeEnd) = anchors.length == 1
+            ? eventQueryRange(primary, fullYear: fullYearRange)
+            : unionEventQueryRange(anchors, fullYear: fullYearRange);
 
         // Fetch events and tasks together – these are critical
         final results = await Future.wait([
           _calendarRepository.getEvents(
             userId: userId,
-            startTime: startOfRange,
-            endTime: endOfRange,
+            startTime: rangeStart,
+            endTime: rangeEnd,
           ),
           _calendarRepository.getTasks(userId: userId),
         ]);
         _events = results[0] as List<EventModel>;
         _tasks = results[1] as List<TaskModel>;
+        _lastEventFetchAnchor = primary;
+        _lastFetchFullYear = fullYearRange;
 
         // Fetch habit suggestions separately so a failure here does not
         // break the loading of events and tasks.
@@ -92,11 +230,56 @@ class CalendarViewModel extends BaseViewModel {
           'CalendarViewModel',
           'Data fetch complete: ${_events.length} events, ${_tasks.length} tasks, ${_habitSuggestions.length} suggestions',
         );
+
+        // Schedule notifications for tasks with due dates that aren't completed
+        for (final task in _tasks) {
+          if (task.dueDate != null && !task.completed) {
+            await _scheduleTaskNotification(task);
+          }
+        }
       } catch (e) {
         Logger.errorWithTag('CalendarViewModel', 'Fetch all failed: $e');
         rethrow;
       }
-    });
+    }, showLoading: showLoading);
+  }
+
+  /// Loads events/tasks without [executeAsync] (for use inside another async op).
+  Future<void> _reloadEventsAndTasksQuiet({
+    required String userId,
+    required List<DateTime> anchors,
+    bool fullYearRange = false,
+  }) async {
+    final (rangeStart, rangeEnd) = anchors.length == 1
+        ? eventQueryRange(anchors.first, fullYear: fullYearRange)
+        : unionEventQueryRange(anchors, fullYear: fullYearRange);
+    final results = await Future.wait([
+      _calendarRepository.getEvents(
+        userId: userId,
+        startTime: rangeStart,
+        endTime: rangeEnd,
+      ),
+      _calendarRepository.getTasks(userId: userId),
+    ]);
+    _events = results[0] as List<EventModel>;
+    _tasks = results[1] as List<TaskModel>;
+    _lastEventFetchAnchor = anchors.first;
+    _lastFetchFullYear = fullYearRange;
+    try {
+      _habitSuggestions = await _calendarRepository.getHabitSuggestions();
+    } catch (e) {
+      Logger.errorWithTag(
+        'CalendarViewModel',
+        'Failed to fetch habit suggestions (non-fatal): $e',
+      );
+      _habitSuggestions = [];
+    }
+    notifyListeners();
+    for (final task in _tasks) {
+      if (task.dueDate != null && !task.completed) {
+        await _scheduleTaskNotification(task);
+      }
+    }
   }
 
   /// Get habit suggestions that match a specific date (by day of week)
@@ -104,8 +287,6 @@ class CalendarViewModel extends BaseViewModel {
     return _habitSuggestions.where((s) {
       if (!s.isValid) return false;
 
-      // Find all matching events (same title, same duration, same time of day)
-      // durationMinutes and timeOfDay (minutes from midnight)
       final matchingEvents = _events.where((e) {
         if (e.title.trim().toLowerCase() != s.title.trim().toLowerCase()) {
           return false;
@@ -123,7 +304,6 @@ class CalendarViewModel extends BaseViewModel {
 
       DateTime? latestDate;
       if (matchingEvents.isNotEmpty) {
-        // Find latest event sorted by date
         matchingEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
         final latestEvent = matchingEvents.last;
         latestDate = DateTime(
@@ -149,7 +329,6 @@ class CalendarViewModel extends BaseViewModel {
     }).toList();
   }
 
-  /// Accept a habit suggestion
   Future<AcceptSuggestionResponse?> acceptHabitSuggestion(
     String suggestionId, {
     String? userId,
@@ -164,7 +343,6 @@ class CalendarViewModel extends BaseViewModel {
     if (response != null && response.success) {
       _habitSuggestions.removeWhere((s) => s.id == suggestionId);
       notifyListeners();
-      // Refresh all data if userId is available so the new recurring event shows
       if (userId != null) {
         await fetchAll(userId: userId);
       }
@@ -172,7 +350,6 @@ class CalendarViewModel extends BaseViewModel {
     return response;
   }
 
-  /// Reject/dismiss a habit suggestion
   Future<bool> dismissHabitSuggestion(String suggestionId) async {
     final result = await executeAsync(() async {
       await _calendarRepository.rejectHabitSuggestion(suggestionId);
@@ -187,46 +364,141 @@ class CalendarViewModel extends BaseViewModel {
     return false;
   }
 
-  Future<void> createEvent(EventModel event) async {
+  Future<EventModel> createEvent(EventModel event) async {
     final result = await executeAsync(() async {
-      await _calendarRepository.createEvent(event);
-      await fetchAll(userId: event.userId); // Refresh data after creation
+      final created = await _calendarRepository.createEvent(event);
+      final anchors = <DateTime>[
+        _lastEventFetchAnchor ?? DateTime.now(),
+        created.startTime,
+      ];
+      await _reloadEventsAndTasksQuiet(
+        userId: event.userId,
+        anchors: anchors,
+        fullYearRange: _lastFetchFullYear,
+      );
+      await _syncServerEventReminder(created);
 
-      // Start background trigger for generating new event suggestions
-      unawaited(OrbitSuggestionService().getSuggestionsForEvent(event,
-          userId: event.userId, forceRegenerate: true));
-      // Clear daily cache so it regenerates on home page
+      unawaited(
+        OrbitSuggestionService().getSuggestionsForEvent(
+          created,
+          userId: event.userId,
+          forceRegenerate: true,
+        ),
+      );
       await OrbitSuggestionService().clearDailySuggestionsCache();
 
-      return true;
+      return created;
     });
 
-    if (result == null && error != null) {
-      throw Exception(error);
+    if (result == null) {
+      throw Exception(error ?? 'Failed to create event');
+    }
+    return result;
+  }
+
+  /// Creates many events with one calendar reload (e.g. materialized recurrence).
+  Future<List<EventModel>> createEvents(List<EventModel> events) async {
+    if (events.isEmpty) {
+      return [];
+    }
+    final userId = events.first.userId;
+    final result = await executeAsync(() async {
+      final created = <EventModel>[];
+      for (final e in events) {
+        final c = await _calendarRepository.createEvent(e);
+        created.add(c);
+        await _syncServerEventReminder(c);
+      }
+      final anchors = <DateTime>[
+        _lastEventFetchAnchor ?? DateTime.now(),
+        ...created.map((c) => c.startTime),
+      ];
+      await _reloadEventsAndTasksQuiet(
+        userId: userId,
+        anchors: anchors,
+        fullYearRange: _lastFetchFullYear,
+      );
+      return created;
+    });
+
+    if (result == null) {
+      throw Exception(error ?? 'Failed to create events');
+    }
+    return result;
+  }
+
+  /// Downloads the generated image and uploads via `POST /events/{id}/images`, then refreshes the calendar.
+  Future<void> attachEventCoverUrl({
+    required String eventId,
+    required String imageUrl,
+    required String userId,
+    String? declaredContentType,
+  }) async {
+    final result = await executeAsync(
+      () async {
+        await _calendarRepository.attachEventCoverUrl(
+          eventId: eventId,
+          imageUrl: imageUrl,
+          declaredContentType: declaredContentType,
+        );
+        await fetchAll(
+          userId: userId,
+          eventRangeAnchor: _lastEventFetchAnchor ?? DateTime.now(),
+          fullYearRange: _lastFetchFullYear,
+          showLoading: false,
+        );
+        return true;
+      },
+      showLoading: false,
+    );
+
+    if (result == null) {
+      throw Exception(error ?? 'Failed to attach cover');
     }
   }
 
   Future<void> createTask(TaskModel task) async {
     final result = await executeAsync(() async {
       await _calendarRepository.createTask(task);
-      await fetchAll(userId: task.userId); // Refresh data after creation
+      await fetchAll(
+        userId: task.userId,
+        eventRangeAnchor: _lastEventFetchAnchor ?? DateTime.now(),
+        fullYearRange: _lastFetchFullYear,
+        showLoading: false,
+      ); // Refresh data after creation
       return true;
     });
 
     if (result == null && error != null) {
       throw Exception(error);
     }
+
+    // Schedule notification if task has a due date
+    if (task.dueDate != null && !task.completed) {
+      await _scheduleTaskNotification(task);
+    }
   }
 
   Future<void> updateEvent(EventModel event) async {
     final result = await executeAsync(() async {
       await _calendarRepository.updateEvent(event);
-      await fetchAll(userId: event.userId); // Refresh data after update
+      await _reloadEventsAndTasksQuiet(
+        userId: event.userId,
+        anchors: <DateTime>[
+          _lastEventFetchAnchor ?? DateTime.now(),
+          event.startTime,
+        ],
+        fullYearRange: _lastFetchFullYear,
+      );
+      await _syncServerEventReminder(event);
 
-      // Start background trigger for regenerating event suggestions
-      unawaited(OrbitSuggestionService().getSuggestionsForEvent(event,
-          userId: event.userId, forceRegenerate: true));
-      // Clear daily cache so it regenerates on home page
+      unawaited(
+        OrbitSuggestionService().getSuggestionsForEvent(
+          event,
+          userId: event.userId,
+          forceRegenerate: true,
+        ),
+      );
       await OrbitSuggestionService().clearDailySuggestionsCache();
 
       return true;
@@ -237,26 +509,59 @@ class CalendarViewModel extends BaseViewModel {
   }
 
   Future<void> updateTask(TaskModel task) async {
+    // Find the old task to check if due date or completion changed
+    final oldTask = _tasks.firstWhere(
+      (t) => t.id == task.id,
+      orElse: () => task,
+    );
+
     final result = await executeAsync(() async {
       await _calendarRepository.updateTask(task);
-      await fetchAll(userId: task.userId); // Refresh data after update
+      await fetchAll(
+        userId: task.userId,
+        eventRangeAnchor: _lastEventFetchAnchor ?? DateTime.now(),
+        fullYearRange: _lastFetchFullYear,
+        showLoading: false,
+      ); // Refresh data after update
       return true;
     });
     if (result == null && error != null) {
       throw Exception(error);
     }
+
+    // Handle notification updates based on task changes
+    if (task.completed) {
+      // Task was completed - cancel the notification
+      await _cancelTaskNotification(task.id);
+    } else if (task.dueDate != oldTask.dueDate ||
+        task.completed != oldTask.completed) {
+      // Due date changed or was uncompleted - reschedule notification
+      await _cancelTaskNotification(task.id);
+      if (task.dueDate != null) {
+        await _scheduleTaskNotification(task);
+      }
+    }
   }
 
   Future<void> deleteEvent(String eventId) async {
-    await executeAsync(() async {
+    final result = await executeAsync(() async {
+      await _removeServerEventReminder(eventId);
       await _calendarRepository.deleteEvent(eventId);
       // Remove from local list to update UI immediately
       _events.removeWhere((event) => event.id == eventId);
       notifyListeners();
+      return true;
     });
+
+    if (result == null && error != null) {
+      throw Exception(error);
+    }
   }
 
   Future<void> deleteTask(String taskId) async {
+    // Cancel notification before deleting
+    await _cancelTaskNotification(taskId);
+
     await executeAsync(() async {
       await _calendarRepository.deleteTask(taskId);
       // Remove from local list to update UI immediately

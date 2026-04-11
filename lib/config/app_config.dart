@@ -36,5 +36,9 @@ class AppConfig {
   // Remote NLP Server Configuration
   // Note: `NlpService` appends `parse/event` and `parse/task` to this base URL.
   // NLP parse endpoints use the same JWT Bearer token issued at login (Orbit-core).
-  static const String nlpServerBaseUrl = 'https://wayd.zapto.org/api/nlp/';
+  // Local: `--dart-define=NLP_SERVER_BASE_URL=http://127.0.0.1:5001/api/nlp/` (trailing slash ok)
+  static const String nlpServerBaseUrl = String.fromEnvironment(
+    'NLP_SERVER_BASE_URL',
+    defaultValue: 'https://wayd.zapto.org/api/nlp/',
+  );
 }

@@ -9,6 +9,7 @@ import '../../settings/view/settings_page.dart';
 import '../../../data/models/event_model.dart';
 
 import '../../core/themes/app_colors.dart';
+import '../../core/themes/hashtag_palette.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -61,13 +62,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'Other';
   }
 
+  /// Heatmap bucket: first event hashtag (display form) when present, else inferred category.
+  String _heatmapCategoryForEvent(EventModel event) {
+    if (event.hashtags.isNotEmpty) {
+      return stripLeadingHashtagForDisplay(event.hashtags.first);
+    }
+    return _inferCategory(event);
+  }
+
   List<DailyHeatmapRecord> _generateRecordsFromEvents(List<EventModel> events) {
     final Map<DateTime, Map<String, int>> dayCategoryDurations = {};
 
     for (final event in events) {
       final dateKey = DateTime(
           event.startTime.year, event.startTime.month, event.startTime.day);
-      final category = _inferCategory(event);
+      final category = _heatmapCategoryForEvent(event);
       final durationMinutes =
           event.endTime.difference(event.startTime).inMinutes;
 
@@ -132,44 +141,49 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  static const _gradientDecoration = BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
-          ),
-        ),
-        child: SafeArea(
-          child: Consumer<CalendarViewModel>(
-            builder: (context, viewModel, child) {
-              final records = _generateRecordsFromEvents(viewModel.events);
+      backgroundColor: const Color(0xFFCDC9F1),
+      body: SizedBox.expand(
+        child: DecoratedBox(
+          decoration: _gradientDecoration,
+          child: SafeArea(
+            child: Consumer<CalendarViewModel>(
+              builder: (context, viewModel, child) {
+                final records = _generateRecordsFromEvents(viewModel.events);
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 20),
-                    HeatmapCalendarWidget(
-                      records: records,
-                      focusedDate: _focusedDate,
-                      onPageChanged: (focusedDay) {
-                        setState(() {
-                          _focusedDate = focusedDay;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    const LocationCardWidget(),
-                  ],
-                ),
-              );
-            },
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 20),
+                      HeatmapCalendarWidget(
+                        records: records,
+                        focusedDate: _focusedDate,
+                        onPageChanged: (focusedDay) {
+                          setState(() {
+                            _focusedDate = focusedDay;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      const LocationCardWidget(),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
