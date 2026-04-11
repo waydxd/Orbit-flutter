@@ -6,6 +6,7 @@ import '../../settings/view/settings_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
 import 'package:intl/intl.dart';
+import '../../home/widgets/daily_suggestions_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -108,9 +109,9 @@ class _HomePageState extends State<HomePage> {
                   // 2. AI Agent Suggestion
                   _buildSectionTitle('AI Suggestions'),
                   const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _buildAiSuggestionCard(),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: DailySuggestionsWidget(),
                   ),
 
                   const SizedBox(height: 30),
@@ -391,65 +392,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAiSuggestionCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAFFFE),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: Color(0xFF50C8AA),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 15),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Schedule optimization available',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Based on your recent habits, we suggest moving "Math Study" to 10:00 AM for better focus.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
