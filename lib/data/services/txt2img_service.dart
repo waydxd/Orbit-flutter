@@ -36,7 +36,7 @@ class Txt2ImgCoverResult {
   bool get isSuccess => url != null && url!.isNotEmpty;
 }
 
-/// Calls `POST /v1/text-to-image` on Orbit-txt2img, or `POST /api/v1/image/text-to-image` on Orbit-core when proxying.
+/// Calls `POST /v1/text-to-image` on Orbit-txt2img, or `POST /api/imagen/v1/text-to-image` on Orbit-core when proxying.
 class Txt2ImgService {
   Txt2ImgService({Dio? dio}) : _dio = dio ?? _buildDio();
 
