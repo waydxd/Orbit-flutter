@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../core/view_models/base_view_model.dart';
 import '../../../core/services/app_settings_service.dart';
 import '../../../core/services/notification_service.dart';
@@ -7,6 +8,7 @@ import '../../../data/models/task_model.dart';
 import '../../../data/models/habit_suggestion.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/push_notification_api_service.dart';
+import '../../../data/services/suggestion_service.dart';
 import '../../../utils/logger.dart';
 
 /// Visible event query window: month of [anchor] ±7 days, or full [anchor].year ±7 days.
@@ -306,7 +308,7 @@ class CalendarViewModel extends BaseViewModel {
           latestEvent.startTime.year,
           latestEvent.startTime.month,
           latestEvent.startTime.day,
-        ).add(const Duration(days: 7));
+        );
       } else if (s.suggestedStartTime != null) {
         latestDate = DateTime(
           s.suggestedStartTime!.year,
@@ -321,7 +323,7 @@ class CalendarViewModel extends BaseViewModel {
             date.day == latestDate.day;
       }
 
-      return false;
+      return date.weekday == s.dayOfWeekIndex;
     }).toList();
   }
 
@@ -373,6 +375,16 @@ class CalendarViewModel extends BaseViewModel {
         fullYearRange: _lastFetchFullYear,
       );
       await _syncServerEventReminder(created);
+
+      unawaited(
+        OrbitSuggestionService().getSuggestionsForEvent(
+          created,
+          userId: event.userId,
+          forceRegenerate: true,
+        ),
+      );
+      await OrbitSuggestionService().clearDailySuggestionsCache();
+
       return created;
     });
 
@@ -477,6 +489,16 @@ class CalendarViewModel extends BaseViewModel {
         fullYearRange: _lastFetchFullYear,
       );
       await _syncServerEventReminder(event);
+
+      unawaited(
+        OrbitSuggestionService().getSuggestionsForEvent(
+          event,
+          userId: event.userId,
+          forceRegenerate: true,
+        ),
+      );
+      await OrbitSuggestionService().clearDailySuggestionsCache();
+
       return true;
     });
     if (result == null && error != null) {

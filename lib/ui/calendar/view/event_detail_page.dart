@@ -14,6 +14,7 @@ import '../../../utils/logger.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../tasks/view/create_item_page.dart';
+import 'event_suggestions_widget.dart';
 
 class EventDetailPage extends StatefulWidget {
   const EventDetailPage({
@@ -201,6 +202,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                     height: 1.5,
                                   ),
                                 ),
+                                const SizedBox(height: 24),
+                                EventSuggestionsWidget(event: event),
                               ],
                             ),
                           ),
