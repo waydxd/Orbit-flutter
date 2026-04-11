@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +13,7 @@ import '../../core/widgets/error_widget.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/event_model.dart';
 import '../view_model/stay_point_view_model.dart';
+import '../widgets/event_map_callout.dart';
 import '../widgets/significant_location_card.dart';
 import '../../../modules/location_tracking/models/stay_point.dart';
 import 'location_detail_page.dart';
@@ -28,7 +33,19 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  /// Completed geocode: value null means failed or empty result.
+  final Map<String, LatLng?> _eventGeocodeResults = {};
+  final Set<String> _eventGeocodeInFlight = {};
+  String _geocodeScheduleSignature = '';
+
+  String? _calloutLocationName;
+  EventModel? _calloutPreviewEvent;
+  LatLng? _calloutAnchor;
+  ScreenCoordinate? _calloutScreenCoord;
+
   static const LatLng _defaultCenter = LatLng(22.3193, 114.1694);
+  static const double _calloutTotalHeight =
+      EventMapCallout.width + 10; // image block + triangle
 
   @override
   void initState() {
@@ -72,13 +89,103 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   // ── StayPoint map helpers ─────────────────────────────────────────────
 
   void _onStayPointCardTapped(int index, StayPoint sp) {
-    setState(() => _selectedIndex = index);
+    setState(() {
+      _selectedIndex = index;
+      _clearEventCallout();
+    });
     _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(sp.centroidLat, sp.centroidLon),
         15.0,
       ),
     );
+  }
+
+  void _clearEventCallout() {
+    _calloutLocationName = null;
+    _calloutPreviewEvent = null;
+    _calloutAnchor = null;
+    _calloutScreenCoord = null;
+  }
+
+  EventModel _pickPreviewEvent(List<EventModel> events) {
+    final sorted = List<EventModel>.from(events)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    for (final e in sorted) {
+      if (e.imageUrls.isNotEmpty) return e;
+    }
+    return sorted.first;
+  }
+
+  void _openEventCallout({
+    required String locationName,
+    required List<EventModel> events,
+    required LatLng anchor,
+  }) {
+    if (events.isEmpty) return;
+    setState(() {
+      _selectedIndex = null;
+      _calloutLocationName = locationName;
+      _calloutPreviewEvent = _pickPreviewEvent(events);
+      _calloutAnchor = anchor;
+      _calloutScreenCoord = null;
+    });
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(anchor, 15.0),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshCalloutScreenCoord());
+    });
+  }
+
+  Future<void> _refreshCalloutScreenCoord() async {
+    final controller = _mapController;
+    final anchor = _calloutAnchor;
+    if (!mounted || controller == null || anchor == null) return;
+    try {
+      final sc = await controller.getScreenCoordinate(anchor);
+      if (!mounted || _calloutAnchor != anchor) return;
+      setState(() => _calloutScreenCoord = sc);
+    } catch (_) {
+      // Map not ready or platform limitation
+    }
+  }
+
+  void _queueGeocodesForEventLocations(
+    List<MapEntry<String, List<EventModel>>> eventLocations,
+  ) {
+    for (final entry in eventLocations) {
+      final name = entry.key;
+      if (_eventGeocodeResults.containsKey(name) ||
+          _eventGeocodeInFlight.contains(name)) {
+        continue;
+      }
+      _eventGeocodeInFlight.add(name);
+      unawaited(_geocodeEventLocation(name));
+    }
+  }
+
+  Future<void> _geocodeEventLocation(String locationName) async {
+    try {
+      final locations = await locationFromAddress(locationName);
+      if (!mounted) return;
+      setState(() {
+        _eventGeocodeInFlight.remove(locationName);
+        if (locations.isNotEmpty) {
+          final loc = locations.first;
+          _eventGeocodeResults[locationName] =
+              LatLng(loc.latitude, loc.longitude);
+        } else {
+          _eventGeocodeResults[locationName] = null;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _eventGeocodeInFlight.remove(locationName);
+        _eventGeocodeResults[locationName] = null;
+      });
+    }
   }
 
   void _fitAllMarkers(List<StayPoint> stayPoints) {
@@ -117,7 +224,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
     );
   }
 
-  Set<Marker> _buildMarkers(List<StayPoint> stayPoints) {
+  Set<Marker> _buildStayPointMarkers(List<StayPoint> stayPoints) {
     return stayPoints.asMap().entries.map((entry) {
       final i = entry.key;
       final sp = entry.value;
@@ -129,14 +236,51 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
               ? BitmapDescriptor.hueViolet
               : BitmapDescriptor.hueAzure,
         ),
-        infoWindow: InfoWindow(
-          title: sp.label ?? 'Significant Location',
-          snippet:
-              SignificantLocationCard.formatDuration(sp.dwellDurationMinutes),
-        ),
+        infoWindow: const InfoWindow(),
         onTap: () => _onStayPointCardTapped(i, sp),
       );
     }).toSet();
+  }
+
+  double _logicalMapPixel(num value, double dpr) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return value / dpr;
+    }
+    return value.toDouble();
+  }
+
+  Widget? _buildCalloutOverlay(BuildContext context) {
+    if (_calloutLocationName == null ||
+        _calloutPreviewEvent == null ||
+        _calloutScreenCoord == null) {
+      return null;
+    }
+
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final sc = _calloutScreenCoord!;
+    final x = _logicalMapPixel(sc.x, dpr);
+    final y = _logicalMapPixel(sc.y, dpr);
+
+    return Positioned(
+      left: x - EventMapCallout.width / 2,
+      top: y - _calloutTotalHeight,
+      child: EventMapCallout(
+        previewEvent: _calloutPreviewEvent,
+        onMagnifyMap: () {
+          _mapController?.animateCamera(CameraUpdate.zoomIn());
+        },
+        onTap: () {
+          final name = _calloutLocationName!;
+          setState(_clearEventCallout);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LocationDetailPage(locationName: name),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showStayPointDetail(BuildContext context, StayPoint sp) {
@@ -190,13 +334,25 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                     stayPoints.first.centroidLat, stayPoints.first.centroidLon)
                 : _defaultCenter;
 
+            final geoSig =
+                eventLocations.map((e) => e.key).join('\u0001');
+            if (geoSig != _geocodeScheduleSignature) {
+              _geocodeScheduleSignature = geoSig;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                _queueGeocodesForEventLocations(eventLocations);
+              });
+            }
+
+            final mapCalloutOverlay = _buildCalloutOverlay(context);
+
             return Stack(
               children: [
                 // Full-screen map with live blue dot
                 GoogleMap(
                   initialCameraPosition:
                       CameraPosition(target: initialCenter, zoom: 12.0),
-                  markers: _buildMarkers(stayPoints),
+                  markers: _buildStayPointMarkers(stayPoints),
                   onMapCreated: (controller) {
                     _mapController = controller;
                     if (stayPoints.isNotEmpty) {
@@ -206,12 +362,24 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                       });
                     }
                   },
+                  onTap: (_) {
+                    if (_calloutLocationName != null) {
+                      setState(_clearEventCallout);
+                    }
+                  },
+                  onCameraIdle: () {
+                    if (_calloutAnchor != null) {
+                      unawaited(_refreshCalloutScreenCoord());
+                    }
+                  },
                   myLocationEnabled: true,
                   myLocationButtonEnabled: false,
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
                   compassEnabled: false,
                 ),
+
+                if (mapCalloutOverlay != null) mapCalloutOverlay,
 
                 // Top bar: back | my-location + refresh
                 _buildTopBar(context, vm),
@@ -286,6 +454,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                       setState(() {
                         _selectedIndex = null;
                         _hasInitialFit = false;
+                        _clearEventCallout();
                       });
                     },
                   ),
@@ -409,7 +578,11 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                 delegate: SliverChildBuilderDelegate(
                   (ctx, index) {
                     final entry = filteredEventLocations[index];
-                    return _buildEventLocationCard(ctx, entry.key, entry.value);
+                    return _buildEventLocationCard(
+                      ctx,
+                      entry.key,
+                      entry.value,
+                    );
                   },
                   childCount: filteredEventLocations.length,
                 ),
@@ -568,12 +741,21 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LocationDetailPage(locationName: locationName),
-          ),
-        );
+        final coord = _eventGeocodeResults[locationName];
+        if (coord != null) {
+          _openEventCallout(
+            locationName: locationName,
+            events: events,
+            anchor: coord,
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LocationDetailPage(locationName: locationName),
+            ),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

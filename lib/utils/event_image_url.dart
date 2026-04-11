@@ -1,4 +1,18 @@
 import '../config/environment.dart';
+import '../data/services/auth_token_service.dart';
+
+/// API returns images in append order (oldest → newest). Detail/cover uses newest first.
+List<String> newestFirstEventImageUrls(List<String> urls) {
+  if (urls.length <= 1) return List<String>.from(urls);
+  return urls.reversed.toList();
+}
+
+Future<Map<String, String>?> eventImageRequestHeaders(String absoluteUrl) async {
+  if (!eventImageUrlRequiresAuth(absoluteUrl)) return {};
+  final token = await AuthTokenService.getAccessToken();
+  if (token == null || token.isEmpty) return {};
+  return {'Authorization': 'Bearer $token'};
+}
 
 String resolveEventImageUrl(String stored) {
   final t = stored.trim();

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -6,13 +5,13 @@ import 'package:provider/provider.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/repositories/calendar_repository.dart';
 import '../../../data/services/api_client.dart';
-import '../../../data/services/auth_token_service.dart';
 import '../../../data/services/txt2img_service.dart';
 import '../../../config/environment.dart';
 import '../../../utils/event_image_url.dart';
 import '../../../utils/logger.dart';
 import '../view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/widgets/event_cover_network_image.dart';
 import '../../tasks/view/create_item_page.dart';
 import 'event_suggestions_widget.dart';
 
@@ -487,18 +486,12 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
   List<String> _displayUrls = [];
   int _coverRetryKey = 0;
 
-  /// API returns images in append order (oldest → newest). Hero uses [first].
-  static List<String> _newestFirstUrls(List<String> urls) {
-    if (urls.length <= 1) return List<String>.from(urls);
-    return urls.reversed.toList();
-  }
-
   Future<List<String>> _refetchDisplayUrlsFromBackend({
     required List<String> fallbackIfEmpty,
   }) async {
     try {
       final fresh = await _calendarRepo.listEventImages(widget.event.id);
-      if (fresh.isNotEmpty) return _newestFirstUrls(fresh);
+      if (fresh.isNotEmpty) return newestFirstEventImageUrls(fresh);
     } catch (e) {
       Logger.warningWithTag('EventDetailCover', 'refetch images: $e');
     }
@@ -521,7 +514,8 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
   @override
   void initState() {
     super.initState();
-    _displayUrls = _newestFirstUrls(List<String>.from(widget.event.imageUrls));
+    _displayUrls =
+        newestFirstEventImageUrls(List<String>.from(widget.event.imageUrls));
     if (_displayUrls.isNotEmpty) {
       _loading = false;
     } else {
@@ -535,7 +529,7 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
       if (!mounted) return;
       if (fromServer.isNotEmpty) {
         setState(() {
-          _displayUrls = _newestFirstUrls(fromServer);
+          _displayUrls = newestFirstEventImageUrls(fromServer);
           _loading = false;
         });
         return;
@@ -718,57 +712,20 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
         final fromServer = await _calendarRepo.listEventImages(widget.event.id);
         if (!mounted) return;
         if (fromServer.isNotEmpty) {
-          setState(() => _displayUrls = _newestFirstUrls(fromServer));
+          setState(
+              () => _displayUrls = newestFirstEventImageUrls(fromServer));
         }
       } catch (_) {}
     }
   }
 
-  Future<Map<String, String>?> _headersFor(String absoluteUrl) async {
-    if (!eventImageUrlRequiresAuth(absoluteUrl)) return {};
-    final token = await AuthTokenService.getAccessToken();
-    if (token == null || token.isEmpty) return {};
-    return {'Authorization': 'Bearer $token'};
-  }
-
   Widget _cachedCover(String rawUrl) {
-    final absolute = resolveEventImageUrl(rawUrl);
-    return FutureBuilder<Map<String, String>?>(
-      key: ValueKey<String>('cover_${rawUrl}_$_coverRetryKey'),
-      future: _headersFor(absolute),
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return Container(
-            color: AppColors.grey100,
-            child: const Center(
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        }
-        final h = snap.data;
-        return CachedNetworkImage(
-          imageUrl: absolute,
-          httpHeaders: (h == null || h.isEmpty) ? null : h,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          placeholder: (context, u) => Container(
-            color: AppColors.grey100,
-            child: const Center(
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          ),
-          errorWidget: (context, u, error) =>
-              _errorBody('Could not load image'),
-        );
-      },
+    return SizedBox.expand(
+      child: EventCoverNetworkImage(
+        key: ValueKey<String>('cover_${rawUrl}_$_coverRetryKey'),
+        rawUrl: rawUrl,
+        fit: BoxFit.cover,
+      ),
     );
   }
 

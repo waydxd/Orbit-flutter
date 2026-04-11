@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +9,7 @@ import '../../core/themes/app_colors.dart';
 import '../../core/themes/hashtag_palette.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/event_model.dart';
+import '../widgets/event_map_callout.dart';
 
 class LocationDetailPage extends StatefulWidget {
   final String locationName;
@@ -20,6 +23,7 @@ class LocationDetailPage extends StatefulWidget {
 class _LocationDetailPageState extends State<LocationDetailPage> {
   LatLng? _locationCoords;
   bool _isLoadingMap = true;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -42,6 +46,12 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         setState(() => _isLoadingMap = false);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -128,12 +138,14 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         target: _locationCoords!,
         zoom: 15.0,
       ),
+      onMapCreated: (c) => _mapController = c,
       markers: {
         Marker(
           markerId: const MarkerId('location'),
           position: _locationCoords!,
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+          infoWindow: const InfoWindow(),
         ),
       },
       myLocationEnabled: true,
@@ -198,15 +210,44 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
 
   // ── Sheet content ─────────────────────────────────────────────────────
 
+  EventModel _pickPreviewEvent(List<EventModel> events) {
+    final sorted = List<EventModel>.from(events)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    for (final e in sorted) {
+      if (e.imageUrls.isNotEmpty) return e;
+    }
+    return sorted.first;
+  }
+
   Widget _buildSheetContent(
     List<EventModel> events,
     ScrollController controller,
   ) {
+    final previewEvent = _pickPreviewEvent(events);
+    final cardW = math.min(280.0, MediaQuery.sizeOf(context).width - 48);
+
     return CustomScrollView(
       controller: controller,
       slivers: [
         // Drag handle
         SliverToBoxAdapter(child: _buildDragHandle()),
+
+        if (events.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: Center(
+                child: EventMapCallout(
+                  cardWidth: cardW,
+                  previewEvent: previewEvent,
+                  showPointer: false,
+                  onMagnifyMap: () {
+                    _mapController?.animateCamera(CameraUpdate.zoomIn());
+                  },
+                ),
+              ),
+            ),
+          ),
 
         // Location header inside the sheet
         SliverToBoxAdapter(

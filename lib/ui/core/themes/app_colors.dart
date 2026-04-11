@@ -41,23 +41,15 @@ class AppColors {
   static const Color textPrimary = Color(0xFF111827);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textTertiary = Color(0xFF9CA3AF);
-  static const Color textPrimaryDark = Color(0xFFF9FAFB);
-  static const Color textSecondaryDark = Color(0xFFD1D5DB);
-  static const Color textTertiaryDark = Color(0xFF9CA3AF);
 
   // Surface Colors (replacing deprecated background)
   static const Color backgroundLight = Color(0xFFFFFFFF);
-  static const Color backgroundDark = Color(0xFF111827);
   static const Color surfaceLight = Color(0xFFF9FAFB);
-  static const Color surfaceDark = Color(0xFF1F2937);
 
   // Neumorphic Colors
   static const Color neumorphicLight = Color(0xFFE0E5EC);
-  static const Color neumorphicDark = Color(0xFF2E3440);
   static const Color neumorphicShadowLight = Color(0xFFA3B1C6);
-  static const Color neumorphicShadowDark = Color(0xFF1A1F2B);
   static const Color neumorphicHighlightLight = Color(0xFFFFFFFF);
-  static const Color neumorphicHighlightDark = Color(0xFF3E4A59);
 
   // Color Schemes
   static const ColorScheme lightColorScheme = ColorScheme(
@@ -80,27 +72,5 @@ class AppColors {
     onInverseSurface: white,
     inversePrimary: primaryLight,
     surfaceTint: primary,
-  );
-
-  static const ColorScheme darkColorScheme = ColorScheme(
-    brightness: Brightness.dark,
-    primary: primaryLight,
-    onPrimary: black,
-    secondary: secondaryLight,
-    onSecondary: black,
-    tertiary: accentLight,
-    onTertiary: black,
-    error: error,
-    onError: white,
-    surface: surfaceDark,
-    onSurface: textPrimaryDark,
-    outline: grey600,
-    outlineVariant: grey700,
-    shadow: black,
-    scrim: black,
-    inverseSurface: grey200,
-    onInverseSurface: black,
-    inversePrimary: primaryDark,
-    surfaceTint: primaryLight,
   );
 }
