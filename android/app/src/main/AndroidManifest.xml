@@ -16,7 +16,7 @@
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:enabled="true"
-            android:exported="true"
+            android:exported="false"
             android:foregroundServiceType="location" />
         <activity
             android:name=".MainActivity"

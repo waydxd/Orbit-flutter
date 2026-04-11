@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../../core/view_models/base_view_model.dart';
+import '../../core/themes/hashtag_palette.dart' show stableHashtagHash;
 import '../../../core/services/app_settings_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../data/repositories/calendar_repository.dart';
@@ -110,14 +111,15 @@ class CalendarViewModel extends BaseViewModel {
 
   // Schedule a notification 30 minutes before the task's due date.
   Future<void> _scheduleTaskNotification(TaskModel task) async {
+    if (!await _appSettings.getTaskNotificationsEnabled()) return;
     if (task.dueDate == null || task.completed) return;
 
     final notificationTime =
         task.dueDate!.subtract(const Duration(minutes: 30));
     if (notificationTime.isBefore(DateTime.now())) return;
 
-    // Use task id hash as notification id for easy lookup/cancellation later.
-    final notificationId = task.id.hashCode;
+    // Use a stable FNV-1a hash so the ID survives app restarts.
+    final notificationId = stableHashtagHash(task.id);
 
     await _notificationService.scheduleNotification(
       id: notificationId,
@@ -134,7 +136,7 @@ class CalendarViewModel extends BaseViewModel {
 
   // Cancel notification for a task.
   Future<void> _cancelTaskNotification(String taskId) async {
-    final notificationId = taskId.hashCode;
+    final notificationId = stableHashtagHash(taskId);
     await _notificationService.cancelNotification(notificationId);
     Logger.infoWithTag(
       'CalendarViewModel',

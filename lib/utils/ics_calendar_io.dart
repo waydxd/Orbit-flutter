@@ -71,8 +71,10 @@ DateTime? _parseIcsDateTime(String value) {
         s = int.tryParse(time.substring(4, 6)) ?? 0;
       }
     }
-    final local = DateTime(y, mo, da, h, mi, s);
-    return isUtc ? local.toUtc().toLocal() : local;
+    if (isUtc) {
+      return DateTime.utc(y, mo, da, h, mi, s).toLocal();
+    }
+    return DateTime(y, mo, da, h, mi, s);
   }
   return null;
 }
