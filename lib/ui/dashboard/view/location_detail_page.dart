@@ -210,7 +210,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
 
   // ── Sheet content ─────────────────────────────────────────────────────
 
-  EventModel _pickPreviewEvent(List<EventModel> events) {
+  EventModel? _pickPreviewEvent(List<EventModel> events) {
+    if (events.isEmpty) return null;
     final sorted = List<EventModel>.from(events)
       ..sort((a, b) => b.startTime.compareTo(a.startTime));
     for (final e in sorted) {
@@ -232,7 +233,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         // Drag handle
         SliverToBoxAdapter(child: _buildDragHandle()),
 
-        if (events.isNotEmpty)
+        if (previewEvent != null)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),

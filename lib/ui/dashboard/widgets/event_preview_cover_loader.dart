@@ -34,15 +34,35 @@ class _EventPreviewCoverLoaderState extends State<EventPreviewCoverLoader> {
   @override
   void initState() {
     super.initState();
+    _refreshFromEvent();
+  }
+
+  @override
+  void didUpdateWidget(covariant EventPreviewCoverLoader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.event.id != widget.event.id ||
+        !_sameImageUrls(oldWidget.event.imageUrls, widget.event.imageUrls)) {
+      _refreshFromEvent();
+    }
+  }
+
+  void _refreshFromEvent() {
     _rawUrls =
         newestFirstEventImageUrls(List<String>.from(widget.event.imageUrls));
-    if (_rawUrls.isNotEmpty) {
-      _loading = false;
-    } else {
+    _loading = _rawUrls.isEmpty;
+    if (_loading) {
       unawaited(_bootstrap());
     }
   }
 
+  bool _sameImageUrls(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
   Future<void> _bootstrap() async {
     try {
       final fromServer = await _repo.listEventImages(widget.event.id);
