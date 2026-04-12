@@ -63,6 +63,7 @@ class _EventPreviewCoverLoaderState extends State<EventPreviewCoverLoader> {
     }
     return true;
   }
+
   Future<void> _bootstrap() async {
     try {
       final fromServer = await _repo.listEventImages(widget.event.id);
