@@ -9,6 +9,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: GoogleFonts.poppins().fontFamily,
       colorScheme: AppColors.lightColorScheme,
       textTheme: _textTheme,
       appBarTheme: _lightAppBarTheme,
@@ -21,86 +22,63 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: AppColors.darkColorScheme,
-      textTheme: _textTheme,
-      appBarTheme: _darkAppBarTheme,
-      elevatedButtonTheme: _elevatedButtonTheme,
-      outlinedButtonTheme: _outlinedButtonTheme,
-      textButtonTheme: _textButtonTheme,
-      inputDecorationTheme: _inputDecorationTheme,
-      cardTheme: _cardThemeData,
-      bottomNavigationBarTheme: _bottomNavigationBarTheme,
-    );
-  }
-
   static TextTheme get _textTheme {
-    return GoogleFonts.interTextTheme().copyWith(
-      displayLarge: GoogleFonts.inter(
+    return GoogleFonts.poppinsTextTheme().copyWith(
+      displayLarge: GoogleFonts.poppins(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.5,
       ),
-      displayMedium: GoogleFonts.inter(
+      displayMedium: GoogleFonts.poppins(
         fontSize: 28,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.25,
       ),
-      displaySmall: GoogleFonts.inter(
+      displaySmall: GoogleFonts.poppins(
         fontSize: 24,
         fontWeight: FontWeight.w600,
       ),
-      headlineLarge: GoogleFonts.inter(
+      headlineLarge: GoogleFonts.poppins(
         fontSize: 22,
         fontWeight: FontWeight.w600,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: GoogleFonts.poppins(
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
-      headlineSmall: GoogleFonts.inter(
+      headlineSmall: GoogleFonts.poppins(
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
-      titleLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
-      titleMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
-      titleSmall: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
-      bodyLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w400),
-      bodyMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400),
-      bodySmall: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w400),
-      labelLarge: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
-      labelMedium: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
-      labelSmall: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
+      titleLarge:
+          GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+      titleMedium:
+          GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+      titleSmall:
+          GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+      bodyLarge: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w400),
+      bodyMedium:
+          GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400),
+      bodySmall: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w400),
+      labelLarge:
+          GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+      labelMedium:
+          GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+      labelSmall:
+          GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500),
     );
   }
 
   static AppBarTheme get _lightAppBarTheme {
-    return const AppBarTheme(
+    return AppBarTheme(
       elevation: 0,
       centerTitle: true,
       backgroundColor: Colors.transparent,
       foregroundColor: AppColors.textPrimary,
-      titleTextStyle: TextStyle(
+      titleTextStyle: GoogleFonts.poppins(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
-      ),
-    );
-  }
-
-  static AppBarTheme get _darkAppBarTheme {
-    return const AppBarTheme(
-      elevation: 0,
-      centerTitle: true,
-      backgroundColor: Colors.transparent,
-      foregroundColor: AppColors.textPrimaryDark,
-      titleTextStyle: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimaryDark,
       ),
     );
   }
@@ -111,7 +89,8 @@ class AppTheme {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        textStyle:
+            GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -121,7 +100,8 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        textStyle:
+            GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -131,7 +111,8 @@ class AppTheme {
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        textStyle:
+            GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -172,16 +153,15 @@ class AppTheme {
   }
 
   static BottomNavigationBarThemeData get _bottomNavigationBarTheme {
-    return const BottomNavigationBarThemeData(
+    return BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
       elevation: 0,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textSecondary,
-      selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-      unselectedLabelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
+      selectedLabelStyle:
+          GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+      unselectedLabelStyle:
+          GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
     );
   }
 }

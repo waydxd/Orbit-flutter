@@ -343,6 +343,9 @@ class AuthViewModel extends BaseViewModel {
       await LocalStorageService.removePreference('user_email');
       await LocalStorageService.removePreference('user_id');
     }, showLoading: false);
+    if (!isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<bool> loadProfile() async {

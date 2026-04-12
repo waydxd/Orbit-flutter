@@ -89,10 +89,8 @@ Color onHashtagAccentMutedColor(Color accent) {
       : Colors.white.withValues(alpha: 0.72);
 }
 
-double hashtagSoftFillAlpha(Brightness brightness) {
-  return brightness == Brightness.dark ? 0.2 : 0.14;
-}
+/// Light-theme-only hashtag chip fill opacity.
+const double hashtagSoftFillAlpha = 0.14;
 
-double hashtagSuggestionBorderAlpha(Brightness brightness) {
-  return brightness == Brightness.dark ? 0.35 : 0.28;
-}
+/// Light-theme-only suggestion row border opacity.
+const double hashtagSuggestionBorderAlpha = 0.28;

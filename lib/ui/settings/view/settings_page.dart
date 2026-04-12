@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/view_model/auth_view_model.dart';
-import '../../auth/view/login_page.dart';
 import '../../core/themes/app_colors.dart';
 import '../../profile/view/profile_page.dart';
 import 'calendar_import_export_page.dart';
@@ -489,9 +488,7 @@ class _LogoutButton extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-      (route) => false,
-    );
+    Navigator.of(context, rootNavigator: true)
+        .popUntil((route) => route.isFirst);
   }
 }

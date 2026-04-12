@@ -11,13 +11,11 @@ class HashtagChipCompact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = hashtagDreamColor(tag);
-    final brightness = Theme.of(context).brightness;
-    final fillAlpha = hashtagSoftFillAlpha(brightness);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: fillAlpha),
+        color: accent.withValues(alpha: hashtagSoftFillAlpha),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -104,9 +102,6 @@ class HashtagChipSuggestion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = hashtagDreamColor(tag);
-    final brightness = Theme.of(context).brightness;
-    final fillAlpha = hashtagSoftFillAlpha(brightness);
-    final borderAlpha = hashtagSuggestionBorderAlpha(brightness);
     final conf = confidence.clamp(0.0, 1.0);
     final pct = (confidence * 100).clamp(0.0, 100.0).toStringAsFixed(0);
 
@@ -115,10 +110,10 @@ class HashtagChipSuggestion extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: accent.withValues(alpha: fillAlpha),
+          color: accent.withValues(alpha: hashtagSoftFillAlpha),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: accent.withValues(alpha: borderAlpha),
+            color: accent.withValues(alpha: hashtagSuggestionBorderAlpha),
           ),
         ),
         child: Column(

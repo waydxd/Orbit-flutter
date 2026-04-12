@@ -179,7 +179,6 @@ class CreateItemPage extends StatefulWidget {
 
 class _CreateItemPageState extends State<CreateItemPage> {
   late bool isEvent;
-  int selectedColorIndex = 0;
 
   // Form controllers and state
   final TextEditingController _nameController = TextEditingController();
@@ -324,17 +323,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
   bool _bufferCheckLoading = false;
   Timer? _bufferDebounceTimer;
   int _bufferCheckSeq = 0;
-
-  final List<Color> eventColors = [
-    const Color(0xFFE0E5EC), // The planet/moon one (placeholder)
-    const Color(0xFF0D3B4C),
-    const Color(0xFF005691),
-    const Color(0xFF2CB9B0),
-    const Color(0xFF63E695),
-    const Color(0xFFFF8A80),
-    const Color(0xFFFFB74D),
-    const Color(0xFFE195FF),
-  ];
 
   @override
   void dispose() {
@@ -1375,8 +1363,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
         _buildEventHashtagField(),
         const SizedBox(height: 20),
         _buildEventDetailsField(),
-        const SizedBox(height: 20),
-        _buildColorPicker(),
       ],
     );
   }
@@ -1774,57 +1760,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildColorPicker() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Color(0xFFE0E0FF), width: 1),
-          bottom: BorderSide(color: Color(0xFFE0E0FF), width: 1),
-        ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(eventColors.length, (index) {
-            return GestureDetector(
-              onTap: () => setState(() => selectedColorIndex = index),
-              child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: eventColors[index],
-                  shape: BoxShape.circle,
-                  border: selectedColorIndex == index
-                      ? Border.all(color: Colors.white, width: 3)
-                      : null,
-                  boxShadow: selectedColorIndex == index
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: index == 0
-                    ? Center(
-                        child: Icon(
-                          Icons.public,
-                          size: 20,
-                          color: Colors.grey.shade400,
-                        ),
-                      )
-                    : null,
-              ),
-            );
-          }),
-        ),
       ),
     );
   }
