@@ -334,8 +334,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                     stayPoints.first.centroidLat, stayPoints.first.centroidLon)
                 : _defaultCenter;
 
-            final geoSig =
-                eventLocations.map((e) => e.key).join('\u0001');
+            final geoSig = eventLocations.map((e) => e.key).join('\u0001');
             if (geoSig != _geocodeScheduleSignature) {
               _geocodeScheduleSignature = geoSig;
               WidgetsBinding.instance.addPostFrameCallback((_) {

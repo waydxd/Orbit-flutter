@@ -50,15 +50,22 @@ class AppTheme {
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
-      titleLarge: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-      titleMedium: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
-      titleSmall: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+      titleLarge:
+          GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+      titleMedium:
+          GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+      titleSmall:
+          GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
       bodyLarge: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w400),
-      bodyMedium: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400),
+      bodyMedium:
+          GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400),
       bodySmall: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w400),
-      labelLarge: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
-      labelMedium: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
-      labelSmall: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500),
+      labelLarge:
+          GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+      labelMedium:
+          GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+      labelSmall:
+          GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500),
     );
   }
 
@@ -82,7 +89,8 @@ class AppTheme {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+        textStyle:
+            GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -92,7 +100,8 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+        textStyle:
+            GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -102,7 +111,8 @@ class AppTheme {
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+        textStyle:
+            GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }

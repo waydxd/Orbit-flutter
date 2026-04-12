@@ -712,8 +712,7 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
         final fromServer = await _calendarRepo.listEventImages(widget.event.id);
         if (!mounted) return;
         if (fromServer.isNotEmpty) {
-          setState(
-              () => _displayUrls = newestFirstEventImageUrls(fromServer));
+          setState(() => _displayUrls = newestFirstEventImageUrls(fromServer));
         }
       } catch (_) {}
     }

@@ -7,7 +7,8 @@ List<String> newestFirstEventImageUrls(List<String> urls) {
   return urls.reversed.toList();
 }
 
-Future<Map<String, String>?> eventImageRequestHeaders(String absoluteUrl) async {
+Future<Map<String, String>?> eventImageRequestHeaders(
+    String absoluteUrl) async {
   if (!eventImageUrlRequiresAuth(absoluteUrl)) return {};
   final token = await AuthTokenService.getAccessToken();
   if (token == null || token.isEmpty) return {};
