@@ -193,15 +193,33 @@ class _CalendarPageState extends State<CalendarPage>
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
-  // Drag & Layout State
-  double _currentHeight = 188.0; // Start with Week view height
-  final double _weekHeight = 188.0;
-  final double _monthHeight = 392.0;
+  // Drag & Layout State (aligned with legacy calendar shell)
+  /// Week mode: calendar shell (`_currentHeight` + safe padding) occupies this fraction of
+  /// screen height from the top; i.e. `_currentHeight ≈ screenHeight * fraction - topPadding`.
+  static const double _kWeekViewScreenFraction = 0.25;
 
-  /// Reserve space so the timetable Column never collapses past this height.
-  static const double _kMinTimetableHeight = 200.0;
-  bool _isDragging = false;
-  // Height will be calculated dynamically
+  /// Snap / min height for week view (updated from [MediaQuery] in [didChangeDependencies]).
+  double _weekHeight = 200.0;
+  double _currentHeight = 200.0;
+  final double _monthHeight = 420.0;
+
+  /// Minimum height for the Ongoing timeline panel (scales with screen so it is not a hard 220px).
+  static const double _kMinOngoingHeightFloor = 152.0;
+  static const double _kMinOngoingHeightScreenFraction = 0.26;
+
+  /// Minimum height reserved for Ongoing when the calendar is in week or month mode.
+  double _minOngoingPanelHeight(double screenHeight) =>
+      math.max(_kMinOngoingHeightFloor, screenHeight * _kMinOngoingHeightScreenFraction);
+
+  /// Max calendar strip height (`_currentHeight`) while week/month so Ongoing keeps at least [_minOngoingPanelHeight].
+  double _maxCalendarStripHeightNonYear(
+    double screenHeight,
+    double topPadding,
+  ) {
+    final yearH = screenHeight - topPadding;
+    final cap = screenHeight - topPadding - _minOngoingPanelHeight(screenHeight);
+    return cap.clamp(_weekHeight, yearH);
+  }
 
   // View Mode
   CalendarViewMode _viewMode = CalendarViewMode.week;
@@ -210,11 +228,19 @@ class _CalendarPageState extends State<CalendarPage>
   late final ScrollController _timetableScrollController;
   Timer? _timetableFetchDebounce;
   bool _timetableInitialScrollApplied = false;
+  bool _timelineApplyScheduled = false;
 
-  /// Year view: scroll month list to [DateTime.now] month when viewing current year.
-  late final ScrollController _yearMonthsScrollController;
+  /// Year list: recreated when entering year so the list starts near [focusedDay]'s month.
+  ScrollController _yearScrollController = ScrollController();
   final List<GlobalKey> _yearMonthItemKeys =
       List<GlobalKey>.generate(12, (_) => GlobalKey());
+  bool _isYearScrollScheduled = false;
+
+  /// Approximate height of one month block in the year list (for initial scroll offset).
+  static const double _approxMonthHeight = 324.0;
+
+  /// Second tap on the same date in year grid exits to week view (legacy behavior).
+  DateTime? _yearViewLastTapDay;
 
   @override
   void initState() {
@@ -222,10 +248,27 @@ class _CalendarPageState extends State<CalendarPage>
     _selectedDay = _focusedDay;
     _timetableScrollController = ScrollController();
     _timetableScrollController.addListener(_onTimelineScroll);
-    _yearMonthsScrollController = ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applyInitialTimelineScrollIfNeeded();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final screenH = MediaQuery.sizeOf(context).height;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final weekH = (screenH * _kWeekViewScreenFraction - topPadding)
+        .clamp(80.0, screenH * 0.9);
+    final sizeChanged = (_weekHeight - weekH).abs() > 0.5;
+    _weekHeight = weekH;
+    if (_viewMode == CalendarViewMode.week && sizeChanged) {
+      setState(() {
+        _currentHeight = weekH;
+      });
+    } else if (sizeChanged) {
+      setState(() {});
+    }
   }
 
   @override
@@ -233,8 +276,32 @@ class _CalendarPageState extends State<CalendarPage>
     _timetableFetchDebounce?.cancel();
     _timetableScrollController.removeListener(_onTimelineScroll);
     _timetableScrollController.dispose();
-    _yearMonthsScrollController.dispose();
+    _yearScrollController.dispose();
     super.dispose();
+  }
+
+  void _resetYearScrollControllerForMonth(int monthIndex) {
+    _yearScrollController.dispose();
+    final initialOffset =
+        (monthIndex * _approxMonthHeight).clamp(0.0, 11.0 * _approxMonthHeight);
+    _yearScrollController = ScrollController(initialScrollOffset: initialOffset);
+  }
+
+  void _scheduleYearViewScrollToFocusedMonth() {
+    if (_isYearScrollScheduled) return;
+    _isYearScrollScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isYearScrollScheduled = false;
+      final monthIndex = (_focusedDay.month - 1).clamp(0, 11);
+      final monthContext = _yearMonthItemKeys[monthIndex].currentContext;
+      if (monthContext == null) return;
+      Scrollable.ensureVisible(
+        monthContext,
+        duration: Duration.zero,
+        alignment: 0.0,
+      );
+    });
   }
 
   void _scrollYearViewToCurrentMonth() {
@@ -276,10 +343,54 @@ class _CalendarPageState extends State<CalendarPage>
       if (_viewMode != CalendarViewMode.year) return;
       if (y == nowY) {
         _scrollYearViewToCurrentMonth();
-      } else if (_yearMonthsScrollController.hasClients) {
-        _yearMonthsScrollController.jumpTo(0);
+      } else if (_yearScrollController.hasClients) {
+        _yearScrollController.jumpTo(0);
       }
     });
+  }
+
+  void _handleYearViewDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    final lastDay = _yearViewLastTapDay;
+    final isSecondTapOnSameDate =
+        lastDay != null && isSameDay(lastDay, selectedDay);
+
+    if (isSecondTapOnSameDate) {
+      _yearViewLastTapDay = null;
+      final normalized = DateTime(
+        selectedDay.year,
+        selectedDay.month,
+        selectedDay.day,
+      );
+      setState(() {
+        _selectedDay = normalized;
+        _focusedDay = focusedDay;
+        _viewMode = CalendarViewMode.week;
+        _calendarFormat = CalendarFormat.week;
+        _currentHeight = _weekHeight;
+      });
+      _timetableInitialScrollApplied = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _jumpTimelineToDay(normalized, animate: true);
+        _refetchEventsForCalendar(fullYearRange: false);
+      });
+      return;
+    }
+
+    _yearViewLastTapDay =
+        DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+    setState(() {
+      _selectedDay = selectedDay;
+      _focusedDay = focusedDay;
+    });
+  }
+
+  void _maybeInvalidateTimelineScrollFlag(double screenHeight, double topPadding) {
+    final remaining = screenHeight - (_currentHeight + topPadding);
+    if (_viewMode != CalendarViewMode.year &&
+        remaining < _minOngoingPanelHeight(screenHeight)) {
+      _timetableInitialScrollApplied = false;
+    }
   }
 
   int _dayIndexForDate(DateTime d) {
@@ -395,64 +506,86 @@ class _CalendarPageState extends State<CalendarPage>
   double _maxCalendarContentHeight(double screenHeight, double topPadding) {
     return math.max(
       _weekHeight,
-      screenHeight - topPadding - _kMinTimetableHeight,
+      screenHeight - topPadding - _minOngoingPanelHeight(screenHeight),
+    );
+  }
+
+  double _clampStripHeightForMode(
+    double height,
+    CalendarViewMode mode,
+    double screenHeight,
+    double topPadding,
+  ) {
+    final yearH = screenHeight - topPadding;
+    if (mode == CalendarViewMode.year) {
+      return height.clamp(_weekHeight, yearH);
+    }
+    return height.clamp(
+      _weekHeight,
+      _maxCalendarStripHeightNonYear(screenHeight, topPadding),
     );
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
-    final double maxCal = _maxCalendarContentHeight(screenHeight, topPadding);
+    final previousMode = _viewMode;
 
-    final prevMode = _viewMode;
+    final double raw = _currentHeight + details.delta.dy;
+
+    CalendarViewMode newMode;
+    if (raw > _monthHeight + 100) {
+      newMode = CalendarViewMode.year;
+    } else if (raw > _weekHeight + 50) {
+      newMode = CalendarViewMode.month;
+    } else {
+      newMode = CalendarViewMode.week;
+    }
+
+    final double newHeight =
+        _clampStripHeightForMode(raw, newMode, screenHeight, topPadding);
+
+    if (previousMode != CalendarViewMode.year && newMode == CalendarViewMode.year) {
+      _resetYearScrollControllerForMonth((_focusedDay.month - 1).clamp(0, 11));
+    }
+
     setState(() {
-      _currentHeight += details.delta.dy;
-      // Clamp height
-      if (_currentHeight < _weekHeight) _currentHeight = _weekHeight;
-      if (_currentHeight > maxCal) _currentHeight = maxCal;
-
-      // Dynamic mode switching based on height thresholds
-      // Use relative thresholds to make it feel responsive
-      if (_currentHeight > _monthHeight + 100) {
-        _viewMode = CalendarViewMode.year;
-      } else if (_currentHeight > _weekHeight + 50) {
-        _viewMode = CalendarViewMode.month;
+      _currentHeight = newHeight;
+      _viewMode = newMode;
+      if (newMode == CalendarViewMode.month) {
         _calendarFormat = CalendarFormat.month;
-      } else {
-        _viewMode = CalendarViewMode.week;
+      } else if (newMode == CalendarViewMode.week) {
         _calendarFormat = CalendarFormat.week;
       }
     });
-    if (_viewMode == CalendarViewMode.year &&
-        prevMode != CalendarViewMode.year) {
+
+    _maybeInvalidateTimelineScrollFlag(screenHeight, topPadding);
+
+    if (previousMode != CalendarViewMode.year && newMode == CalendarViewMode.year) {
       _refetchEventsForCalendar(fullYearRange: true);
-      _scrollYearViewToCurrentMonth();
+      _scheduleYearViewScrollToFocusedMonth();
     }
   }
 
   void _handleDragEnd(DragEndDetails details) {
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
-    final double maxCal = _maxCalendarContentHeight(screenHeight, topPadding);
+    final double yearHeight = screenHeight - topPadding;
 
-    // Improved snapping logic with velocity assistance
     double targetHeight;
     CalendarViewMode targetMode;
 
     final double velocity = details.velocity.pixelsPerSecond.dy;
 
-    // If moving down fast, snap to next larger view
     if (velocity > 500) {
       if (_currentHeight < _monthHeight) {
         targetHeight = _monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
-        targetHeight = maxCal;
+        targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
       }
-    }
-    // If moving up fast, snap to next smaller view
-    else if (velocity < -500) {
+    } else if (velocity < -500) {
       if (_currentHeight > _monthHeight) {
         targetHeight = _monthHeight;
         targetMode = CalendarViewMode.month;
@@ -460,11 +593,9 @@ class _CalendarPageState extends State<CalendarPage>
         targetHeight = _weekHeight;
         targetMode = CalendarViewMode.week;
       }
-    }
-    // Otherwise use position thresholds (unchanged)
-    else {
-      if (_currentHeight > (_monthHeight + maxCal) / 2) {
-        targetHeight = maxCal;
+    } else {
+      if (_currentHeight > (_monthHeight + yearHeight) / 2) {
+        targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
       } else if (_currentHeight > (_weekHeight + _monthHeight) / 2) {
         targetHeight = _monthHeight;
@@ -475,17 +606,17 @@ class _CalendarPageState extends State<CalendarPage>
       }
     }
 
-    targetHeight = targetHeight.clamp(_weekHeight, maxCal);
-    if (targetHeight > _monthHeight + 100) {
-      targetMode = CalendarViewMode.year;
-    } else if (targetHeight > _weekHeight + 50) {
-      targetMode = CalendarViewMode.month;
-    } else {
-      targetMode = CalendarViewMode.week;
+    targetHeight =
+        _clampStripHeightForMode(targetHeight, targetMode, screenHeight, topPadding);
+
+    final bool isTransitioningToYear = _viewMode != CalendarViewMode.year &&
+        targetMode == CalendarViewMode.year;
+
+    if (isTransitioningToYear) {
+      _resetYearScrollControllerForMonth((_focusedDay.month - 1).clamp(0, 11));
     }
 
     setState(() {
-      _isDragging = false;
       _currentHeight = targetHeight;
       _viewMode = targetMode;
       if (targetMode == CalendarViewMode.week) {
@@ -495,126 +626,101 @@ class _CalendarPageState extends State<CalendarPage>
         _calendarFormat = CalendarFormat.month;
       }
     });
-    if (targetMode == CalendarViewMode.year) {
+
+    _maybeInvalidateTimelineScrollFlag(screenHeight, topPadding);
+
+    if (isTransitioningToYear) {
       _refetchEventsForCalendar(fullYearRange: true);
-      _scrollYearViewToCurrentMonth();
+      _scheduleYearViewScrollToFocusedMonth();
     }
-  }
-
-  void _handleDragStart(DragStartDetails details) {
-    setState(() => _isDragging = true);
-  }
-
-  void _handleDragCancel() {
-    setState(() => _isDragging = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
-    final double maxCal = _maxCalendarContentHeight(screenHeight, topPadding);
+    final double yearHeight = screenHeight - topPadding;
+    final double calendarOccupiedHeight = _currentHeight + topPadding;
+    final double remainingHeight = screenHeight - calendarOccupiedHeight;
+    final double minOngoing = _minOngoingPanelHeight(screenHeight);
+    final bool shouldShowTaskList = _viewMode != CalendarViewMode.year &&
+        remainingHeight >= minOngoing;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: Consumer<CalendarViewModel>(
         builder: (context, viewModel, child) {
-          const calendarDecoration = BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
-            ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(24),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          );
-
-          final calendarShellHeight = _currentHeight + topPadding;
-
-          final dragHandle = GestureDetector(
-            onVerticalDragStart: _handleDragStart,
-            onVerticalDragUpdate: _handleDragUpdate,
-            onVerticalDragEnd: _handleDragEnd,
-            onVerticalDragCancel: _handleDragCancel,
-            child: Container(
-              height: 24,
-              width: double.infinity,
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.grey300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          );
-
-          final calendarColumn = Column(
-            children: [
-              SizedBox(height: topPadding),
-              Expanded(
-                child: _viewMode == CalendarViewMode.year
-                    ? _buildCalendarContent(viewModel)
-                    : OverflowBox(
-                        alignment: Alignment.topCenter,
-                        minHeight: _weekHeight,
-                        maxHeight: maxCal,
-                        child: _buildCalendarContent(viewModel),
-                      ),
-              ),
-              dragHandle,
-            ],
-          );
-
-          late final Widget bodyColumn;
-          if (_viewMode == CalendarViewMode.year) {
-            bodyColumn = Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    clipBehavior: Clip.antiAlias,
-                    decoration: calendarDecoration,
-                    child: calendarColumn,
-                  ),
-                ),
-              ],
-            );
-          } else {
-            final calendarShell = _isDragging
-                ? Container(
-                    height: calendarShellHeight,
-                    decoration: calendarDecoration,
-                    child: calendarColumn,
-                  )
-                : AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: calendarShellHeight,
-                    decoration: calendarDecoration,
-                    child: calendarColumn,
-                  );
-            bodyColumn = Column(
-              children: [
-                calendarShell,
-                Expanded(child: _buildTaskList(viewModel)),
-              ],
-            );
-          }
-
           return Stack(
             children: [
-              bodyColumn,
+              Column(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: _currentHeight + topPadding,
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
+                      ),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            SizedBox(height: topPadding),
+                            Expanded(
+                              child: OverflowBox(
+                                alignment: Alignment.topCenter,
+                                minHeight: _weekHeight,
+                                maxHeight: yearHeight,
+                                child: _buildCalendarContent(viewModel),
+                              ),
+                            ),
+                            GestureDetector(
+                              onVerticalDragUpdate: _handleDragUpdate,
+                              onVerticalDragEnd: _handleDragEnd,
+                              child: Container(
+                                height: 24,
+                                width: double.infinity,
+                                color: Colors.transparent,
+                                alignment: Alignment.center,
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.grey300,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (shouldShowTaskList)
+                    Expanded(child: _buildTaskList(viewModel)),
+                ],
+              ),
               if (viewModel.isLoading)
                 const Center(child: CircularProgressIndicator()),
               if (viewModel.error != null)
@@ -683,6 +789,31 @@ class _CalendarPageState extends State<CalendarPage>
 
     final isWeek = _calendarFormat == CalendarFormat.week;
     final calendarStyle = CalendarStyle(
+      defaultTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+      ),
+      weekendTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+      ),
+      outsideTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
+      ),
+      todayTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+      selectedTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
       selectedDecoration: const BoxDecoration(
         color: AppColors.primary,
         shape: BoxShape.circle,
@@ -721,6 +852,9 @@ class _CalendarPageState extends State<CalendarPage>
     );
 
     return TableCalendar(
+      key: ValueKey(
+        'wm-${_calendarFormat.name}-${_focusedDay.year}-${_focusedDay.month}',
+      ),
       firstDay: DateTime.utc(2020, 10, 16),
       lastDay: DateTime.utc(2030, 3, 14),
       focusedDay: _focusedDay,
@@ -730,7 +864,6 @@ class _CalendarPageState extends State<CalendarPage>
             .where((e) => EventRecurrence.occursOnDay(e, day))
             .toList();
       },
-      // Disable scrolling in week view by locking the available gestures
       availableGestures: _calendarFormat == CalendarFormat.week
           ? AvailableGestures.none
           : AvailableGestures.all,
@@ -742,7 +875,6 @@ class _CalendarPageState extends State<CalendarPage>
         });
         _jumpTimelineToDay(selectedDay, animate: true);
       },
-
       onFormatChanged: (format) {
         if (_calendarFormat != format) {
           setState(() {
@@ -758,8 +890,47 @@ class _CalendarPageState extends State<CalendarPage>
       },
       headerStyle: headerStyle,
       calendarStyle: calendarStyle,
-      // Custom builder for markers (dots)
       calendarBuilders: CalendarBuilders(
+        selectedBuilder: (context, day, focusedDay) {
+          const selectedColor = AppColors.primary;
+          return Container(
+            margin: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
+              color: selectedColor,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${day.day}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          );
+        },
+        todayBuilder: (context, day, focusedDay) {
+          final isSelected = isSameDay(_selectedDay, day);
+          return Container(
+            margin: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary
+                  : const Color(0xFF5B91F0).withValues(alpha: 0.75),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${day.day}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          );
+        },
         markerBuilder: (context, date, events) => _calendarMarkerLayout(events),
       ),
     );
@@ -848,9 +1019,9 @@ class _CalendarPageState extends State<CalendarPage>
             // Scrollable List of Months
             Expanded(
               child: ListView.builder(
-                controller: _yearMonthsScrollController,
+                controller: _yearScrollController,
                 itemCount: 12,
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.only(bottom: 120),
                 itemBuilder: (context, index) {
                   final monthDate = DateTime(_focusedDay.year, index + 1, 1);
 
@@ -875,8 +1046,10 @@ class _CalendarPageState extends State<CalendarPage>
                           ),
                         ),
                         SizedBox(
-                          // Wrap TableCalendar in SizedBox to constrain height if needed or ensure it fits
                           child: TableCalendar(
+                            key: ValueKey(
+                              'yv-${_focusedDay.year}-${monthDate.month}',
+                            ),
                             firstDay: DateTime(
                               monthDate.year,
                               monthDate.month,
@@ -896,12 +1069,35 @@ class _CalendarPageState extends State<CalendarPage>
                                   .toList();
                             },
                             headerVisible: false,
-                            daysOfWeekVisible:
-                                false, // Hide repetitive days of week
+                            daysOfWeekVisible: false,
                             pageJumpingEnabled: false,
-                            availableGestures: AvailableGestures
-                                .none, // Disable swiping in this view
+                            availableGestures: AvailableGestures.none,
                             calendarStyle: CalendarStyle(
+                              defaultTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                              weekendTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                              ),
+                              outsideTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
+                              ),
+                              todayTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                              selectedTextStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                               selectedDecoration: const BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
@@ -918,21 +1114,49 @@ class _CalendarPageState extends State<CalendarPage>
                             ),
                             selectedDayPredicate: (day) =>
                                 isSameDay(_selectedDay, day),
-                            onDaySelected: (selectedDay, focusedDay) {
-                              setState(() {
-                                _selectedDay = selectedDay;
-                                _focusedDay = focusedDay;
-                                _viewMode = CalendarViewMode.month;
-                                _calendarFormat = CalendarFormat.month;
-                                final maxCal = _maxCalendarContentHeight(
-                                  MediaQuery.sizeOf(context).height,
-                                  MediaQuery.paddingOf(context).top,
-                                );
-                                _currentHeight = math.min(_monthHeight, maxCal);
-                              });
-                              _jumpTimelineToDay(selectedDay, animate: true);
-                            },
+                            onDaySelected: _handleYearViewDaySelected,
                             calendarBuilders: CalendarBuilders(
+                              selectedBuilder: (context, day, focusedDay) {
+                                const selectedColor = AppColors.primary;
+                                return Container(
+                                  margin: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: selectedColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${day.day}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                );
+                              },
+                              todayBuilder: (context, day, focusedDay) {
+                                final isSelected = isSameDay(_selectedDay, day);
+                                return Container(
+                                  margin: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : const Color(0xFF5B91F0)
+                                            .withValues(alpha: 0.75),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${day.day}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                );
+                              },
                               markerBuilder: (context, date, events) =>
                                   _calendarMarkerLayout(events),
                             ),
@@ -946,38 +1170,28 @@ class _CalendarPageState extends State<CalendarPage>
             ),
           ],
         ),
-        // Floating Back Button - Top Left
         Positioned(
           top: 16,
           left: 16,
-          child: Material(
-            color: Colors.white,
-            elevation: 4,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  _viewMode = CalendarViewMode.month;
-                  _calendarFormat = CalendarFormat.month;
-                  final maxCal = _maxCalendarContentHeight(
+          child: IconButton(
+            icon: const Icon(
+              Icons.chevron_left,
+              color: Color(0xFF6366F1),
+              size: 32,
+            ),
+            onPressed: () {
+              setState(() {
+                _viewMode = CalendarViewMode.month;
+                _calendarFormat = CalendarFormat.month;
+                _currentHeight = math.min(
+                  _monthHeight,
+                  _maxCalendarContentHeight(
                     MediaQuery.sizeOf(context).height,
                     MediaQuery.paddingOf(context).top,
-                  );
-                  _currentHeight = math.min(_monthHeight, maxCal);
-                });
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-            ),
+                  ),
+                );
+              });
+            },
           ),
         ),
       ],
@@ -1046,6 +1260,20 @@ class _CalendarPageState extends State<CalendarPage>
       color: AppColors.grey50,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final minOngoingH = _minOngoingPanelHeight(MediaQuery.sizeOf(context).height);
+          if (constraints.maxHeight < minOngoingH) {
+            return const SizedBox.shrink();
+          }
+
+          if (!_timetableInitialScrollApplied && !_timelineApplyScheduled) {
+            _timelineApplyScheduled = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _timelineApplyScheduled = false;
+              if (!mounted) return;
+              _applyInitialTimelineScrollIfNeeded();
+            });
+          }
+
           const desiredNavClearance = 100.0;
           final bottomInset = math.min(
             desiredNavClearance,

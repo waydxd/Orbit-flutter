@@ -41,6 +41,16 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
   late DateTime _selectedDate;
   int _selectedTab = 0; // 0 for Date, 1 for Time
 
+  DateTime _clampDateTime(
+    DateTime value, {
+    required DateTime min,
+    DateTime? max,
+  }) {
+    if (value.isBefore(min)) return min;
+    if (max != null && value.isAfter(max)) return max;
+    return value;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +59,16 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final minDate = todayStart.subtract(const Duration(days: 1));
+    final maxDate = DateTime(todayStart.year + 5, todayStart.month, todayStart.day);
+    final safeInitialDate = _clampDateTime(
+      _selectedDate,
+      min: minDate,
+      max: maxDate,
+    );
+
     return Container(
       height: 380,
       decoration: const BoxDecoration(
@@ -123,17 +143,22 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
                 ? CupertinoDatePicker(
                     key: const ValueKey('date_picker'),
                     mode: CupertinoDatePickerMode.date,
-                    initialDateTime: _selectedDate,
-                    minimumDate:
-                        DateTime.now().subtract(const Duration(days: 1)),
+                    initialDateTime: safeInitialDate,
+                    minimumDate: minDate,
+                    maximumDate: maxDate,
                     onDateTimeChanged: (DateTime newDate) {
                       setState(() {
-                        _selectedDate = DateTime(
+                        final merged = DateTime(
                           newDate.year,
                           newDate.month,
                           newDate.day,
                           _selectedDate.hour,
                           _selectedDate.minute,
+                        );
+                        _selectedDate = _clampDateTime(
+                          merged,
+                          min: minDate,
+                          max: maxDate,
                         );
                       });
                     },
