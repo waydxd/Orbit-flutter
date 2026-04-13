@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../../core/themes/app_colors.dart';
 
@@ -53,8 +55,12 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final blurHeight = screenHeight * 0.52;
     const bottomBarOffset = 30.0;
+    const minRowContentWidth = 282.0; // 4 icons + center gap + row padding
+    final maxInsetForWidth = (screenWidth - minRowContentWidth) / 2;
+    final horizontalInset = math.min(40.0, math.max(16.0, maxInsetForWidth));
 
     return Positioned(
       left: 0,
@@ -68,8 +74,8 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
           children: [
             // Main Nav Bar Background with transparent circular notch
             Positioned(
-              left: 40,
-              right: 40,
+              left: horizontalInset,
+              right: horizontalInset,
               bottom: bottomBarOffset,
               child: PhysicalShape(
                 clipper: const _NavBarNotchClipper(
@@ -81,39 +87,52 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
                 elevation: 10,
                 child: SizedBox(
                   height: 60,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _NavButton(
-                          icon: Icons.home_outlined,
-                          isActive: widget.currentIndex == 0,
-                          onTap: widget.onHomeTap,
-                          iconSize: 30,
-                        ),
-                        _NavButton(
-                          icon: Icons.calendar_today_outlined,
-                          isActive: widget.currentIndex == 1,
-                          onTap: widget.onCalendarTap,
-                          iconSize: 24,
-                        ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const rowPadding = 20.0;
+                      const iconButtonsWidth = 176.0; // 4 * 44
+                      const preferredCenterGap = 86.0;
+                      final availableGap = constraints.maxWidth -
+                          rowPadding -
+                          iconButtonsWidth;
+                      final centerGap =
+                          availableGap.clamp(64.0, preferredCenterGap);
 
-                        // Space for the center floating button
-                        const SizedBox(width: 86),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _NavButton(
+                              icon: Icons.home_outlined,
+                              isActive: widget.currentIndex == 0,
+                              onTap: widget.onHomeTap,
+                              iconSize: 30,
+                            ),
+                            _NavButton(
+                              icon: Icons.calendar_today_outlined,
+                              isActive: widget.currentIndex == 1,
+                              onTap: widget.onCalendarTap,
+                              iconSize: 24,
+                            ),
 
-                        _NavButton(
-                          icon: Icons.assignment_outlined,
-                          isActive: widget.currentIndex == 2,
-                          onTap: widget.onTodoListTap,
+                            // Keep center notch spacing while allowing small-screen shrink.
+                            SizedBox(width: centerGap),
+
+                            _NavButton(
+                              icon: Icons.assignment_outlined,
+                              isActive: widget.currentIndex == 2,
+                              onTap: widget.onTodoListTap,
+                            ),
+                            _NavButton(
+                              icon: Icons.dashboard_outlined,
+                              isActive: widget.currentIndex == 3,
+                              onTap: widget.onDashboardTap,
+                            ),
+                          ],
                         ),
-                        _NavButton(
-                          icon: Icons.dashboard_outlined,
-                          isActive: widget.currentIndex == 3,
-                          onTap: widget.onDashboardTap,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),

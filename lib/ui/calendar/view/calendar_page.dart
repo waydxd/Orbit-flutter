@@ -371,7 +371,7 @@ class _CalendarPageState extends State<CalendarPage>
       _timetableInitialScrollApplied = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _jumpTimelineToDay(normalized, animate: true);
+        _jumpTimelineToDay(normalized, animate: false);
         _refetchEventsForCalendar(fullYearRange: false);
       });
       return;
@@ -873,7 +873,7 @@ class _CalendarPageState extends State<CalendarPage>
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
-        _jumpTimelineToDay(selectedDay, animate: true);
+        _jumpTimelineToDay(selectedDay, animate: false);
       },
       onFormatChanged: (format) {
         if (_calendarFormat != format) {
