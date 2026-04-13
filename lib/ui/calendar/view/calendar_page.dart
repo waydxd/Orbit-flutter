@@ -280,14 +280,38 @@ class _CalendarPageState extends State<CalendarPage>
     super.dispose();
   }
 
-  void _resetYearScrollControllerForMonth(int monthIndex) {
+  void _resetYearScrollControllerForMonth(
+    int monthIndex, {
+    bool keepScrollOffset = true,
+  }) {
     _yearScrollController.dispose();
     final initialOffset =
         (monthIndex * _approxMonthHeight).clamp(0.0, 11.0 * _approxMonthHeight);
-    _yearScrollController = ScrollController(initialScrollOffset: initialOffset);
+    _yearScrollController = ScrollController(
+      initialScrollOffset: initialOffset,
+      keepScrollOffset: keepScrollOffset,
+    );
+  }
+
+  void _resetYearScrollControllerForYear({
+    required int year,
+    required int month,
+  }) {
+    final nowYear = DateTime.now().year;
+    final monthIndex = year == nowYear ? (month - 1).clamp(0, 11) : 0;
+    _resetYearScrollControllerForMonth(monthIndex);
+  }
+
+  void _resetYearScrollControllerForFocusedYear() {
+    _resetYearScrollControllerForYear(
+      year: _focusedDay.year,
+      month: _focusedDay.month,
+    );
   }
 
   void _scheduleYearViewScrollToFocusedMonth() {
+    final nowYear = DateTime.now().year;
+    if (_focusedDay.year != nowYear) return;
     if (_isYearScrollScheduled) return;
     _isYearScrollScheduled = true;
 
@@ -304,46 +328,11 @@ class _CalendarPageState extends State<CalendarPage>
     });
   }
 
-  void _scrollYearViewToCurrentMonth() {
-    if (_viewMode != CalendarViewMode.year) return;
-    final nowY = DateTime.now().year;
-    if (_focusedDay.year != nowY) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _viewMode != CalendarViewMode.year) return;
-      if (_focusedDay.year != nowY) return;
-      final idx = DateTime.now().month - 1;
-      final ctx = _yearMonthItemKeys[idx].currentContext;
-      if (ctx != null) {
-        Scrollable.ensureVisible(
-          ctx,
-          alignment: 0.0,
-          duration: Duration.zero,
-        );
-        return;
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _viewMode != CalendarViewMode.year) return;
-        final ctx2 = _yearMonthItemKeys[idx].currentContext;
-        if (ctx2 != null) {
-          Scrollable.ensureVisible(
-            ctx2,
-            alignment: 0.0,
-            duration: Duration.zero,
-          );
-        }
-      });
-    });
-  }
-
   void _onYearChangedOnChevron() {
-    final y = _focusedDay.year;
-    final nowY = DateTime.now().year;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_viewMode != CalendarViewMode.year) return;
-      if (y == nowY) {
-        _scrollYearViewToCurrentMonth();
-      } else if (_yearScrollController.hasClients) {
+      if (_yearScrollController.hasClients) {
         _yearScrollController.jumpTo(0);
       }
     });
@@ -546,7 +535,7 @@ class _CalendarPageState extends State<CalendarPage>
         _clampStripHeightForMode(raw, newMode, screenHeight, topPadding);
 
     if (previousMode != CalendarViewMode.year && newMode == CalendarViewMode.year) {
-      _resetYearScrollControllerForMonth((_focusedDay.month - 1).clamp(0, 11));
+      _resetYearScrollControllerForFocusedYear();
     }
 
     setState(() {
@@ -613,7 +602,7 @@ class _CalendarPageState extends State<CalendarPage>
         targetMode == CalendarViewMode.year;
 
     if (isTransitioningToYear) {
-      _resetYearScrollControllerForMonth((_focusedDay.month - 1).clamp(0, 11));
+      _resetYearScrollControllerForFocusedYear();
     }
 
     setState(() {
@@ -954,10 +943,16 @@ class _CalendarPageState extends State<CalendarPage>
                       color: AppColors.primary,
                     ),
                     onPressed: () {
+                      final targetYear = _focusedDay.year - 1;
+                      final targetMonth = _focusedDay.month;
+                      _resetYearScrollControllerForMonth(
+                        0,
+                        keepScrollOffset: false,
+                      );
                       setState(() {
                         _focusedDay = DateTime(
-                          _focusedDay.year - 1,
-                          _focusedDay.month,
+                          targetYear,
+                          targetMonth,
                         );
                       });
                       _refetchEventsForCalendar(fullYearRange: true);
@@ -978,10 +973,16 @@ class _CalendarPageState extends State<CalendarPage>
                       color: AppColors.primary,
                     ),
                     onPressed: () {
+                      final targetYear = _focusedDay.year + 1;
+                      final targetMonth = _focusedDay.month;
+                      _resetYearScrollControllerForMonth(
+                        0,
+                        keepScrollOffset: false,
+                      );
                       setState(() {
                         _focusedDay = DateTime(
-                          _focusedDay.year + 1,
-                          _focusedDay.month,
+                          targetYear,
+                          targetMonth,
                         );
                       });
                       _refetchEventsForCalendar(fullYearRange: true);
@@ -1019,6 +1020,7 @@ class _CalendarPageState extends State<CalendarPage>
             // Scrollable List of Months
             Expanded(
               child: ListView.builder(
+                key: ValueKey('yv-list-${_focusedDay.year}'),
                 controller: _yearScrollController,
                 itemCount: 12,
                 padding: const EdgeInsets.only(bottom: 120),
