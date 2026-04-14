@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/widgets/profile_avatar.dart';
 import '../../profile/view/profile_page.dart';
 import 'calendar_import_export_page.dart';
 import 'gps_settings_page.dart';
@@ -55,15 +56,14 @@ class SettingsPage extends StatelessWidget {
                               return _ProfileTile(
                                 title: user?.displayName ?? 'User name',
                                 subtitle: user?.email ?? 'Profile',
+                                profilePictureUrl: user?.profilePicture,
+                                initials: _initialsForUser(
+                                  displayName: user?.displayName,
+                                  email: user?.email,
+                                ),
                                 onTap: () => _openProfilePage(context),
                               );
                             },
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.person_outline_rounded,
-                            title: 'Account',
-                            onTap: () => _openProfilePage(context),
                           ),
                         ],
                       ),
@@ -86,16 +86,6 @@ class SettingsPage extends StatelessWidget {
                             icon: Icons.location_on_outlined,
                             title: 'GPS',
                             onTap: () => _openGpsSettings(context),
-                          ),
-                          const _DividerLine(),
-                          const _SettingsTile(
-                            icon: Icons.palette_outlined,
-                            title: 'Appearance',
-                          ),
-                          const _DividerLine(),
-                          const _SettingsTile(
-                            icon: Icons.lock_outline_rounded,
-                            title: 'Privacy',
                           ),
                           const _DividerLine(),
                           _SettingsTile(
@@ -149,6 +139,23 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
+
+  String _initialsForUser({
+    required String? displayName,
+    required String? email,
+  }) {
+    final source = (displayName?.trim().isNotEmpty ?? false)
+        ? displayName!.trim()
+        : (email ?? 'U');
+    final parts = source
+        .split(RegExp(r'\s+'))
+        .where((part) => part.trim().isNotEmpty)
+        .toList();
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    return source.substring(0, 1).toUpperCase();
+  }
 }
 
 class _SettingsGroup extends StatelessWidget {
@@ -180,11 +187,15 @@ class _SettingsGroup extends StatelessWidget {
 class _ProfileTile extends StatelessWidget {
   final String title;
   final String subtitle;
+  final String initials;
+  final String? profilePictureUrl;
   final VoidCallback? onTap;
 
   const _ProfileTile({
     required this.title,
     required this.subtitle,
+    required this.initials,
+    this.profilePictureUrl,
     this.onTap,
   });
 
@@ -197,22 +208,10 @@ class _ProfileTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF7C55A), Color(0xFFF39C4A)],
-                ),
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Colors.white,
-                size: 30,
-              ),
+            ProfileAvatar(
+              initials: initials,
+              rawProfilePictureUrl: profilePictureUrl,
+              size: 54,
             ),
             const SizedBox(width: 14),
             Expanded(

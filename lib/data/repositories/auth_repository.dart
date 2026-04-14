@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../services/api_client.dart';
+import '../../utils/constants.dart';
 import '../../utils/logger.dart';
 
 /// Authentication repository for interacting with Orbit-core auth API
@@ -247,4 +248,59 @@ class AuthRepository {
       throw Exception(errorMessage);
     }
   }
+
+  /// Uploads a profile picture (JPEG, PNG, or WebP). Max 5 MB. Overwrites any existing.
+  Future<ProfilePicUploadResult> uploadProfilePicture({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (bytes.isEmpty) {
+      throw Exception('Image is empty');
+    }
+    if (bytes.length > Constants.maxImageSizeBytes) {
+      throw Exception('Image exceeds 5 MB upload limit');
+    }
+    try {
+      final response = await _apiClient.post(
+        '/users/me/profile-pic',
+        data: FormData.fromMap({
+          'image': MultipartFile.fromBytes(bytes, filename: filename),
+        }),
+      );
+
+      if (response.statusCode == 201 && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        final imageId = data['image_id']?.toString().trim() ?? '';
+        final url = data['url']?.toString().trim() ?? '';
+        if (imageId.isEmpty || url.isEmpty) {
+          throw Exception('Invalid response from server');
+        }
+        Logger.infoWithTag(
+          'AuthRepository',
+          'Profile picture uploaded: $imageId',
+        );
+        return ProfilePicUploadResult(imageId: imageId, url: url);
+      }
+
+      throw Exception('Invalid response from server');
+    } catch (e) {
+      final errorMessage = _extractErrorMessage(e);
+      Logger.errorWithTag(
+        'AuthRepository',
+        'Failed to upload profile picture: $errorMessage',
+      );
+      throw Exception(errorMessage);
+    }
+  }
+}
+
+/// Response from `POST /users/me/profile-pic`.
+class ProfilePicUploadResult {
+  const ProfilePicUploadResult({
+    required this.imageId,
+    required this.url,
+  });
+
+  final String imageId;
+  final String url;
 }

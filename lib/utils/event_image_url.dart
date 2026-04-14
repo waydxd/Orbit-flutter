@@ -23,9 +23,12 @@ String resolveEventImageUrl(String stored) {
   return Uri.parse(base).resolve(t).toString();
 }
 
-/// Core serves event binaries at `/api/v1/assets/events/{id}` behind Bearer auth.
+/// Core serves protected binaries under `/api/v1/assets/events/` and
+/// `/api/v1/assets/users/` behind Bearer auth.
 bool eventImageUrlRequiresAuth(String absoluteUrl) {
   final uri = Uri.tryParse(absoluteUrl);
   if (uri == null) return false;
-  return uri.path.contains('/api/v1/assets/events/');
+  final p = uri.path;
+  return p.contains('/api/v1/assets/events/') ||
+      p.contains('/api/v1/assets/users/');
 }
