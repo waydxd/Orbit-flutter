@@ -62,7 +62,8 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final minDate = todayStart.subtract(const Duration(days: 1));
-    final maxDate = DateTime(todayStart.year + 5, todayStart.month, todayStart.day);
+    final maxDate =
+        DateTime(todayStart.year + 5, todayStart.month, todayStart.day);
     final safeInitialDate = _clampDateTime(
       _selectedDate,
       min: minDate,

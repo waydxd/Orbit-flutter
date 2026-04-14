@@ -9,9 +9,7 @@ class EventLocationCoverGrid extends StatelessWidget {
   final double borderRadius;
 
   const EventLocationCoverGrid({
-    super.key,
-    required this.events,
-    required this.size,
+    required this.events, required this.size, super.key,
     this.borderRadius = 8,
   });
 

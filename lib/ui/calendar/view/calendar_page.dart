@@ -208,8 +208,8 @@ class _CalendarPageState extends State<CalendarPage>
   static const double _kMinOngoingHeightScreenFraction = 0.26;
 
   /// Minimum height reserved for Ongoing when the calendar is in week or month mode.
-  double _minOngoingPanelHeight(double screenHeight) =>
-      math.max(_kMinOngoingHeightFloor, screenHeight * _kMinOngoingHeightScreenFraction);
+  double _minOngoingPanelHeight(double screenHeight) => math.max(
+      _kMinOngoingHeightFloor, screenHeight * _kMinOngoingHeightScreenFraction);
 
   /// Max calendar strip height (`_currentHeight`) while week/month so Ongoing keeps at least [_minOngoingPanelHeight].
   double _maxCalendarStripHeightNonYear(
@@ -217,7 +217,8 @@ class _CalendarPageState extends State<CalendarPage>
     double topPadding,
   ) {
     final yearH = screenHeight - topPadding;
-    final cap = screenHeight - topPadding - _minOngoingPanelHeight(screenHeight);
+    final cap =
+        screenHeight - topPadding - _minOngoingPanelHeight(screenHeight);
     return cap.clamp(_weekHeight, yearH);
   }
 
@@ -374,7 +375,8 @@ class _CalendarPageState extends State<CalendarPage>
     });
   }
 
-  void _maybeInvalidateTimelineScrollFlag(double screenHeight, double topPadding) {
+  void _maybeInvalidateTimelineScrollFlag(
+      double screenHeight, double topPadding) {
     final remaining = screenHeight - (_currentHeight + topPadding);
     if (_viewMode != CalendarViewMode.year &&
         remaining < _minOngoingPanelHeight(screenHeight)) {
@@ -534,7 +536,8 @@ class _CalendarPageState extends State<CalendarPage>
     final double newHeight =
         _clampStripHeightForMode(raw, newMode, screenHeight, topPadding);
 
-    if (previousMode != CalendarViewMode.year && newMode == CalendarViewMode.year) {
+    if (previousMode != CalendarViewMode.year &&
+        newMode == CalendarViewMode.year) {
       _resetYearScrollControllerForFocusedYear();
     }
 
@@ -550,7 +553,8 @@ class _CalendarPageState extends State<CalendarPage>
 
     _maybeInvalidateTimelineScrollFlag(screenHeight, topPadding);
 
-    if (previousMode != CalendarViewMode.year && newMode == CalendarViewMode.year) {
+    if (previousMode != CalendarViewMode.year &&
+        newMode == CalendarViewMode.year) {
       _refetchEventsForCalendar(fullYearRange: true);
       _scheduleYearViewScrollToFocusedMonth();
     }
@@ -595,8 +599,8 @@ class _CalendarPageState extends State<CalendarPage>
       }
     }
 
-    targetHeight =
-        _clampStripHeightForMode(targetHeight, targetMode, screenHeight, topPadding);
+    targetHeight = _clampStripHeightForMode(
+        targetHeight, targetMode, screenHeight, topPadding);
 
     final bool isTransitioningToYear = _viewMode != CalendarViewMode.year &&
         targetMode == CalendarViewMode.year;
@@ -632,8 +636,8 @@ class _CalendarPageState extends State<CalendarPage>
     final double calendarOccupiedHeight = _currentHeight + topPadding;
     final double remainingHeight = screenHeight - calendarOccupiedHeight;
     final double minOngoing = _minOngoingPanelHeight(screenHeight);
-    final bool shouldShowTaskList = _viewMode != CalendarViewMode.year &&
-        remainingHeight >= minOngoing;
+    final bool shouldShowTaskList =
+        _viewMode != CalendarViewMode.year && remainingHeight >= minOngoing;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -1262,7 +1266,8 @@ class _CalendarPageState extends State<CalendarPage>
       color: AppColors.grey50,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final minOngoingH = _minOngoingPanelHeight(MediaQuery.sizeOf(context).height);
+          final minOngoingH =
+              _minOngoingPanelHeight(MediaQuery.sizeOf(context).height);
           if (constraints.maxHeight < minOngoingH) {
             return const SizedBox.shrink();
           }

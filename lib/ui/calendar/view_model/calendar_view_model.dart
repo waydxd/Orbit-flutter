@@ -306,10 +306,11 @@ class CalendarViewModel extends BaseViewModel {
       if (matchingEvents.isNotEmpty) {
         matchingEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
         final latestEvent = matchingEvents.last;
+        final targetDate = latestEvent.startTime.add(const Duration(days: 7));
         latestDate = DateTime(
-          latestEvent.startTime.year,
-          latestEvent.startTime.month,
-          latestEvent.startTime.day,
+          targetDate.year,
+          targetDate.month,
+          targetDate.day,
         );
       } else if (s.suggestedStartTime != null) {
         latestDate = DateTime(

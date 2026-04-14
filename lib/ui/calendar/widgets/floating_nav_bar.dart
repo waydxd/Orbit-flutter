@@ -92,9 +92,8 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
                       const rowPadding = 20.0;
                       const iconButtonsWidth = 176.0; // 4 * 44
                       const preferredCenterGap = 86.0;
-                      final availableGap = constraints.maxWidth -
-                          rowPadding -
-                          iconButtonsWidth;
+                      final availableGap =
+                          constraints.maxWidth - rowPadding - iconButtonsWidth;
                       final centerGap =
                           availableGap.clamp(64.0, preferredCenterGap);
 
