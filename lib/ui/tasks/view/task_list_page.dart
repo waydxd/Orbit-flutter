@@ -18,6 +18,7 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   bool _showCompleted = true;
+  final Set<String> _dismissingTaskIds = <String>{};
 
   /// `null` = all priorities; otherwise matches [TaskModel.priority] case-insensitively.
   String? _priorityFilter;
@@ -47,7 +48,11 @@ class _TaskListPageState extends State<TaskListPage> {
               return t.priority.toLowerCase() == _priorityFilter!.toLowerCase();
             }).toList();
             final pendingTasks = _sortTasks(
-              filteredTasks.where((t) => !t.completed).toList(),
+              filteredTasks
+                  .where(
+                    (t) => !t.completed && !_dismissingTaskIds.contains(t.id),
+                  )
+                  .toList(),
             );
             final completedTasks = _sortTasks(
               filteredTasks.where((t) => t.completed).toList(),
@@ -200,13 +205,11 @@ class _TaskListPageState extends State<TaskListPage> {
                                             }
                                           },
                                           onDismissed: (direction) {
-                                            if (direction ==
-                                                DismissDirection.startToEnd) {
-                                              _markTaskComplete(
-                                                  task.id, viewModel);
-                                            } else {
-                                              viewModel.deleteTask(task.id);
-                                            }
+                                            _handleTaskDismiss(
+                                              direction: direction,
+                                              taskId: task.id,
+                                              viewModel: viewModel,
+                                            );
                                           },
                                           child: GestureDetector(
                                             onTap: () {
@@ -1170,6 +1173,30 @@ class _TaskListPageState extends State<TaskListPage> {
       String taskId, CalendarViewModel viewModel) async {
     final task = viewModel.tasks.firstWhere((t) => t.id == taskId);
     await viewModel.updateTask(task.copyWith(completed: false));
+  }
+
+  Future<void> _handleTaskDismiss({
+    required DismissDirection direction,
+    required String taskId,
+    required CalendarViewModel viewModel,
+  }) async {
+    setState(() {
+      _dismissingTaskIds.add(taskId);
+    });
+
+    try {
+      if (direction == DismissDirection.startToEnd) {
+        await _markTaskComplete(taskId, viewModel);
+      } else {
+        await viewModel.deleteTask(taskId);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _dismissingTaskIds.remove(taskId);
+      });
+      rethrow;
+    }
   }
 }
 
