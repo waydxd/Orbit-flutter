@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/agent_chat_message.dart';
-import 'orbi_avatar.dart';
 
 /// Chat message bubble widget
 class ChatMessageBubble extends StatelessWidget {
@@ -25,11 +24,7 @@ class ChatMessageBubble extends StatelessWidget {
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUser) ...[
-            const SmallOrbiAvatar(),
-            const SizedBox(width: 10),
-          ],
-          Flexible(
+          Expanded(
             child: Column(
               crossAxisAlignment:
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -39,7 +34,9 @@ class ChatMessageBubble extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
                     color:
-                        isUser ? const Color(0xFF6366F1) : Colors.transparent,
+                        isUser
+                            ? const Color(0xFF6366F1)
+                            : Colors.transparent,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(20),
                       topRight: const Radius.circular(20),
@@ -73,7 +70,11 @@ class ChatMessageBubble extends StatelessWidget {
                       : _buildMessageContent(isUser),
                 ),
                 // Action buttons (confirm/cancel for agent mode)
-                if (actionButtons != null) actionButtons!,
+                if (actionButtons != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: actionButtons!,
+                  ),
               ],
             ),
           ),
@@ -87,24 +88,11 @@ class ChatMessageBubble extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Agent type label
-        if (!isUser && message.agentType != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              message.agentType!.displayName,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF6366F1),
-              ),
-            ),
-          ),
         // Message content
         Text(
           message.content,
           style: TextStyle(
-            color: isUser ? Colors.white : const Color(0xFF5E6272),
+            color: isUser ? Colors.white : Colors.black,
             fontSize: 15,
             fontWeight: FontWeight.w500,
           ),

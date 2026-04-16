@@ -43,11 +43,7 @@ class AiChatPage extends StatefulWidget {
 
 class _AiChatPageState extends State<AiChatPage> {
   static const BoxDecoration _pageBackgroundDecoration = BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
-    ),
+    color: Colors.white,
   );
 
   final TextEditingController _messageController = TextEditingController();
