@@ -42,6 +42,14 @@ class AiChatPage extends StatefulWidget {
 }
 
 class _AiChatPageState extends State<AiChatPage> {
+  static const BoxDecoration _pageBackgroundDecoration = BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFFEAFFFE), Color(0xFFCDC9F1)],
+    ),
+  );
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -187,19 +195,21 @@ class _AiChatPageState extends State<AiChatPage> {
   Widget build(BuildContext context) {
     if (!_isInitialized) {
       return Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context, hasMessages: false),
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF6366F1),
+        body: Container(
+          decoration: _pageBackgroundDecoration,
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context, hasMessages: false),
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF6366F1),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -213,7 +223,6 @@ class _AiChatPageState extends State<AiChatPage> {
 
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: Colors.white,
             endDrawer: ConversationDrawer(
               conversations: provider.conversations,
               currentConversationId: provider.currentConversationId,
@@ -226,22 +235,25 @@ class _AiChatPageState extends State<AiChatPage> {
               onRenameConversation: _showRenameDialog,
               onDeleteConversation: _showDeleteConfirmation,
             ),
-            body: SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(context, hasMessages: hasMessages),
-                  // Offline/Error banners
-                  if (provider.isOfflineMode) _buildOfflineBanner(),
-                  if (provider.hasError && !provider.isOfflineMode)
-                    _buildErrorBanner(provider),
-                  Expanded(
-                    child: hasMessages
-                        ? _buildMessagesList(provider)
-                        : _buildWelcomeContent(),
-                  ),
-                  _buildInputSection(
-                      provider.isLoading || provider.isProcessingAction),
-                ],
+            body: Container(
+              decoration: _pageBackgroundDecoration,
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    _buildHeader(context, hasMessages: hasMessages),
+                    // Offline/Error banners
+                    if (provider.isOfflineMode) _buildOfflineBanner(),
+                    if (provider.hasError && !provider.isOfflineMode)
+                      _buildErrorBanner(provider),
+                    Expanded(
+                      child: hasMessages
+                          ? _buildMessagesList(provider)
+                          : _buildWelcomeContent(),
+                    ),
+                    _buildInputSection(
+                        provider.isLoading || provider.isProcessingAction),
+                  ],
+                ),
               ),
             ),
           );

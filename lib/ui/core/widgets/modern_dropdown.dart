@@ -37,8 +37,8 @@ class ModernDropdownField<T> extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        constraints: const BoxConstraints(minHeight: 64),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -53,37 +53,44 @@ class ModernDropdownField<T> extends StatelessWidget {
                 color: hasValue ? AppColors.primary : AppColors.textSecondary,
                 size: 20,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
             ],
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (hasValue) ...[
-                    Text(
-                      label,
+              child: hasValue
+                  ? Row(
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            displayText,
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      displayText,
                       style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.3,
+                        color: AppColors.grey400,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    displayText,
-                    style: TextStyle(
-                      color:
-                          hasValue ? AppColors.textPrimary : AppColors.grey400,
-                      fontSize: hasValue ? 14 : 15,
-                      fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
             ),
             Icon(
               Icons.keyboard_arrow_down_rounded,

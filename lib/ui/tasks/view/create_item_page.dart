@@ -831,77 +831,85 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Widget _buildRecurrenceSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ModernDropdownField<String>(
-          label: 'Repeat',
-          icon: Icons.repeat_rounded,
-          value: _repeatFrequencyLabel,
-          displayStringForValue: (val) => val,
-          items: const [
-            'Never',
-            'Daily',
-            'Weekly',
-            'Monthly',
-            'Yearly',
-          ],
-          onChanged: (val) {
-            if (val == null) return;
-            setState(() {
-              _repeatFrequencyLabel = val;
-              if (val == 'Never') {
-                _repeatUntilDate = null;
-              }
-            });
-          },
-        ),
-        if (_repeatFrequencyLabel != 'Never') ...[
-          const SizedBox(height: 8),
-          Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              onTap: _selectRepeatUntilDate,
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Text(
-                      'Repeat until',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _repeatUntilDate != null
-                            ? DateFormat('MMM d, y').format(_repeatUntilDate!)
-                            : 'Select date (required)',
+    final showRepeatUntil = _repeatFrequencyLabel != 'Never';
+    return Container(
+      decoration: _fieldDecoration(),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ModernDropdownField<String>(
+            label: 'Repeat',
+            icon: Icons.repeat_rounded,
+            value: _repeatFrequencyLabel,
+            displayStringForValue: (val) => val,
+            items: const [
+              'Never',
+              'Daily',
+              'Weekly',
+              'Monthly',
+              'Yearly',
+            ],
+            onChanged: (val) {
+              if (val == null) return;
+              setState(() {
+                _repeatFrequencyLabel = val;
+                if (val == 'Never') {
+                  _repeatUntilDate = null;
+                }
+              });
+            },
+          ),
+          if (showRepeatUntil) ...[
+            Divider(
+              height: 1,
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey.shade200,
+            ),
+            Material(
+              color: Colors.white,
+              child: InkWell(
+                onTap: _selectRepeatUntilDate,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Repeat until',
                         style: TextStyle(
-                          color: _repeatUntilDate != null
-                              ? const Color(0xFF1F2937)
-                              : Colors.grey.shade500,
+                          color: Colors.grey.shade600,
                           fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
-                        textAlign: TextAlign.end,
                       ),
-                    ),
-                    Icon(Icons.chevron_right,
-                        color: Colors.grey.shade400, size: 22),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _repeatUntilDate != null
+                              ? DateFormat('MMM d, y').format(_repeatUntilDate!)
+                              : 'Select date',
+                          style: TextStyle(
+                            color: _repeatUntilDate != null
+                                ? const Color(0xFF1F2937)
+                                : Colors.grey.shade500,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                      Icon(Icons.chevron_right,
+                          color: Colors.grey.shade400, size: 22),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -915,6 +923,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
           hintText: 'Task name',
           hintStyle: TextStyle(color: Colors.grey.shade400),
           border: InputBorder.none,
+          filled: true,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 16,
@@ -943,7 +953,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         onTap: _selectDeadlineDateTime,
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
               Text(
@@ -1437,12 +1447,17 @@ class _CreateItemPageState extends State<CreateItemPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.tag_rounded, color: Colors.grey.shade500, size: 20),
+              const Icon(
+                Icons.tag_rounded,
+                color: Color(0xFF6366F1),
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Hashtags',
                 style: TextStyle(
                   color: Colors.grey.shade600,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1689,11 +1704,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
           focusNode: focusNode,
           onEditingComplete: onEditingComplete,
           decoration: InputDecoration(
-            hintText: 'Location (Optional)',
+            hintText: 'Location',
             hintStyle: TextStyle(color: Colors.grey.shade400),
-            prefixIcon:
-                Icon(Icons.location_on_outlined, color: Colors.grey.shade400),
             border: InputBorder.none,
+            filled: true,
+            fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 16,
