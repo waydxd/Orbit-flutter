@@ -406,7 +406,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       const SizedBox(height: 14),
                                       _buildTextField(
                                         controller: _usernameController,
-                                        label: 'Username',
+                                        label: 'User ID',
                                         validator: _validateUsername,
                                       ),
                                       const SizedBox(height: 14),

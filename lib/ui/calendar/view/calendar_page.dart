@@ -23,10 +23,10 @@ const double _kTimetableLaneGap = 2.0;
 const double _kDayRowExtent = 24 * _kTimetableHourHeight;
 
 /// Inclusive start of the scrollable timeline (local midnight).
-final DateTime _kTimelineStart = DateTime(2018, 1, 1);
+final DateTime _kTimelineStart = DateTime(2010, 1, 1);
 
 /// Exclusive end: last renderable day is the day before this.
-final DateTime _kTimelineEndExclusive = DateTime(2036, 1, 1);
+final DateTime _kTimelineEndExclusive = DateTime(2041, 1, 1);
 
 int _timelineDayCount() =>
     _kTimelineEndExclusive.difference(_kTimelineStart).inDays;
@@ -848,8 +848,8 @@ class _CalendarPageState extends State<CalendarPage>
       key: ValueKey(
         'wm-${_calendarFormat.name}-${_focusedDay.year}-${_focusedDay.month}',
       ),
-      firstDay: DateTime.utc(2020, 10, 16),
-      lastDay: DateTime.utc(2030, 3, 14),
+      firstDay: DateTime.utc(2010, 1, 1),
+      lastDay: DateTime.utc(2040, 12, 31),
       focusedDay: _focusedDay,
       calendarFormat: _calendarFormat,
       eventLoader: (day) {
