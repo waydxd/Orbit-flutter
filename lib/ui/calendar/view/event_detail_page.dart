@@ -10,6 +10,7 @@ import '../../../config/environment.dart';
 import '../../../utils/event_image_url.dart';
 import '../../../utils/logger.dart';
 import '../view_model/calendar_view_model.dart';
+import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/widgets/event_cover_network_image.dart';
 import '../../tasks/view/create_item_page.dart';
@@ -518,8 +519,24 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
         newestFirstEventImageUrls(List<String>.from(widget.event.imageUrls));
     if (_displayUrls.isNotEmpty) {
       _loading = false;
+      // Event objects passed from previous screens may carry stale image URLs.
+      // Refresh from backend so reopening the page reflects the latest cover.
+      _syncDisplayUrlsFromBackendSilently();
     } else {
       _bootstrap();
+    }
+  }
+
+  Future<void> _syncDisplayUrlsFromBackendSilently() async {
+    try {
+      final fromServer = await _calendarRepo.listEventImages(widget.event.id);
+      if (!mounted || fromServer.isEmpty) return;
+      final latest = newestFirstEventImageUrls(fromServer);
+      setState(() {
+        _displayUrls = latest;
+      });
+    } catch (e) {
+      Logger.warningWithTag('EventDetailCover', 'silent image refresh: $e');
     }
   }
 
@@ -550,7 +567,9 @@ class EventDetailCoverImageState extends State<EventDetailCoverImage> {
       _loading = true;
       _result = null;
     });
-    final r = await _service.requestCoverUrl(widget.event);
+    final profile =
+        Provider.of<AuthViewModel>(context, listen: false).currentUser;
+    final r = await _service.requestCoverUrl(widget.event, user: profile);
     if (!mounted) return;
     if (r.isSuccess && r.url != null) {
       try {

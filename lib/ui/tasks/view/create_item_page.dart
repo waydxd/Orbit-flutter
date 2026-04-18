@@ -11,6 +11,7 @@ import '../../core/widgets/hashtag_chip.dart';
 import '../../../data/models/event_model.dart';
 import '../../../data/utils/event_recurrence.dart';
 import '../../../data/utils/event_recurrence_materialize.dart';
+import '../../../data/models/user_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/nlp_parse_result.dart';
 import '../../../data/models/hashtag_prediction.dart';
@@ -787,11 +788,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
     required CalendarViewModel viewModel,
     required EventModel created,
     required String currentUserId,
+    UserModel? currentUser,
   }) {
     unawaited((() async {
       try {
         final t2i = Txt2ImgService();
-        final cover = await t2i.requestCoverUrl(created);
+        final cover = await t2i.requestCoverUrl(created, user: currentUser);
         if (cover.isSuccess && cover.url != null) {
           await viewModel.attachEventCoverUrl(
             eventId: created.id,
@@ -1148,6 +1150,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 viewModel: viewModel,
                 created: created,
                 currentUserId: currentUserId,
+                currentUser: authViewModel.currentUser,
               );
             }
           } else {
@@ -1200,6 +1203,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                 viewModel: viewModel,
                 created: createdList.first,
                 currentUserId: currentUserId,
+                currentUser: authViewModel.currentUser,
               );
             }
           }
