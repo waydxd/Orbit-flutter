@@ -322,36 +322,23 @@ class _TaskListPageState extends State<TaskListPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Filter by priority',
-                onPressed: () => _showPriorityFilterSheet(context),
-                icon: Icon(
-                  Icons.filter_list_rounded,
-                  color:
-                      filterActive ? const Color(0xFF8B80F0) : AppColors.black,
-                  size: 28,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Sort tasks',
-                onPressed: () => _showSortSheet(context),
-                icon: Icon(
-                  Icons.swap_vert,
-                  color: sortActive ? const Color(0xFF8B80F0) : AppColors.black,
-                  size: 28,
-                ),
-              ),
-            ],
+          IconButton(
+            tooltip: 'Filter by priority',
+            onPressed: () => _showPriorityFilterSheet(context),
+            icon: Icon(
+              Icons.filter_list_rounded,
+              color:
+                  filterActive ? const Color(0xFF8B80F0) : AppColors.black,
+              size: 28,
+            ),
           ),
           IconButton(
-            tooltip: 'Refresh',
-            onPressed: _refreshTasks,
-            icon: const Icon(
-              Icons.refresh_rounded,
-              color: AppColors.black,
-              size: 26,
+            tooltip: 'Sort tasks',
+            onPressed: () => _showSortSheet(context),
+            icon: Icon(
+              Icons.swap_vert,
+              color: sortActive ? const Color(0xFF8B80F0) : AppColors.black,
+              size: 28,
             ),
           ),
         ],

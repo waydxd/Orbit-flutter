@@ -62,13 +62,13 @@ class NlpParseResult extends Equatable {
       title: json['title'] as String,
       description: json['description'] as String?,
       startTime: json['start_time'] != null
-          ? DateTime.parse(json['start_time'] as String)
+          ? DateTime.parse(json['start_time'] as String).toLocal()
           : null,
       endTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time'] as String)
+          ? DateTime.parse(json['end_time'] as String).toLocal()
           : null,
       dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String)
+          ? DateTime.parse(json['due_date'] as String).toLocal()
           : null,
       location: json['location'] as String?,
       recurrence: json['recurrence'] as String?,

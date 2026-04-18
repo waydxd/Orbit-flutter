@@ -464,7 +464,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   List<StayPoint> _filterStayPoints(List<StayPoint> stayPoints) {
     if (_searchQuery.isEmpty) return stayPoints;
     return stayPoints
-        .where((sp) => (sp.label ?? 'Significant Location')
+        .where((sp) => (sp.label ?? 'Stay point')
             .toLowerCase()
             .contains(_searchQuery))
         .toList();
@@ -528,34 +528,6 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
               child: _buildNoSearchResultsState(),
             )
           else ...[
-            // ── Significant Locations (StayPoints) ──
-            if (filteredStayPoints.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: _buildSectionTitle(
-                  'Significant Locations',
-                  filteredStayPoints.length,
-                  Icons.location_on,
-                  AppColors.primary,
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, index) {
-                    final sp = filteredStayPoints[index];
-                    final originalIndex =
-                        stayPoints.indexWhere((p) => p.id == sp.id);
-                    return SignificantLocationCard(
-                      stayPoint: sp,
-                      isSelected: _selectedIndex == originalIndex,
-                      onTap: () => _onStayPointCardTapped(originalIndex, sp),
-                      onLongPress: () => _showStayPointDetail(ctx, sp),
-                    );
-                  },
-                  childCount: filteredStayPoints.length,
-                ),
-              ),
-            ],
-
             // ── Event Locations ──
             if (filteredEventLocations.isNotEmpty) ...[
               SliverToBoxAdapter(
@@ -577,6 +549,34 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                     );
                   },
                   childCount: filteredEventLocations.length,
+                ),
+              ),
+            ],
+
+            // ── Stay point locations (StayPoints) ──
+            if (filteredStayPoints.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: _buildSectionTitle(
+                  'Stay point locations',
+                  filteredStayPoints.length,
+                  Icons.location_on,
+                  AppColors.primary,
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, index) {
+                    final sp = filteredStayPoints[index];
+                    final originalIndex =
+                        stayPoints.indexWhere((p) => p.id == sp.id);
+                    return SignificantLocationCard(
+                      stayPoint: sp,
+                      isSelected: _selectedIndex == originalIndex,
+                      onTap: () => _onStayPointCardTapped(originalIndex, sp),
+                      onLongPress: () => _showStayPointDetail(ctx, sp),
+                    );
+                  },
+                  childCount: filteredStayPoints.length,
                 ),
               ),
             ],
@@ -972,7 +972,7 @@ class _StayPointDetailSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        stayPoint.label ?? 'Significant Location',
+                        stayPoint.label ?? 'Stay point',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
