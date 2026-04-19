@@ -191,14 +191,19 @@ class _DateTimePickerSheetState extends State<_DateTimePickerSheet> {
 class CreateItemPage extends StatefulWidget {
   final bool initialIsEvent;
   final EventModel? editEvent;
+  final TaskModel? editTask;
   final NlpParseResult? parsedResult;
 
   const CreateItemPage({
     this.initialIsEvent = true,
     this.editEvent,
+    this.editTask,
     this.parsedResult,
     super.key,
-  });
+  }) : assert(
+          editEvent == null || editTask == null,
+          'editEvent and editTask are mutually exclusive',
+        );
 
   @override
   State<CreateItemPage> createState() => _CreateItemPageState();
@@ -220,6 +225,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
     if (widget.editEvent != null) {
       isEvent = true;
       _prefillFromEditEvent();
+    } else if (widget.editTask != null) {
+      isEvent = false;
+      _prefillFromEditTask();
     } else if (widget.parsedResult != null) {
       isEvent = widget.parsedResult!.type == 'event';
       _prefillFromParsedResult();
@@ -259,6 +267,18 @@ class _CreateItemPageState extends State<CreateItemPage> {
     final pre = EventRecurrence.prefillFromEvent(event);
     _repeatFrequencyLabel = pre.frequencyLabel;
     _repeatUntilDate = pre.untilLocalDate;
+  }
+
+  void _prefillFromEditTask() {
+    final task = widget.editTask!;
+    _nameController.text = task.title;
+    _detailsController.text = task.description;
+    if (task.dueDate != null) {
+      _deadlineDate = task.dueDate;
+      _deadlineTime = TimeOfDay.fromDateTime(task.dueDate!);
+    }
+    _selectedPriority = task.priority.isNotEmpty ? task.priority : 'medium';
+    _selectedTags = List<String>.from(task.hashtags);
   }
 
   /// Heuristic: stored as local midnight → end-of-day (23:59).
@@ -1220,19 +1240,36 @@ class _CreateItemPageState extends State<CreateItemPage> {
           );
         }
 
-        final task = TaskModel(
-          id: uuid.v4(),
-          userId: currentUserId,
-          title: _nameController.text,
-          description: _detailsController.text,
-          dueDate: deadline,
-          completed: false,
-          priority: _selectedPriority,
-          hashtags: List<String>.from(_selectedTags),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await viewModel.createTask(task);
+        if (widget.editTask != null) {
+          final t = widget.editTask!;
+          final updated = TaskModel(
+            id: t.id,
+            userId: t.userId,
+            title: _nameController.text,
+            description: _detailsController.text,
+            dueDate: deadline,
+            completed: t.completed,
+            priority: _selectedPriority,
+            hashtags: List<String>.from(_selectedTags),
+            createdAt: t.createdAt,
+            updatedAt: DateTime.now(),
+          );
+          await viewModel.updateTask(updated);
+        } else {
+          final task = TaskModel(
+            id: uuid.v4(),
+            userId: currentUserId,
+            title: _nameController.text,
+            description: _detailsController.text,
+            dueDate: deadline,
+            completed: false,
+            priority: _selectedPriority,
+            hashtags: List<String>.from(_selectedTags),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          await viewModel.createTask(task);
+        }
       }
 
       if (mounted) {
@@ -1240,7 +1277,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
         String successMsg;
         if (!isEvent) {
           successMsg =
-              'Task ${widget.editEvent != null ? 'updated' : 'created'} successfully!';
+              'Task ${widget.editTask != null ? 'updated' : 'created'} successfully!';
         } else if (widget.editEvent != null) {
           successMsg = 'Event updated successfully!';
         } else if (createdEventCount != null && createdEventCount > 1) {
@@ -1257,7 +1294,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Failed to ${widget.editEvent != null ? 'update' : 'create'} ${isEvent ? 'event' : 'task'}: $e'),
+              'Failed to ${isEvent ? (widget.editEvent != null ? 'update' : 'create') : (widget.editTask != null ? 'update' : 'create')} ${isEvent ? 'event' : 'task'}: $e',
+            ),
           ),
         );
       }
@@ -1319,16 +1357,25 @@ class _CreateItemPageState extends State<CreateItemPage> {
           ),
           Expanded(
             child: Center(
-              child: widget.editEvent == null
-                  ? _buildToggle()
-                  : const Text(
+              child: widget.editEvent != null
+                  ? const Text(
                       'Edit Event',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1F2937),
                       ),
-                    ),
+                    )
+                  : widget.editTask != null
+                      ? const Text(
+                          'Edit Task',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                        )
+                      : _buildToggle(),
             ),
           ),
           const SizedBox(width: 48),
@@ -1832,7 +1879,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
               child: viewModel.isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : Text(
-                      widget.editEvent != null ? 'Update' : 'Create',
+                      widget.editEvent != null || widget.editTask != null
+                          ? 'Update'
+                          : 'Create',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,

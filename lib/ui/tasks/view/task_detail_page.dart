@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../data/models/task_model.dart';
+import '../../calendar/view_model/calendar_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/widgets/hashtag_chip.dart';
+import 'create_item_page.dart';
 
-class TaskDetailPage extends StatelessWidget {
+class TaskDetailPage extends StatefulWidget {
   final TaskModel task;
 
   const TaskDetailPage({required this.task, super.key});
 
+  @override
+  State<TaskDetailPage> createState() => _TaskDetailPageState();
+}
+
+class _TaskDetailPageState extends State<TaskDetailPage> {
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
       case 'urgent':
@@ -24,8 +32,107 @@ class TaskDetailPage extends StatelessWidget {
     }
   }
 
+  Future<void> _handleDelete(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final viewModel = Provider.of<CalendarViewModel>(context, listen: false);
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Delete Task'),
+        content: const Text('Are you sure you want to delete this task?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await viewModel.deleteTask(widget.task.id);
+      if (context.mounted) {
+        Navigator.pop(context);
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Task deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Failed to delete task: $e')),
+        );
+      }
+    }
+  }
+
+  void _showMoreOptions(BuildContext context) {
+    final pageContext = context;
+    showModalBottomSheet<void>(
+      context: pageContext,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading:
+                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              title: const Text(
+                'Edit',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                Navigator.push<bool>(
+                  pageContext,
+                  MaterialPageRoute(
+                    builder: (context) => CreateItemPage(
+                      initialIsEvent: false,
+                      editTask: widget.task,
+                    ),
+                  ),
+                ).then((result) {
+                  if (result == true && pageContext.mounted) {
+                    Navigator.pop(pageContext);
+                  }
+                });
+              },
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.delete_outline, color: AppColors.error),
+              title: const Text(
+                'Delete',
+                style: TextStyle(color: AppColors.error),
+              ),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _handleDelete(pageContext);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final task = widget.task;
     final due = task.dueDate;
     return Scaffold(
       body: Container(
@@ -42,6 +149,7 @@ class TaskDetailPage extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new),
@@ -61,7 +169,11 @@ class TaskDetailPage extends StatelessWidget {
                         maxLines: 2,
                       ),
                     ),
-                    const SizedBox(width: 48),
+                    IconButton(
+                      icon: const Icon(Icons.more_horiz),
+                      color: AppColors.textPrimary,
+                      onPressed: () => _showMoreOptions(context),
+                    ),
                   ],
                 ),
               ),

@@ -65,10 +65,17 @@ class _HomePageState extends State<HomePage> {
               final pastEvents =
                   todayEvents.where((e) => e.endTime.isBefore(now)).length;
 
-              // Tasks
-              final totalTasks = viewModel.tasks.length;
+              // Today's Statistics tasks: due today (local) or no due date
+              final todayTasks = viewModel.tasks.where((t) {
+                final d = t.dueDate;
+                if (d == null) return true;
+                return d.year == now.year &&
+                    d.month == now.month &&
+                    d.day == now.day;
+              }).toList();
+              final totalTasks = todayTasks.length;
               final completedTasks =
-                  viewModel.tasks.where((t) => t.completed).length;
+                  todayTasks.where((t) => t.completed).length;
 
               // Upcoming tasks/events for swappable cards
               final upcomingTasks =

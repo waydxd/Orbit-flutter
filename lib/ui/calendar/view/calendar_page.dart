@@ -19,6 +19,10 @@ import 'event_detail_page.dart';
 const double _kTimetableHourHeight = 80.0;
 const double _kTimetableLaneGap = 2.0;
 
+/// Pushes timeline blocks down so they line up with the hour-label row (see
+/// [HabitSuggestion] cards, which use the same offset).
+const double _kTimelineVerticalOffset = 10.0;
+
 /// One calendar day row height in the infinite vertical timeline.
 const double _kDayRowExtent = 24 * _kTimetableHourHeight;
 
@@ -1424,15 +1428,14 @@ class _TimelineDayRow extends StatelessWidget {
                 final slotWidth = (usableWidth - gapTotal) / lay.columnCount;
                 final leftPx =
                     leftMargin + lay.column * (slotWidth + _kTimetableLaneGap);
-                final topPx =
-                    (seg.start.difference(dayMidnight).inMinutes / 60.0) *
-                            _kTimetableHourHeight +
-                        10;
+                // Full hour scale (80px/hour): height matches start→end duration.
+                final startMin = seg.start.difference(dayMidnight).inMinutes;
+                final endMin = seg.end.difference(dayMidnight).inMinutes;
+                final topPx = (startMin / 60.0) * _kTimetableHourHeight +
+                    _kTimelineVerticalOffset;
                 final heightPx = math.max(
                   4.0,
-                  (seg.end.difference(seg.start).inMinutes / 60.0) *
-                          _kTimetableHourHeight -
-                      20,
+                  ((endMin - startMin) / 60.0) * _kTimetableHourHeight,
                 );
                 return Positioned(
                   top: topPx,
@@ -1485,7 +1488,8 @@ class _TimelineDayRow extends StatelessWidget {
               }),
               if (showNowLine)
                 Positioned(
-                  top: (now.hour + now.minute / 60.0) * _kTimetableHourHeight,
+                  top: (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
+                      _kTimelineVerticalOffset,
                   left: 0,
                   right: 0,
                   child: Row(

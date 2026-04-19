@@ -26,13 +26,14 @@ class CountdownController {
   }
 
   void _updateState() {
-    if (config.dueDate == null) {
+    final due = _currentDueDate;
+    if (due == null) {
       _state.text = '';
       return;
     }
 
     final now = DateTime.now();
-    final difference = config.dueDate!.difference(now);
+    final difference = due.difference(now);
 
     // Call onWarning if due in less than 30 minutes and hasn't warned yet
     if (!difference.isNegative && difference.inMinutes <= 30 && !_hasWarned) {
