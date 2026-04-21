@@ -4,7 +4,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
 
   // API Configuration
-  static const String baseUrl = 'https://wayd.zapto.org';
+  static const String baseUrl = 'http://vml1wk238.cse.ust.hk';
   static const String apiVersion = 'v1';
 
   // Local Storage Keys
@@ -38,6 +38,6 @@ class AppConfig {
   // Local: `--dart-define=NLP_SERVER_BASE_URL=http://127.0.0.1:5001/api/nlp/` (trailing slash ok)
   static const String nlpServerBaseUrl = String.fromEnvironment(
     'NLP_SERVER_BASE_URL',
-    defaultValue: 'https://wayd.zapto.org/api/nlp/',
+    defaultValue: 'http://vml1wk238.cse.ust.hk/api/nlp/',
   );
 }
