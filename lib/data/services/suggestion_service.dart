@@ -18,6 +18,9 @@ class OrbitSuggestionService {
   late ClientChannel _channel;
   late SuggestionServiceClient _stub;
 
+  final Map<String, Future<List<Suggestion>>> _inFlightEventRequests = {};
+  final Map<String, Future<List<Suggestion>>> _inFlightDailyRequests = {};
+
   OrbitSuggestionService._internal() {
     _channel = ClientChannel(
       EnvironmentConfig.grpcHost,
@@ -34,7 +37,7 @@ class OrbitSuggestionService {
   Future<CallOptions> _getCallOptions() async {
     final token = await LocalStorageService.getSecure(AppConfig.accessTokenKey);
     return CallOptions(
-      timeout: const Duration(seconds: 60),
+      timeout: const Duration(seconds: 180), // Extended from 60s to 120s
       metadata: {
         if (token != null) 'authorization': 'Bearer $token',
       },
@@ -48,34 +51,38 @@ class OrbitSuggestionService {
         .reduce((a, b) => a ^ b);
   }
 
+  bool hasInFlightEventRequest(String eventId) =>
+      _inFlightEventRequests.containsKey(eventId);
+
   Future<List<Suggestion>> getSuggestionsForEvent(EventModel event,
       {String userId = '', bool forceRegenerate = false}) async {
+    // If a request is already in flight for this event, return that future
+    // so background generation continues and UI can attach to it.
+    if (_inFlightEventRequests.containsKey(event.id)) {
+      return _inFlightEventRequests[event.id]!;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final cacheKey = 'sug_data_${event.id}';
     final dateKey = 'sug_date_${event.id}';
 
     // Check cache: Event didn't update since last fetch.
     if (!forceRegenerate) {
-      final cachedDateStr = prefs.getString(dateKey);
-      if (cachedDateStr != null) {
-        bool isSameTime = false;
+      final cachedData = prefs.getString(cacheKey);
+      if (cachedData != null) {
         try {
-          isSameTime =
-              DateTime.parse(cachedDateStr).isAtSameMomentAs(event.updatedAt);
-        } catch (_) {}
-
-        if (isSameTime ||
-            cachedDateStr == event.updatedAt.toUtc().toIso8601String() ||
-            cachedDateStr == event.updatedAt.toIso8601String()) {
-          final cachedData = prefs.getString(cacheKey);
-          if (cachedData != null) {
-            final List<dynamic> strList = jsonDecode(cachedData);
+          final List<dynamic> strList = jsonDecode(cachedData);
+          if (strList.isNotEmpty) {
             return strList
                 .map((e) => Suggestion.fromJson(e as String))
                 .toList();
           }
-        }
+        } catch (_) {}
       }
+
+      // If we reach here and it's not force regenerate, do NOT automatically fetch.
+      // (Returns empty list to display "No suggestions available" state and require user interaction or event update to generate)
+      return [];
     }
 
     final request = EventRequest(
@@ -89,6 +96,18 @@ class OrbitSuggestionService {
     );
     request.hashtags.addAll(event.hashtags);
 
+    final future = _executeGetSuggestionsForEvent(
+        event, request, prefs, cacheKey, dateKey);
+    _inFlightEventRequests[event.id] = future;
+    return future;
+  }
+
+  Future<List<Suggestion>> _executeGetSuggestionsForEvent(
+      EventModel event,
+      EventRequest request,
+      SharedPreferences prefs,
+      String cacheKey,
+      String dateKey) async {
     try {
       final options = await _getCallOptions();
       final response = await _stub.getSuggestions(request, options: options);
@@ -113,6 +132,8 @@ class OrbitSuggestionService {
         } catch (_) {}
       }
       return [];
+    } finally {
+      _inFlightEventRequests.remove(event.id);
     }
   }
 
@@ -130,20 +151,36 @@ class OrbitSuggestionService {
     final dateStr = DateFormat('yyyy-MM-dd').format(parsedDate);
     final eventsHash = _computeEventsHash(recentEvents);
 
+    // If a request is already in flight for this date, return that future
+    if (_inFlightDailyRequests.containsKey(dateStr)) {
+      return _inFlightDailyRequests[dateStr]!;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final dailyCacheKey = 'daily_sug_data_$dateStr';
     final dailyHashKey = 'daily_sug_hash_$dateStr';
+    const dailyLastDateKey = 'daily_sug_last_date';
+
+    // Clear previous date's cache if date changed
+    final lastDate = prefs.getString(dailyLastDateKey);
+    if (lastDate != null && lastDate != dateStr) {
+      final oldCacheKey = 'daily_sug_data_$lastDate';
+      final oldHashKey = 'daily_sug_hash_$lastDate';
+      await prefs.remove(oldCacheKey);
+      await prefs.remove(oldHashKey);
+    }
+    await prefs.setString(dailyLastDateKey, dateStr);
 
     // Check daily cache: Same day and no events updated/created
     if (!forceRegenerate) {
-      final savedHash = prefs.getInt(dailyHashKey);
-      if (savedHash != null && savedHash == eventsHash) {
-        final cachedData = prefs.getString(dailyCacheKey);
-        if (cachedData != null) {
-          final List<dynamic> strList = jsonDecode(cachedData);
-          return strList.map((e) => Suggestion.fromJson(e as String)).toList();
-        }
+      final cachedData = prefs.getString(dailyCacheKey);
+      if (cachedData != null) {
+        final List<dynamic> strList = jsonDecode(cachedData);
+        return strList.map((e) => Suggestion.fromJson(e as String)).toList();
       }
+
+      // Do NOT auto-fetch daily suggestions. Require explicit user regeneration.
+      return [];
     }
 
     final request = DailySuggestionRequest(
@@ -171,6 +208,20 @@ class OrbitSuggestionService {
             : '',
       );
     }
+
+    final future = _executeGetDailySuggestions(
+        dateStr, request, eventsHash, prefs, dailyCacheKey, dailyHashKey);
+    _inFlightDailyRequests[dateStr] = future;
+    return future;
+  }
+
+  Future<List<Suggestion>> _executeGetDailySuggestions(
+      String dateStr,
+      DailySuggestionRequest request,
+      int eventsHash,
+      SharedPreferences prefs,
+      String dailyCacheKey,
+      String dailyHashKey) async {
     try {
       final response = await _stub.getDailySuggestions(request,
           options: await _getCallOptions());
@@ -195,6 +246,8 @@ class OrbitSuggestionService {
         } catch (_) {}
       }
       return [];
+    } finally {
+      _inFlightDailyRequests.remove(dateStr);
     }
   }
 

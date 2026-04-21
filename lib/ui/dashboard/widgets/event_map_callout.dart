@@ -15,7 +15,8 @@ class EventMapCallout extends StatelessWidget {
   final VoidCallback? onMagnifyMap;
 
   const EventMapCallout({
-    required this.events, super.key,
+    required this.events,
+    super.key,
     this.cardWidth = width,
     this.onTap,
     this.showPointer = true,

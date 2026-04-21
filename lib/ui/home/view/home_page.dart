@@ -360,8 +360,7 @@ class _HomePageState extends State<HomePage> {
   String _greetingWithName(UserModel? user, DateTime now) {
     final phrase = _greetingForLocalHour(now.hour);
     final first = user?.firstName?.trim();
-    final name =
-        (first != null && first.isNotEmpty) ? first : 'user';
+    final name = (first != null && first.isNotEmpty) ? first : 'user';
     return '$phrase, $name';
   }
 }

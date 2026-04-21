@@ -464,9 +464,8 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   List<StayPoint> _filterStayPoints(List<StayPoint> stayPoints) {
     if (_searchQuery.isEmpty) return stayPoints;
     return stayPoints
-        .where((sp) => (sp.label ?? 'Stay point')
-            .toLowerCase()
-            .contains(_searchQuery))
+        .where((sp) =>
+            (sp.label ?? 'Stay point').toLowerCase().contains(_searchQuery))
         .toList();
   }
 

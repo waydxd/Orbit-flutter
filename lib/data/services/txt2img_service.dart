@@ -119,8 +119,7 @@ class Txt2ImgService {
       1200,
     );
     final profileLine = _profileContextLine(user);
-    final profileBlock =
-        profileLine.isEmpty ? '' : '\n\n$profileLine';
+    final profileBlock = profileLine.isEmpty ? '' : '\n\n$profileLine';
 
     return '''
 Full-bleed soft pastel aesthetic illustration of $title.

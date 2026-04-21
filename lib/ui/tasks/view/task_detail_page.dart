@@ -113,8 +113,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
               },
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.delete_outline, color: AppColors.error),
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
               title: const Text(
                 'Delete',
                 style: TextStyle(color: AppColors.error),
@@ -227,7 +226,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                             if (due != null) ...[
                               _buildInfoRow(
                                 icon: Icons.calendar_today_rounded,
-                                text: DateFormat('EEEE, d MMMM yyyy').format(due),
+                                text:
+                                    DateFormat('EEEE, d MMMM yyyy').format(due),
                               ),
                               const SizedBox(height: 8),
                               _buildInfoRow(

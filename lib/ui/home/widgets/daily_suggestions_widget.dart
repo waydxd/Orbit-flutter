@@ -7,6 +7,7 @@ import '../../../generated/protos/suggestion.pbgrpc.dart';
 import '../../core/themes/app_colors.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
+import 'dart:math' as math;
 
 class DailySuggestionsWidget extends StatefulWidget {
   const DailySuggestionsWidget({super.key});
@@ -135,6 +136,19 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
     }
   }
 
+  String _getLabelForType(SuggestionType type) {
+    switch (type) {
+      case SuggestionType.SUGGESTION_TYPE_TRANSPORTATION:
+        return 'Transit';
+      case SuggestionType.SUGGESTION_TYPE_ATTIRE:
+        return 'Attire';
+      case SuggestionType.SUGGESTION_TYPE_PREPARATION:
+        return 'Prep';
+      default:
+        return 'Tip';
+    }
+  }
+
   Widget _buildEmptyCard(String title, String subtitle, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -155,12 +169,12 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFEAFFFE),
+              color: const Color(0xFF0047AB).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF50C8AA),
+              color: const Color(0xFF0047AB),
               size: 24,
             ),
           ),
@@ -212,74 +226,16 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
           );
         } else if (activeSuggestions == null || activeSuggestions.isEmpty) {
           content = _buildEmptyCard(
-            'No suggestions available',
-            'We don\'t have any tips for today yet.',
+            'Try to generate your daily suggestions now!',
+            'Click the button below to get personalized tips for today.',
             Icons.auto_awesome,
           );
         } else {
-          // Display whatever the length is, up to 4 (since we may return 3+1 now)
           final suggestions = activeSuggestions;
-          content = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: suggestions
-                .map((suggestion) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEAFFFE),
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: Icon(
-                              _getIconForType(suggestion.type),
-                              color: const Color(0xFF50C8AA),
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  suggestion.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  suggestion.description,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ))
-                .toList(),
+          content = SuggestionCarousel(
+            items: suggestions,
+            iconBuilder: _getIconForType,
+            labelBuilder: _getLabelForType,
           );
         }
 
@@ -308,6 +264,288 @@ class _DailySuggestionsWidgetState extends State<DailySuggestionsWidget> {
           ],
         );
       },
+    );
+  }
+}
+
+class SuggestionCarousel extends StatefulWidget {
+  final List<Suggestion> items;
+  final double viewportFraction;
+  final IconData Function(SuggestionType) iconBuilder;
+  final String Function(SuggestionType) labelBuilder;
+
+  const SuggestionCarousel({
+    required this.items,
+    required this.iconBuilder,
+    required this.labelBuilder,
+    super.key,
+    this.viewportFraction = 0.95, // Increased from 0.88 to make the card wider
+  });
+
+  @override
+  State<SuggestionCarousel> createState() => _SuggestionCarouselState();
+}
+
+class _SuggestionCarouselState extends State<SuggestionCarousel> {
+  late final PageController _pageController;
+  late final ValueNotifier<double> _orbitPage;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: widget.viewportFraction);
+    _orbitPage = ValueNotifier<double>(0);
+  }
+
+  @override
+  void didUpdateWidget(covariant SuggestionCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final len = widget.items.length;
+    if (len == 0) return;
+    if (_currentPage >= len) {
+      final target = len - 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_pageController.hasClients) return;
+        _pageController.jumpToPage(target);
+        setState(() => _currentPage = target);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _orbitPage.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  bool _onScrollNotification(ScrollNotification n) {
+    if (n.metrics is! PageMetrics) return false;
+    final p = (n.metrics as PageMetrics).page;
+    if (p == null) return false;
+    _orbitPage.value = p;
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    const cardHeight = 200.0;
+    const pageViewHeight = cardHeight + 48.0 // Gap
+        ;
+
+    final dotCount = widget.items.length.clamp(0, 5);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: pageViewHeight,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _onScrollNotification,
+            child: PageView.builder(
+              controller: _pageController,
+              clipBehavior: Clip.none,
+              itemCount: widget.items.length,
+              physics: const BouncingScrollPhysics(),
+              padEnds: true,
+              onPageChanged: (i) {
+                setState(() => _currentPage = i);
+                _orbitPage.value = i.toDouble();
+              },
+              itemBuilder: (context, index) {
+                return ValueListenableBuilder<double>(
+                  valueListenable: _orbitPage,
+                  builder: (context, page, child) {
+                    final delta = index - page;
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            top: 16.0), // Slightly increased top padding
+                        child: _OrbitCardShell(
+                          orbitDelta: delta,
+                          child: child!,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: _SuggestionCard(
+                      suggestion: widget.items[index],
+                      height: cardHeight,
+                      icon: widget.iconBuilder(widget.items[index].type),
+                      label: widget.labelBuilder(widget.items[index].type),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        // Dots slider directly underneath the box
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(dotCount, (index) {
+            final isActive = index == _currentPage;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: isActive ? 22 : 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.primary
+                    : AppColors.primary.withValues(alpha: 0.28),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _OrbitCardShell extends StatelessWidget {
+  final double orbitDelta;
+  final Widget child;
+
+  const _OrbitCardShell({
+    required this.orbitDelta,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final d = orbitDelta.clamp(-1.35, 1.35);
+    final absD = d.abs();
+    final angleY = -d * (math.pi / 6.5);
+    final scale = 1.0 - 0.09 * absD.clamp(0.0, 1.0);
+    final orbitLift =
+        18.0 * (1.0 - math.cos(absD.clamp(0.0, 1.0) * math.pi / 2));
+
+    final matrix = Matrix4.identity()
+      ..setEntry(3, 2, 0.00135)
+      ..translateByDouble(0.0, orbitLift, 0.0, 1)
+      ..rotateY(angleY);
+
+    return Transform(
+      alignment: Alignment.center,
+      transform: matrix,
+      filterQuality: FilterQuality.medium,
+      child: Transform.scale(
+        scale: scale,
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+}
+
+class _SuggestionCard extends StatelessWidget {
+  final Suggestion suggestion;
+  final double height;
+  final IconData icon;
+  final String label;
+
+  const _SuggestionCard({
+    required this.suggestion,
+    required this.height,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        height: height,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(
+              alpha: 0.8), // Match Today's Statistics cards background
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              alignment: Alignment.topLeft,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0047AB).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 12, color: const Color(0xFF0047AB)),
+                    const SizedBox(width: 4),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Color(0xFF0047AB),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                suggestion.title,
+                style: const TextStyle(
+                  fontSize: 21.2,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111827),
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Text(
+                    suggestion.description.isNotEmpty
+                        ? suggestion.description
+                        : 'No description',
+                    style: const TextStyle(
+                      fontSize: 14.8,
+                      color: Color(0xFF6B7280),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

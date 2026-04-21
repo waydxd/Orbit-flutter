@@ -370,7 +370,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             avatarVersion: _avatarVersion,
                             profilePictureUrl: user?.profilePicture,
                             localImageBytes: _pendingAvatarBytes,
-                            onTapPhoto: user != null ? _changeProfilePhoto : null,
+                            onTapPhoto:
+                                user != null ? _changeProfilePhoto : null,
                           ),
                           if (authViewModel.error != null) ...[
                             const SizedBox(height: 16),

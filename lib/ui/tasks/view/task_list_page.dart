@@ -327,8 +327,7 @@ class _TaskListPageState extends State<TaskListPage> {
             onPressed: () => _showPriorityFilterSheet(context),
             icon: Icon(
               Icons.filter_list_rounded,
-              color:
-                  filterActive ? const Color(0xFF8B80F0) : AppColors.black,
+              color: filterActive ? const Color(0xFF8B80F0) : AppColors.black,
               size: 28,
             ),
           ),

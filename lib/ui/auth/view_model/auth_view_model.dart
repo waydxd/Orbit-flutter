@@ -361,8 +361,7 @@ class AuthViewModel extends BaseViewModel {
             var profile = await _authRepository.getProfile();
             final pic = profile.profilePicture?.trim() ?? '';
             if (pic.isEmpty) {
-              final localPic =
-                  LocalStorageService.getPreference<String>(
+              final localPic = LocalStorageService.getPreference<String>(
                     _profilePictureUrlPrefKey,
                   ) ??
                   '';
@@ -411,7 +410,8 @@ class AuthViewModel extends BaseViewModel {
             final uploadedUrl = upload.url.trim();
             if (uploadedUrl.isNotEmpty) {
               if (_currentUser != null) {
-                _currentUser = _currentUser!.copyWith(profilePicture: uploadedUrl);
+                _currentUser =
+                    _currentUser!.copyWith(profilePicture: uploadedUrl);
               }
               await LocalStorageService.setPreference(
                 _profilePictureUrlPrefKey,
