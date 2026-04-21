@@ -7,6 +7,7 @@ import '../services/chat_api_service.dart';
 import '../services/chat_exceptions.dart';
 import '../repositories/chat_repository.dart';
 import '../repositories/chat_local_repository.dart';
+import '../services/local_storage_service.dart';
 import '../../utils/logger.dart';
 
 export '../models/chat_session.dart';
@@ -216,16 +217,25 @@ class ChatAgentProvider extends ChangeNotifier {
   /// so local cache is the source of truth for the sidebar list.
   Future<void> loadConversations() async {
     try {
+      final currentUserId =
+          LocalStorageService.getPreference<String>('user_id');
       final cachedSessions =
           await _localRepository.getCachedSessions(_localSessionsKey);
+
       if (cachedSessions != null && cachedSessions.isNotEmpty) {
+        // Filter sessions by current user ID to prevent access denied errors
+        // If currentUserId is null, we might still show them, or we can require match.
+        final userSessions = currentUserId != null
+            ? cachedSessions.where((s) => s.userId == currentUserId).toList()
+            : cachedSessions;
+
         _updateState(_state.copyWith(
-          conversations: cachedSessions,
+          conversations: userSessions,
           isLoadingHistory: false,
           clearError: true,
         ));
         Logger.infoWithTag('ChatAgentProvider',
-            'Loaded ${cachedSessions.length} conversations from cache');
+            'Loaded ${userSessions.length} conversations from cache');
       } else {
         _updateState(_state.copyWith(
           isLoadingHistory: false,
@@ -258,20 +268,82 @@ class ChatAgentProvider extends ChangeNotifier {
     ));
 
     try {
-      final messages = await _repository.getChatHistory(
+      // Load conversation details to get messages and pending actions
+      final conversationDetail = await _repository.getConversationDetail(
         conversationId: conversationId,
       );
+
+      // Map correlation ID to action
+      final actionMap = {
+        for (final a in conversationDetail.pendingActions)
+          if (a.correlationId != null) a.correlationId!: a
+      };
+
+      final messages = conversationDetail.messages.map((msg) {
+        if (msg.isUser) {
+          return AgentChatMessage.user(
+            id: msg.id.isNotEmpty
+                ? msg.id
+                : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}',
+            conversationId: conversationId,
+            content: msg.content,
+            timestamp: msg.timestamp,
+          );
+        } else {
+          final effectiveId = msg.id.isNotEmpty
+              ? msg.id
+              : '${conversationId}_${msg.timestamp.millisecondsSinceEpoch}';
+
+          String? mActionId = msg.metadata?['action_id'];
+          String? mActionType = msg.metadata?['action_type'];
+          String? mActionStatus = msg.metadata?['action_status'];
+          String? mActionSummary = msg.metadata?['action_summary'];
+
+          // Fallback to searching actionMap by correlation ID or action ID
+          ConversationPendingAction? action = actionMap[msg.id];
+          if (action == null && mActionId != null) {
+            try {
+              action = conversationDetail.pendingActions
+                  .firstWhere((a) => a.actionId == mActionId);
+            } catch (_) {}
+          }
+
+          if (action != null) {
+            mActionId ??= action.actionId;
+            mActionType ??= action.type;
+            mActionStatus ??= action.status;
+            mActionSummary ??= action.proposedTitle ?? 'Action';
+          }
+
+          if (mActionId != null && mActionId.isNotEmpty) {
+            return AgentChatMessage.agentWithAction(
+              id: effectiveId,
+              conversationId: conversationId,
+              content: msg.content,
+              agentType: AgentType.calendarAssistant,
+              timestamp: msg.timestamp,
+              actionId: mActionId,
+              actionType: mActionType ?? 'action',
+              actionSummary: mActionSummary ?? 'Action',
+              actionStatus: mActionStatus ?? 'pending',
+            );
+          }
+
+          return AgentChatMessage.agent(
+            id: effectiveId,
+            conversationId: conversationId,
+            content: msg.content,
+            agentType: AgentType.calendarAssistant,
+            timestamp: msg.timestamp,
+          );
+        }
+      }).toList();
 
       // Keep locally persisted action metadata/outcome messages when reloading history.
       final cachedMessages =
           await _localRepository.getCachedAgentMessages(conversationId) ??
               const <AgentChatMessage>[];
       final mergedMessages = _mergeWithCachedMessages(messages, cachedMessages);
-
-      // Also load conversation details to get pending actions
-      final conversationDetail = await _repository.getConversationDetail(
-        conversationId: conversationId,
-      );
 
       // Get the first pending action if any
       PendingActionInfo? pendingAction;
@@ -283,6 +355,22 @@ class ChatAgentProvider extends ChangeNotifier {
           status: firstPending.status,
           idempotencyKey: firstPending.idempotencyKey,
         );
+
+        final bool isActionAssigned =
+            mergedMessages.any((m) => m.actionId == firstPending.actionId);
+        if (!isActionAssigned) {
+          for (int i = mergedMessages.length - 1; i >= 0; i--) {
+            if (!mergedMessages[i].isUser) {
+              mergedMessages[i] = mergedMessages[i].copyWith(
+                actionId: firstPending.actionId,
+                actionType: firstPending.type,
+                actionSummary: firstPending.proposedTitle ?? 'Action',
+                actionStatus: firstPending.status,
+              );
+              break;
+            }
+          }
+        }
       }
 
       _updateState(_state.copyWith(
@@ -958,6 +1046,9 @@ class ChatAgentProvider extends ChangeNotifier {
   Future<void> _saveConversationToHistory(
       String conversationId, String userMessage, String? reply) async {
     try {
+      final currentUserId =
+          LocalStorageService.getPreference<String>('user_id') ?? '';
+
       // Generate a title from the first message (truncated)
       final title = userMessage.length > 30
           ? '${userMessage.substring(0, 30)}...'
@@ -971,7 +1062,7 @@ class ChatAgentProvider extends ChangeNotifier {
       final now = DateTime.now();
       final session = ChatSession(
         sessionId: conversationId,
-        userId: '', // User ID will be filled by auth context if needed
+        userId: currentUserId,
         title: title,
         createdAt: existingIndex >= 0
             ? _state.conversations[existingIndex].createdAt
@@ -1038,23 +1129,74 @@ class ChatAgentProvider extends ChangeNotifier {
         if (m.id.isNotEmpty) m.id: m,
     };
 
+    final usedLocalIds = <String>{};
+
     final merged = remote.map((m) {
-      final local = cachedById[m.id];
+      AgentChatMessage? local = cachedById[m.id];
+
+      // Fuzzy match if exact ID lookup fails (e.g., if backend correlation ID differs from message ID)
+      if (local == null) {
+        try {
+          local = cached.firstWhere((c) =>
+              !usedLocalIds.contains(c.id) &&
+              c.isUser == m.isUser &&
+              (c.content.trim() == m.content.trim() ||
+                  m.content
+                      .trim()
+                      .startsWith('${c.content.trim()}\n\n[System_Timezone')));
+          usedLocalIds.add(local.id);
+        } catch (_) {}
+      } else {
+        usedLocalIds.add(local.id);
+      }
+
       if (local == null) return m;
+
+      String? finalStatus = m.actionStatus ?? local.actionStatus;
+      if (m.actionStatus == 'confirmed' ||
+          m.actionStatus == 'cancelled' ||
+          m.actionStatus == 'expired' ||
+          m.actionStatus == 'executed') {
+        finalStatus = m.actionStatus;
+      } else if (m.actionStatus == 'pending' || m.actionStatus == null) {
+        if (local.actionStatus == 'executed' ||
+            local.actionStatus == 'cancelled' ||
+            local.actionStatus == 'expired' ||
+            local.actionStatus == 'confirmed') {
+          finalStatus = local.actionStatus;
+        }
+      }
+
       return m.copyWith(
         actionId: m.actionId ?? local.actionId,
         actionType: m.actionType ?? local.actionType,
         actionSummary: m.actionSummary ?? local.actionSummary,
-        actionStatus: m.actionStatus ?? local.actionStatus,
+        actionStatus: finalStatus,
       );
     }).toList();
 
     final remoteIds = merged.map((m) => m.id).toSet();
     for (final local in cached) {
       if (!remoteIds.contains(local.id)) {
-        merged.add(local);
+        // Check if there is a remote message that is practically the same
+        // We now check against merged instead of generating a duplicate check loop,
+        // but let's keep it safe. Since we fuzzy matched in the map above,
+        // if it found a match, it would have merged its action properties into a message
+        // but 'local' itself is skipped here unless its ID wasn't added.
+        final isDuplicate = merged.any((m) =>
+            m.isUser == local.isUser &&
+            (m.content.trim() == local.content.trim() ||
+                m.content.trim().startsWith(
+                    '${local.content.trim()}\n\n[System_Timezone')));
+
+        if (!isDuplicate) {
+          merged.add(local);
+        }
       }
     }
+
+    // Sort to maintain correct chronological order (especially for local action messages)
+    merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     return merged;
   }

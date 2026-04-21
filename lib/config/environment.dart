@@ -93,11 +93,11 @@ class EnvironmentConfig {
         return 'http://$_localHost:8080';
       case Environment.development:
         // Shared remote backend by default; use --dart-define=API_BASE_URL=... for local Docker core.
-        return 'https://wayd.zapto.org';
+        return 'http://vml1wk238.cse.ust.hk';
       case Environment.staging:
-        return 'https://wayd.zapto.org';
+        return 'http://vml1wk238.cse.ust.hk';
       case Environment.production:
-        return 'https://wayd.zapto.org';
+        return 'http://vml1wk238.cse.ust.hk';
     }
   }
 
@@ -123,7 +123,7 @@ class EnvironmentConfig {
       case Environment.development:
       case Environment.staging:
       case Environment.production:
-        return 'wayd.zapto.org';
+        return 'vml1wk238.cse.ust.hk';
     }
   }
 

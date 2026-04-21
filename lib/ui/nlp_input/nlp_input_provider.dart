@@ -96,10 +96,10 @@ class NlpInputProvider extends ChangeNotifier {
         title: parsedData['title'] as String? ?? text,
         description: parsedData['description'] as String?,
         startTime: parsedData['start_time'] != null
-            ? DateTime.parse(parsedData['start_time'] as String)
+            ? DateTime.parse(parsedData['start_time'] as String).toLocal()
             : null,
         endTime: parsedData['end_time'] != null
-            ? DateTime.parse(parsedData['end_time'] as String)
+            ? DateTime.parse(parsedData['end_time'] as String).toLocal()
             : null,
         location: parsedData['location'] as String?,
         recurrence: recurrence,
@@ -113,7 +113,7 @@ class NlpInputProvider extends ChangeNotifier {
         title: parsedData['title'] as String? ?? text,
         description: parsedData['description'] as String?,
         dueDate: parsedData['due_date'] != null
-            ? DateTime.parse(parsedData['due_date'] as String)
+            ? DateTime.parse(parsedData['due_date'] as String).toLocal()
             : null,
         priority: parsedData['priority'] as String? ?? 'medium',
         confidence: classification.confidence,

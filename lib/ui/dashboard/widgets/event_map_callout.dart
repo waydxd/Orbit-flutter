@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/event_model.dart';
-import 'event_preview_cover_loader.dart';
+import 'event_location_cover_grid.dart';
 
 /// Map overlay or sheet card: square image, thick white frame, optional pointer.
 /// [onMagnifyMap] zooms the map camera (same as the map zoom-in control), not the thumbnail.
@@ -9,15 +9,15 @@ class EventMapCallout extends StatelessWidget {
   static const double width = 128;
 
   final double cardWidth;
-  final EventModel? previewEvent;
+  final List<EventModel> events;
   final VoidCallback? onTap;
   final bool showPointer;
   final VoidCallback? onMagnifyMap;
 
   const EventMapCallout({
+    required this.events,
     super.key,
     this.cardWidth = width,
-    this.previewEvent,
     this.onTap,
     this.showPointer = true,
     this.onMagnifyMap,
@@ -28,8 +28,6 @@ class EventMapCallout extends StatelessWidget {
     const borderWidth = 4.0;
     const radius = 12.0;
     const innerRadius = 8.0;
-
-    final event = previewEvent;
     // Stack + only Positioned.fill gets 0 height when max height is unbounded
     // (Column parent). Fix: explicit square, same as former AspectRatio(1:1).
     final innerSide = cardWidth - 2 * borderWidth;
@@ -67,12 +65,11 @@ class EventMapCallout extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(innerRadius),
-                        child: event != null
-                            ? EventPreviewCoverLoader(
-                                event: event,
-                                fit: BoxFit.cover,
-                              )
-                            : _placeholder(),
+                        child: EventLocationCoverGrid(
+                          events: events,
+                          size: innerSide,
+                          borderRadius: innerRadius,
+                        ),
                       ),
                     ),
                   ),
@@ -108,17 +105,6 @@ class EventMapCallout extends StatelessWidget {
               painter: _CalloutTrianglePainter(),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _placeholder() {
-    return Container(
-      color: const Color(0xFFE8E8F0),
-      child: const Icon(
-        Icons.image_outlined,
-        size: 40,
-        color: Color(0xFF9CA3AF),
       ),
     );
   }

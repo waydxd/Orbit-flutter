@@ -32,7 +32,7 @@ class SignificantLocationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = stayPoint.label ?? 'Significant Location';
+    final title = stayPoint.label ?? 'Stay point';
     final coords =
         formatCoordinates(stayPoint.centroidLat, stayPoint.centroidLon);
 

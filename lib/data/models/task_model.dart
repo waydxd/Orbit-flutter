@@ -12,6 +12,15 @@ class TaskModel extends BaseModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Parses API [due_date]; returns null for missing values or Go/sql zero sentinels.
+  static DateTime? _parseDueDateFromJson(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is! String || raw.isEmpty) return null;
+    final dt = DateTime.parse(raw).toLocal();
+    if (dt.year < 1970) return null;
+    return dt;
+  }
+
   const TaskModel({
     required this.id,
     required this.userId,
@@ -31,16 +40,14 @@ class TaskModel extends BaseModel {
       userId: json['user_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String? ?? '',
-      dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String)
-          : null,
+      dueDate: _parseDueDateFromJson(json['due_date']),
       completed: json['completed'] as bool? ?? false,
       priority: json['priority'] as String? ?? 'medium',
       hashtags: json['hashtags'] != null
           ? List<String>.from(json['hashtags'] as List)
           : const [],
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 

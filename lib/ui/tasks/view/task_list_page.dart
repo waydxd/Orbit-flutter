@@ -18,9 +18,11 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   bool _showCompleted = true;
+  final Set<String> _dismissingTaskIds = <String>{};
 
   /// `null` = all priorities; otherwise matches [TaskModel.priority] case-insensitively.
   String? _priorityFilter;
+  _TaskSortOption _sortOption = _TaskSortOption.none;
 
   Future<void> _refreshTasks() async {
     final userId = context.read<AuthViewModel>().currentUser?.id;
@@ -45,10 +47,16 @@ class _TaskListPageState extends State<TaskListPage> {
               if (_priorityFilter == null) return true;
               return t.priority.toLowerCase() == _priorityFilter!.toLowerCase();
             }).toList();
-            final pendingTasks =
-                filteredTasks.where((t) => !t.completed).toList();
-            final completedTasks =
-                filteredTasks.where((t) => t.completed).toList();
+            final pendingTasks = _sortTasks(
+              filteredTasks
+                  .where(
+                    (t) => !t.completed && !_dismissingTaskIds.contains(t.id),
+                  )
+                  .toList(),
+            );
+            final completedTasks = _sortTasks(
+              filteredTasks.where((t) => t.completed).toList(),
+            );
 
             return SafeArea(
               child: Column(
@@ -197,13 +205,11 @@ class _TaskListPageState extends State<TaskListPage> {
                                             }
                                           },
                                           onDismissed: (direction) {
-                                            if (direction ==
-                                                DismissDirection.startToEnd) {
-                                              _markTaskComplete(
-                                                  task.id, viewModel);
-                                            } else {
-                                              viewModel.deleteTask(task.id);
-                                            }
+                                            _handleTaskDismiss(
+                                              direction: direction,
+                                              taskId: task.id,
+                                              viewModel: viewModel,
+                                            );
                                           },
                                           child: GestureDetector(
                                             onTap: () {
@@ -310,6 +316,7 @@ class _TaskListPageState extends State<TaskListPage> {
 
   Widget _buildHeader() {
     final filterActive = _priorityFilter != null;
+    final sortActive = _sortOption != _TaskSortOption.none;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
@@ -325,12 +332,12 @@ class _TaskListPageState extends State<TaskListPage> {
             ),
           ),
           IconButton(
-            tooltip: 'Refresh',
-            onPressed: _refreshTasks,
-            icon: const Icon(
-              Icons.refresh_rounded,
-              color: AppColors.black,
-              size: 26,
+            tooltip: 'Sort tasks',
+            onPressed: () => _showSortSheet(context),
+            icon: Icon(
+              Icons.swap_vert,
+              color: sortActive ? const Color(0xFF8B80F0) : AppColors.black,
+              size: 28,
             ),
           ),
         ],
@@ -422,6 +429,132 @@ class _TaskListPageState extends State<TaskListPage> {
         ),
       ),
     );
+  }
+
+  void _showSortSheet(BuildContext context) {
+    const options = <(_TaskSortOption option, String label)>[
+      (_TaskSortOption.none, 'Default order'),
+      (_TaskSortOption.priority, 'Priority'),
+      (_TaskSortOption.dueDate, 'Due date'),
+    ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 20,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.grey400.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text(
+                    'Sort tasks',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...options.map((opt) {
+                  final selected = _sortOption == opt.$1;
+                  return ListTile(
+                    title: Text(
+                      opt.$2,
+                      style: TextStyle(
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w500,
+                        color: selected
+                            ? const Color(0xFF8B80F0)
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    trailing: selected
+                        ? const Icon(Icons.check_rounded,
+                            color: Color(0xFF8B80F0))
+                        : null,
+                    onTap: () {
+                      setState(() => _sortOption = opt.$1);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<TaskModel> _sortTasks(List<TaskModel> tasks) {
+    if (_sortOption == _TaskSortOption.none) return tasks;
+    tasks.sort((a, b) {
+      switch (_sortOption) {
+        case _TaskSortOption.priority:
+          final priorityCompare =
+              _priorityRank(a.priority).compareTo(_priorityRank(b.priority));
+          if (priorityCompare != 0) return priorityCompare;
+          return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        case _TaskSortOption.dueDate:
+          final aDue = a.dueDate;
+          final bDue = b.dueDate;
+          if (aDue == null && bDue == null) {
+            return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          }
+          if (aDue == null) return 1;
+          if (bDue == null) return -1;
+          final dueCompare = aDue.compareTo(bDue);
+          if (dueCompare != 0) return dueCompare;
+          return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        case _TaskSortOption.none:
+          return 0;
+      }
+    });
+    return tasks;
+  }
+
+  int _priorityRank(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return 0;
+      case 'high':
+        return 1;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 3;
+      default:
+        return 4;
+    }
   }
 
   Widget _buildSummaryCard(List<TaskModel> pendingTasks) {
@@ -1027,6 +1160,30 @@ class _TaskListPageState extends State<TaskListPage> {
     final task = viewModel.tasks.firstWhere((t) => t.id == taskId);
     await viewModel.updateTask(task.copyWith(completed: false));
   }
+
+  Future<void> _handleTaskDismiss({
+    required DismissDirection direction,
+    required String taskId,
+    required CalendarViewModel viewModel,
+  }) async {
+    setState(() {
+      _dismissingTaskIds.add(taskId);
+    });
+
+    try {
+      if (direction == DismissDirection.startToEnd) {
+        await _markTaskComplete(taskId, viewModel);
+      } else {
+        await viewModel.deleteTask(taskId);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _dismissingTaskIds.remove(taskId);
+      });
+      rethrow;
+    }
+  }
 }
 
 class TaskItemWidget extends StatefulWidget {
@@ -1222,4 +1379,10 @@ class _TaskItemWidgetState extends State<TaskItemWidget> {
       ),
     );
   }
+}
+
+enum _TaskSortOption {
+  none,
+  priority,
+  dueDate,
 }

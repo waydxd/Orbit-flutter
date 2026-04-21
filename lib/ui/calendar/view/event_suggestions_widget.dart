@@ -30,7 +30,10 @@ class _EventSuggestionsWidgetState extends State<EventSuggestionsWidget> {
     final user = Provider.of<AuthViewModel>(context, listen: false).currentUser;
     final userId = user?.id ?? '';
 
-    if (forceRegenerate) {
+    final inFlight =
+        OrbitSuggestionService().hasInFlightEventRequest(widget.event.id);
+
+    if (forceRegenerate || inFlight) {
       setState(() {
         _isRegenerating = true;
       });

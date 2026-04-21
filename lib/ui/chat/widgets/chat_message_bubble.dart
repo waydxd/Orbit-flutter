@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../data/models/agent_chat_message.dart';
-import 'orbi_avatar.dart';
 
 /// Chat message bubble widget
 class ChatMessageBubble extends StatelessWidget {
@@ -25,55 +25,66 @@ class ChatMessageBubble extends StatelessWidget {
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUser) ...[
-            const SmallOrbiAvatar(),
-            const SizedBox(width: 10),
-          ],
-          Flexible(
+          Expanded(
             child: Column(
               crossAxisAlignment:
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                  decoration: BoxDecoration(
-                    color:
-                        isUser ? const Color(0xFF6366F1) : Colors.transparent,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: Radius.circular(isUser ? 20 : 4),
-                      bottomRight: Radius.circular(isUser ? 4 : 20),
+                GestureDetector(
+                  onLongPress: () {
+                    Clipboard.setData(ClipboardData(text: message.content));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Message copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14),
+                    decoration: BoxDecoration(
+                      color:
+                          isUser ? const Color(0xFF6366F1) : Colors.transparent,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(isUser ? 20 : 4),
+                        bottomRight: Radius.circular(isUser ? 4 : 20),
+                      ),
+                      boxShadow: isUser
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
-                    boxShadow: isUser
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 50,
-                          height: 20,
-                          child: Center(
-                            child: SizedBox(
-                              width: 40,
-                              child: LinearProgressIndicator(
-                                color: Color(0xFF6366F1),
-                                backgroundColor: Color(0xFFE0E7FF),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 50,
+                            height: 20,
+                            child: Center(
+                              child: SizedBox(
+                                width: 40,
+                                child: LinearProgressIndicator(
+                                  color: Color(0xFF6366F1),
+                                  backgroundColor: Color(0xFFE0E7FF),
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                      : _buildMessageContent(isUser),
+                          )
+                        : _buildMessageContent(isUser),
+                  ),
                 ),
                 // Action buttons (confirm/cancel for agent mode)
-                if (actionButtons != null) actionButtons!,
+                if (actionButtons != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: actionButtons,
+                  ),
               ],
             ),
           ),
@@ -87,24 +98,11 @@ class ChatMessageBubble extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Agent type label
-        if (!isUser && message.agentType != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              message.agentType!.displayName,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF6366F1),
-              ),
-            ),
-          ),
         // Message content
         Text(
           message.content,
           style: TextStyle(
-            color: isUser ? Colors.white : const Color(0xFF5E6272),
+            color: isUser ? Colors.white : Colors.black,
             fontSize: 15,
             fontWeight: FontWeight.w500,
           ),

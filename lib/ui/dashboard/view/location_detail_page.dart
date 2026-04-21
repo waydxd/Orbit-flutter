@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +7,8 @@ import '../../core/themes/app_colors.dart';
 import '../../core/themes/hashtag_palette.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/event_model.dart';
-import '../widgets/event_map_callout.dart';
+import '../widgets/event_preview_cover_loader.dart';
+import 'significant_locations_page.dart';
 
 class LocationDetailPage extends StatefulWidget {
   final String locationName;
@@ -210,86 +209,67 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
 
   // ── Sheet content ─────────────────────────────────────────────────────
 
-  EventModel? _pickPreviewEvent(List<EventModel> events) {
-    if (events.isEmpty) return null;
-    final sorted = List<EventModel>.from(events)
-      ..sort((a, b) => b.startTime.compareTo(a.startTime));
-    for (final e in sorted) {
-      if (e.imageUrls.isNotEmpty) return e;
-    }
-    return sorted.first;
-  }
-
   Widget _buildSheetContent(
     List<EventModel> events,
     ScrollController controller,
   ) {
-    final previewEvent = _pickPreviewEvent(events);
-    final cardW = math.min(280.0, MediaQuery.sizeOf(context).width - 48);
-
     return CustomScrollView(
       controller: controller,
       slivers: [
         // Drag handle
         SliverToBoxAdapter(child: _buildDragHandle()),
 
-        if (previewEvent != null)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: Center(
-                child: EventMapCallout(
-                  cardWidth: cardW,
-                  previewEvent: previewEvent,
-                  showPointer: false,
-                  onMagnifyMap: () {
-                    _mapController?.animateCamera(CameraUpdate.zoomIn());
-                  },
-                ),
-              ),
-            ),
-          ),
-
         // Location header inside the sheet
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SignificantLocationsPage(),
                   ),
-                  child: const Icon(Icons.location_on,
-                      color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.locationName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                );
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.location_on,
+                        color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.locationName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${events.length} event${events.length != 1 ? 's' : ''} at this location',
-                        style: const TextStyle(
-                            fontSize: 14, color: AppColors.textSecondary),
-                      ),
-                    ],
+                        Text(
+                          '${events.length} event${events.length != 1 ? 's' : ''} at this location',
+                          style: const TextStyle(
+                              fontSize: 14, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const Icon(Icons.chevron_right, color: AppColors.grey400),
+                ],
+              ),
             ),
           ),
         ),
@@ -382,33 +362,12 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date badge
-          Container(
-            width: 52,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  DateFormat('MMM').format(event.startTime).toUpperCase(),
-                  style: TextStyle(
-                    color: accent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-                Text(
-                  DateFormat('d').format(event.startTime),
-                  style: TextStyle(
-                    color: accent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-              ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 52,
+              height: 52,
+              child: EventPreviewCoverLoader(event: event, fit: BoxFit.cover),
             ),
           ),
           const SizedBox(width: 14),

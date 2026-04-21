@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/themes/app_colors.dart';
 import '../../core/themes/hashtag_palette.dart';
 
 /// Data model for a card in the card stack carousel.
@@ -42,7 +43,7 @@ class CardStackItem {
       dateTime: dueDate,
       isTask: true,
       tag: 'Task',
-      tagColor: const Color(0xFF6366F1),
+      tagColor: AppColors.secondary,
     );
   }
 

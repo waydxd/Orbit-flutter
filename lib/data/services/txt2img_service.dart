@@ -7,6 +7,7 @@ import '../../config/app_config.dart';
 import '../../config/environment.dart';
 import '../../utils/logger.dart';
 import '../models/event_model.dart';
+import '../models/user_model.dart';
 import 'auth_token_service.dart';
 
 /// Outcome of requesting an AI cover image from Orbit-txt2img (direct or via Orbit-core BFF).
@@ -60,15 +61,55 @@ class Txt2ImgService {
     );
   }
 
-  /// Fixed negative guidance (fal flux-kontext-lora has a single `prompt` field; we append as "Avoid:").
+  /// Fixed negative guidance (fal flux-lora has a single `prompt` field; we append as "Avoid:").
   static const String _eventCoverNegativePrompt =
-      'frame, border, card, poster, mockup, UI, text, label, watermark, '
-      'white background, white margin, panel, window, device screen, '
-      'image within image, floating element, illustration inside a box, '
-      'dark vignette border, rounded corners, canvas edge, photo frame';
+      'Full-bleed image, edge-to-edge composition, no internal frame. '
+      'photorealistic, 3d render, harsh shadows, dark tones, neon colors, '
+      'busy complex background, gritty texture, thick outlines, bold colors, '
+      'high contrast, text, label, watermark, UI, frame, border, card, '
+      'poster, mockup, image within image, realistic face, vintage grain';
 
-  /// Positive prompt body only (title + detail interpolated).
-  static String buildPositivePrompt(String titleRaw, String detailsRaw) {
+  static int? _ageYears(DateTime? birthDate) {
+    if (birthDate == null) return null;
+    final now = DateTime.now();
+    var age = now.year - birthDate.year;
+    final hadBirthday = now.month > birthDate.month ||
+        (now.month == birthDate.month && now.day >= birthDate.day);
+    if (!hadBirthday) age--;
+    if (age < 0) return null;
+    return age;
+  }
+
+  /// Optional steering from profile; omits missing fields. Two lines when present.
+  static String _profileContextLine(UserModel? user) {
+    if (user == null) return '';
+
+    final parts = <String>[];
+    final region = user.region?.trim();
+    if (region != null && region.isNotEmpty) {
+      parts.add('Region: ${_sanitizeSegment(region, 120)}');
+    }
+    final gender = user.gender?.trim();
+    if (gender != null && gender.isNotEmpty) {
+      parts.add('Gender: ${_sanitizeSegment(gender, 80)}');
+    }
+    final age = _ageYears(user.birthDate);
+    if (age != null) {
+      parts.add('Age: $age');
+    }
+
+    if (parts.isEmpty) return '';
+
+    return 'Subtle personalization context for the scene (do not depict as text):\n'
+        '${parts.join(', ')}.';
+  }
+
+  /// Positive prompt body only (title + detail + optional profile).
+  static String buildPositivePrompt(
+    String titleRaw,
+    String detailsRaw, {
+    UserModel? user,
+  }) {
     final title = _sanitizeSegment(
       titleRaw.trim().isEmpty ? 'Event' : titleRaw,
       300,
@@ -77,19 +118,29 @@ class Txt2ImgService {
       detailsRaw.trim().isEmpty ? 'No additional details' : detailsRaw,
       1200,
     );
+    final profileLine = _profileContextLine(user);
+    final profileBlock = profileLine.isEmpty ? '' : '\n\n$profileLine';
 
     return '''
-A full-bleed photorealistic scene of $title, $details.
+Full-bleed soft pastel aesthetic illustration of $title.
+Dreamy muted color palette of blush pink, lavender, mint, and cream.
+Soft diffused lighting with gentle gradient transitions and no harsh shadows.
+Clean minimal composition with rounded soft organic shapes, delicate thin linework, airy calm atmosphere.
+Flat pastel background with subtle color depth extending edge to edge.
+Modern lifestyle illustration style with a smooth and polished finish.
+No text, no UI, no border, no frame, no mockup, no photorealism, no dark tones.
 
-The scene extends naturally to every edge of the frame with no white space.
-Soft natural lighting, clean modern composition, one clear focal subject centered.
-Professional and polished look, shallow depth of field, warm neutral tones.'''
+Subject and context: $details.$profileBlock'''
         .trim();
   }
 
   /// Full string sent as API `prompt` (positive + negative as avoid-list).
-  static String buildPrompt(String titleRaw, String detailsRaw) {
-    final positive = buildPositivePrompt(titleRaw, detailsRaw);
+  static String buildPrompt(
+    String titleRaw,
+    String detailsRaw, {
+    UserModel? user,
+  }) {
+    final positive = buildPositivePrompt(titleRaw, detailsRaw, user: user);
     return '$positive\n\nAvoid: $_eventCoverNegativePrompt';
   }
 
@@ -145,7 +196,12 @@ Professional and polished look, shallow depth of field, warm neutral tones.'''
   }
 
   /// Requests a cover image URL for [event].
-  Future<Txt2ImgCoverResult> requestCoverUrl(EventModel event) async {
+  ///
+  /// [user] optional profile (region, gender, age from birth date) steers the prompt.
+  Future<Txt2ImgCoverResult> requestCoverUrl(
+    EventModel event, {
+    UserModel? user,
+  }) async {
     if (!EnvironmentConfig.shouldClientAttemptTxt2Img) {
       Logger.debugWithTag('Txt2Img',
           'Image generation disabled (TXT2IMG_USE_CORE_PROXY=false, no direct URL)');
@@ -158,7 +214,11 @@ Professional and polished look, shallow depth of field, warm neutral tones.'''
       return Txt2ImgCoverResult.skipped();
     }
 
-    final prompt = buildPrompt(event.title, event.description);
+    final prompt = buildPrompt(
+      event.title,
+      event.description,
+      user: user,
+    );
     final path = EnvironmentConfig.txt2ImgRequestPath;
     final baseOpt = _dio.options.baseUrl;
     final fullUrl =

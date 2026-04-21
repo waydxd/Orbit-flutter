@@ -1,12 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'dart:typed_data';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/widgets/modern_dropdown.dart';
+import '../../core/widgets/profile_avatar.dart';
 import '../../../data/models/user_model.dart';
+import '../../../utils/constants.dart';
+import '../../../utils/event_image_url.dart';
 import '../../../utils/region_timezone_data.dart';
 import '../../../utils/validators.dart';
 
@@ -28,6 +34,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _selectedRegion;
   String? _selectedTimezone;
   String? _lastSyncedSignature;
+  bool _isUploadingProfilePhoto = false;
+  int _avatarVersion = 0;
+  Uint8List? _pendingAvatarBytes;
 
   static const Map<String, String> _genderLabels = {
     'male': 'Male',
@@ -202,6 +211,105 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _changeProfilePhoto() async {
+    if (!mounted) return;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    final picker = ImagePicker();
+    final XFile? file = await picker.pickImage(
+      source: source,
+      maxWidth: 4096,
+      maxHeight: 4096,
+      imageQuality: 88,
+    );
+    if (file == null || !mounted) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > Constants.maxImageSizeBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Image must be 5 MB or smaller'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploadingProfilePhoto = true;
+      _pendingAvatarBytes = bytes;
+    });
+    final authViewModel = context.read<AuthViewModel>();
+    final name = file.name.trim().isNotEmpty ? file.name : 'upload.jpg';
+    final ok = await authViewModel.uploadProfilePicture(bytes, name);
+    if (!mounted) return;
+    setState(() => _isUploadingProfilePhoto = false);
+
+    if (ok) {
+      final rawUrl = authViewModel.currentUser?.profilePicture?.trim() ?? '';
+      if (rawUrl.isNotEmpty) {
+        final absolute = resolveEventImageUrl(rawUrl);
+        if (absolute.isNotEmpty) {
+          final uri = Uri.parse(absolute);
+          final oldUri = uri.replace(
+            queryParameters: {
+              ...uri.queryParameters,
+              'v': _avatarVersion.toString(),
+            },
+          );
+          final newUri = uri.replace(
+            queryParameters: {
+              ...uri.queryParameters,
+              'v': (_avatarVersion + 1).toString(),
+            },
+          );
+          await CachedNetworkImage.evictFromCache(oldUri.toString());
+          await CachedNetworkImage.evictFromCache(newUri.toString());
+        }
+      }
+      if (!mounted) return;
+      setState(() => _avatarVersion++);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile picture updated'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else if (authViewModel.error != null) {
+      setState(() => _pendingAvatarBytes = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authViewModel.error!),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthViewModel>(
@@ -258,6 +366,12 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: user?.displayName ?? 'Your profile',
                             subtitle: user?.email ?? 'Signed in account',
                             isVerified: user?.emailVerified ?? false,
+                            isUploadingPhoto: _isUploadingProfilePhoto,
+                            avatarVersion: _avatarVersion,
+                            profilePictureUrl: user?.profilePicture,
+                            localImageBytes: _pendingAvatarBytes,
+                            onTapPhoto:
+                                user != null ? _changeProfilePhoto : null,
                           ),
                           if (authViewModel.error != null) ...[
                             const SizedBox(height: 16),
@@ -293,7 +407,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       const SizedBox(height: 14),
                                       _buildTextField(
                                         controller: _usernameController,
-                                        label: 'Username',
+                                        label: 'User ID',
                                         validator: _validateUsername,
                                       ),
                                       const SizedBox(height: 14),
@@ -479,16 +593,27 @@ class _ProfileHeaderCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isVerified;
+  final bool isUploadingPhoto;
+  final int avatarVersion;
+  final String? profilePictureUrl;
+  final Uint8List? localImageBytes;
+  final VoidCallback? onTapPhoto;
 
   const _ProfileHeaderCard({
     required this.initials,
     required this.title,
     required this.subtitle,
     required this.isVerified,
+    required this.isUploadingPhoto,
+    required this.avatarVersion,
+    this.profilePictureUrl,
+    this.localImageBytes,
+    this.onTapPhoto,
   });
 
   @override
   Widget build(BuildContext context) {
+    const avatarSize = 64.0;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -505,24 +630,82 @@ class _ProfileHeaderCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF8E86FF), Color(0xFF6B63F6)],
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initials,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTapPhoto,
+              borderRadius: BorderRadius.circular(avatarSize / 2 + 4),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: SizedBox(
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      ProfileAvatar(
+                        key: ValueKey(
+                          '${profilePictureUrl ?? ''}-$avatarVersion',
+                        ),
+                        initials: initials,
+                        localImageBytes: localImageBytes,
+                        rawProfilePictureUrl: profilePictureUrl,
+                        cacheBuster: avatarVersion,
+                        size: avatarSize,
+                      ),
+                      if (isUploadingPhoto)
+                        Positioned.fill(
+                          child: ClipOval(
+                            child: ColoredBox(
+                              color: Colors.black.withValues(alpha: 0.35),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (onTapPhoto != null && !isUploadingPhoto)
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 16),

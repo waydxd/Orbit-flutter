@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
 import '../../settings/view/settings_page.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/event_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../shared/widgets/card_stack_item.dart';
 import '../widgets/upcoming_carousel.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +22,22 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Timer? _clockTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,8 +50,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         child: SafeArea(
-          child: Consumer<CalendarViewModel>(
-            builder: (context, viewModel, child) {
+          child: Consumer2<CalendarViewModel, AuthViewModel>(
+            builder: (context, viewModel, auth, child) {
               // Prepare data
               final now = DateTime.now();
 
@@ -45,10 +65,17 @@ class _HomePageState extends State<HomePage> {
               final pastEvents =
                   todayEvents.where((e) => e.endTime.isBefore(now)).length;
 
-              // Tasks
-              final totalTasks = viewModel.tasks.length;
+              // Today's Statistics tasks: due today (local) or no due date
+              final todayTasks = viewModel.tasks.where((t) {
+                final d = t.dueDate;
+                if (d == null) return true;
+                return d.year == now.year &&
+                    d.month == now.month &&
+                    d.day == now.day;
+              }).toList();
+              final totalTasks = todayTasks.length;
               final completedTasks =
-                  viewModel.tasks.where((t) => t.completed).length;
+                  todayTasks.where((t) => t.completed).length;
 
               // Upcoming tasks/events for swappable cards
               final upcomingTasks =
@@ -76,7 +103,7 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.only(
                     bottom: 120), // Space for floating nav bar
                 children: [
-                  _buildHeader(),
+                  _buildHeader(now, auth.currentUser),
                   const SizedBox(height: 20),
 
                   // 1. Swappable Cards (Upcoming Tasks/Events)
@@ -143,7 +170,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(DateTime now, UserModel? user) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
@@ -153,16 +180,16 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                DateFormat('EEEE, MMM d').format(DateTime.now()),
+                DateFormat('EEEE, MMM d').format(now),
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Text(
-                'Good Morning',
-                style: TextStyle(
+              Text(
+                _greetingWithName(user, now),
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -319,5 +346,21 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
+  }
+
+  /// Device-local hour buckets: morning / afternoon / evening / night.
+  String _greetingForLocalHour(int hour) {
+    if (hour >= 5 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 17) return 'Good afternoon';
+    if (hour >= 17 && hour < 22) return 'Good evening';
+    return 'Good night';
+  }
+
+  /// Uses [UserModel.firstName] only; if missing, addresses as "user".
+  String _greetingWithName(UserModel? user, DateTime now) {
+    final phrase = _greetingForLocalHour(now.hour);
+    final first = user?.firstName?.trim();
+    final name = (first != null && first.isNotEmpty) ? first : 'user';
+    return '$phrase, $name';
   }
 }

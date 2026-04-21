@@ -14,6 +14,7 @@ import '../../calendar/view_model/calendar_view_model.dart';
 import '../../../data/models/event_model.dart';
 import '../view_model/stay_point_view_model.dart';
 import '../widgets/event_map_callout.dart';
+import '../widgets/event_location_cover_grid.dart';
 import '../widgets/significant_location_card.dart';
 import '../../../modules/location_tracking/models/stay_point.dart';
 import 'location_detail_page.dart';
@@ -39,7 +40,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   String _geocodeScheduleSignature = '';
 
   String? _calloutLocationName;
-  EventModel? _calloutPreviewEvent;
+  List<EventModel>? _calloutEvents;
   LatLng? _calloutAnchor;
   ScreenCoordinate? _calloutScreenCoord;
 
@@ -103,18 +104,9 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
 
   void _clearEventCallout() {
     _calloutLocationName = null;
-    _calloutPreviewEvent = null;
+    _calloutEvents = null;
     _calloutAnchor = null;
     _calloutScreenCoord = null;
-  }
-
-  EventModel _pickPreviewEvent(List<EventModel> events) {
-    final sorted = List<EventModel>.from(events)
-      ..sort((a, b) => b.startTime.compareTo(a.startTime));
-    for (final e in sorted) {
-      if (e.imageUrls.isNotEmpty) return e;
-    }
-    return sorted.first;
   }
 
   void _openEventCallout({
@@ -126,7 +118,8 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
     setState(() {
       _selectedIndex = null;
       _calloutLocationName = locationName;
-      _calloutPreviewEvent = _pickPreviewEvent(events);
+      _calloutEvents = List<EventModel>.from(events)
+        ..sort((a, b) => b.startTime.compareTo(a.startTime));
       _calloutAnchor = anchor;
       _calloutScreenCoord = null;
     });
@@ -251,7 +244,8 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
 
   Widget? _buildCalloutOverlay(BuildContext context) {
     if (_calloutLocationName == null ||
-        _calloutPreviewEvent == null ||
+        _calloutEvents == null ||
+        _calloutEvents!.isEmpty ||
         _calloutScreenCoord == null) {
       return null;
     }
@@ -265,13 +259,12 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
       left: x - EventMapCallout.width / 2,
       top: y - _calloutTotalHeight,
       child: EventMapCallout(
-        previewEvent: _calloutPreviewEvent,
+        events: _calloutEvents!,
         onMagnifyMap: () {
           _mapController?.animateCamera(CameraUpdate.zoomIn());
         },
         onTap: () {
           final name = _calloutLocationName!;
-          setState(_clearEventCallout);
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -471,9 +464,8 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
   List<StayPoint> _filterStayPoints(List<StayPoint> stayPoints) {
     if (_searchQuery.isEmpty) return stayPoints;
     return stayPoints
-        .where((sp) => (sp.label ?? 'Significant Location')
-            .toLowerCase()
-            .contains(_searchQuery))
+        .where((sp) =>
+            (sp.label ?? 'Stay point').toLowerCase().contains(_searchQuery))
         .toList();
   }
 
@@ -535,34 +527,6 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
               child: _buildNoSearchResultsState(),
             )
           else ...[
-            // ── Significant Locations (StayPoints) ──
-            if (filteredStayPoints.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: _buildSectionTitle(
-                  'Significant Locations',
-                  filteredStayPoints.length,
-                  Icons.location_on,
-                  AppColors.primary,
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, index) {
-                    final sp = filteredStayPoints[index];
-                    final originalIndex =
-                        stayPoints.indexWhere((p) => p.id == sp.id);
-                    return SignificantLocationCard(
-                      stayPoint: sp,
-                      isSelected: _selectedIndex == originalIndex,
-                      onTap: () => _onStayPointCardTapped(originalIndex, sp),
-                      onLongPress: () => _showStayPointDetail(ctx, sp),
-                    );
-                  },
-                  childCount: filteredStayPoints.length,
-                ),
-              ),
-            ],
-
             // ── Event Locations ──
             if (filteredEventLocations.isNotEmpty) ...[
               SliverToBoxAdapter(
@@ -584,6 +548,34 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                     );
                   },
                   childCount: filteredEventLocations.length,
+                ),
+              ),
+            ],
+
+            // ── Stay point locations (StayPoints) ──
+            if (filteredStayPoints.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: _buildSectionTitle(
+                  'Stay point locations',
+                  filteredStayPoints.length,
+                  Icons.location_on,
+                  AppColors.primary,
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, index) {
+                    final sp = filteredStayPoints[index];
+                    final originalIndex =
+                        stayPoints.indexWhere((p) => p.id == sp.id);
+                    return SignificantLocationCard(
+                      stayPoint: sp,
+                      isSelected: _selectedIndex == originalIndex,
+                      onTap: () => _onStayPointCardTapped(originalIndex, sp),
+                      onLongPress: () => _showStayPointDetail(ctx, sp),
+                    );
+                  },
+                  childCount: filteredStayPoints.length,
                 ),
               ),
             ],
@@ -735,8 +727,9 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
     String locationName,
     List<EventModel> events,
   ) {
-    events.sort((a, b) => b.startTime.compareTo(a.startTime));
-    final latest = events.first;
+    final sortedEvents = List<EventModel>.from(events)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    final latest = sortedEvents.first;
 
     return GestureDetector(
       onTap: () {
@@ -744,7 +737,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
         if (coord != null) {
           _openEventCallout(
             locationName: locationName,
-            events: events,
+            events: sortedEvents,
             anchor: coord,
           );
         } else {
@@ -781,8 +774,11 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.event_outlined,
-                  color: AppColors.primary, size: 22),
+              child: EventLocationCoverGrid(
+                events: sortedEvents,
+                size: 44,
+                borderRadius: 12,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -827,7 +823,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${events.length} event${events.length != 1 ? 's' : ''}',
+                          '${sortedEvents.length} event${sortedEvents.length != 1 ? 's' : ''}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -975,7 +971,7 @@ class _StayPointDetailSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        stayPoint.label ?? 'Significant Location',
+                        stayPoint.label ?? 'Stay point',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,

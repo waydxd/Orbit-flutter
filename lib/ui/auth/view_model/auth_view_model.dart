@@ -16,6 +16,7 @@ class AuthViewModel extends BaseViewModel {
   final AuthRepository _authRepository;
   bool _isAuthenticated = false;
   UserModel? _currentUser;
+  static const String _profilePictureUrlPrefKey = 'user_profile_picture_url';
 
   AuthViewModel({AuthRepository? authRepository})
       : _authRepository = authRepository ?? AuthRepository(ApiClient());
@@ -342,6 +343,7 @@ class AuthViewModel extends BaseViewModel {
       await LocalStorageService.removePreference('is_authenticated');
       await LocalStorageService.removePreference('user_email');
       await LocalStorageService.removePreference('user_id');
+      await LocalStorageService.removePreference(_profilePictureUrlPrefKey);
     }, showLoading: false);
     if (!isDisposed) {
       notifyListeners();
@@ -356,7 +358,22 @@ class AuthViewModel extends BaseViewModel {
 
     return await executeAsync<bool>(() async {
           try {
-            final profile = await _authRepository.getProfile();
+            var profile = await _authRepository.getProfile();
+            final pic = profile.profilePicture?.trim() ?? '';
+            if (pic.isEmpty) {
+              final localPic = LocalStorageService.getPreference<String>(
+                    _profilePictureUrlPrefKey,
+                  ) ??
+                  '';
+              if (localPic.trim().isNotEmpty) {
+                profile = profile.copyWith(profilePicture: localPic.trim());
+              }
+            } else {
+              await LocalStorageService.setPreference(
+                _profilePictureUrlPrefKey,
+                pic,
+              );
+            }
             _currentUser = profile;
             await LocalStorageService.setPreference(
                 'user_email', profile.email);
@@ -374,6 +391,58 @@ class AuthViewModel extends BaseViewModel {
             return false;
           }
         }, showLoading: true) ??
+        false;
+  }
+
+  /// Uploads a new profile picture then refreshes the current user from the server.
+  Future<bool> uploadProfilePicture(List<int> bytes, String filename) async {
+    if (!_isAuthenticated && _currentUser == null) {
+      setError('Please login again to update your profile');
+      return false;
+    }
+
+    return await executeAsync<bool>(() async {
+          try {
+            final upload = await _authRepository.uploadProfilePicture(
+              bytes: bytes,
+              filename: filename,
+            );
+            final uploadedUrl = upload.url.trim();
+            if (uploadedUrl.isNotEmpty) {
+              if (_currentUser != null) {
+                _currentUser =
+                    _currentUser!.copyWith(profilePicture: uploadedUrl);
+              }
+              await LocalStorageService.setPreference(
+                _profilePictureUrlPrefKey,
+                uploadedUrl,
+              );
+            }
+            var profile = await _authRepository.getProfile();
+            final pic = profile.profilePicture?.trim() ?? '';
+            if (pic.isEmpty && upload.url.isNotEmpty) {
+              profile = profile.copyWith(profilePicture: upload.url);
+            } else if (pic.isNotEmpty) {
+              await LocalStorageService.setPreference(
+                _profilePictureUrlPrefKey,
+                pic,
+              );
+            }
+            _currentUser = profile;
+            await LocalStorageService.setPreference(
+                'user_email', profile.email);
+            await LocalStorageService.setPreference('user_id', profile.id);
+            return true;
+          } catch (e) {
+            setError(
+              _extractErrorMessage(
+                e,
+                'Failed to upload profile picture.',
+              ),
+            );
+            return false;
+          }
+        }, showLoading: false) ??
         false;
   }
 
