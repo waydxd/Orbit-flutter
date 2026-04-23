@@ -5,6 +5,7 @@ import '../models/daily_heatmap_record.dart';
 import '../widgets/heatmap_calendar_widget.dart';
 import '../widgets/location_card_widget.dart';
 import '../../calendar/view_model/calendar_view_model.dart';
+import '../../auth/view_model/auth_view_model.dart';
 import '../../settings/view/settings_page.dart';
 import '../../../data/models/event_model.dart';
 
@@ -20,10 +21,17 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   DateTime _focusedDate = DateTime.now();
+  String? _initialFetchedUserId;
+  List<DailyHeatmapRecord> _heatmapRecords = const [];
+  int _heatmapRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _fetchHeatmapMonth(_focusedDate);
+    });
   }
 
   String _inferCategory(EventModel event) {
@@ -95,6 +103,28 @@ class _DashboardPageState extends State<DashboardPage> {
     }).toList();
   }
 
+  Future<void> _fetchHeatmapMonth(DateTime focusedDay) async {
+    final userId = context.read<AuthViewModel>().currentUser?.id;
+    if (userId == null) return;
+
+    final anchor = DateTime(focusedDay.year, focusedDay.month, focusedDay.day);
+    final requestId = ++_heatmapRequestId;
+    final events = await context.read<CalendarViewModel>().loadEventsForRange(
+          userId: userId,
+          eventRangeAnchor: anchor,
+          mergeEventAnchors: [
+            anchor.subtract(const Duration(days: 1)),
+            anchor.add(const Duration(days: 1)),
+          ],
+          fullYearRange: false,
+        );
+
+    if (!mounted || requestId != _heatmapRequestId) return;
+    setState(() {
+      _heatmapRecords = _generateRecordsFromEvents(events);
+    });
+  }
+
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -157,9 +187,16 @@ class _DashboardPageState extends State<DashboardPage> {
         child: DecoratedBox(
           decoration: _gradientDecoration,
           child: SafeArea(
-            child: Consumer<CalendarViewModel>(
-              builder: (context, viewModel, child) {
-                final records = _generateRecordsFromEvents(viewModel.events);
+            child: Builder(
+              builder: (context) {
+                final userId = context.watch<AuthViewModel>().currentUser?.id;
+                if (userId != null && _initialFetchedUserId != userId) {
+                  _initialFetchedUserId = userId;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    _fetchHeatmapMonth(_focusedDate);
+                  });
+                }
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.only(bottom: 120),
@@ -169,12 +206,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       _buildHeader(),
                       const SizedBox(height: 20),
                       HeatmapCalendarWidget(
-                        records: records,
+                        records: _heatmapRecords,
                         focusedDate: _focusedDate,
                         onPageChanged: (focusedDay) {
                           setState(() {
                             _focusedDate = focusedDay;
                           });
+                          _fetchHeatmapMonth(focusedDay);
                         },
                       ),
                       const SizedBox(height: 20),

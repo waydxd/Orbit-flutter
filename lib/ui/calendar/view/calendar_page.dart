@@ -1382,6 +1382,8 @@ class _TimelineDayRow extends StatelessWidget {
     final laneLayouts = layoutTimetableSegmentsForDay(intervals);
     final now = DateTime.now();
     final showNowLine = isSameDay(dayMidnight, now);
+    final nowLabel = DateFormat('HH:mm').format(now);
+    final nowLineTop = (now.hour + now.minute / 60.0) * _kTimetableHourHeight;
 
     return SizedBox(
       height: _kDayRowExtent,
@@ -1403,13 +1405,25 @@ class _TimelineDayRow extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: 50,
-                        child: Text(
-                          '${i.toString().padLeft(2, '0')}:00',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        child: Builder(
+                          builder: (context) {
+                            final hourLabel =
+                                '${i.toString().padLeft(2, '0')}:00';
+                            final hourTop = i * _kTimetableHourHeight;
+                            final hideHourLabel = showNowLine &&
+                                (nowLineTop - hourTop).abs() < 16.0;
+                            if (hideHourLabel) {
+                              return const SizedBox.shrink();
+                            }
+                            return Text(
+                              hourLabel,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            );
+                          },
                         ),
                       ),
                       Expanded(
@@ -1488,8 +1502,7 @@ class _TimelineDayRow extends StatelessWidget {
               }),
               if (showNowLine)
                 Positioned(
-                  top: (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
-                      _kTimelineVerticalOffset,
+                  top: nowLineTop,
                   left: 0,
                   right: 0,
                   child: Row(
@@ -1497,10 +1510,10 @@ class _TimelineDayRow extends StatelessWidget {
                       SizedBox(
                         width: 50,
                         child: Text(
-                          DateFormat('HH:mm').format(now),
+                          nowLabel,
                           style: const TextStyle(
                             color: Colors.redAccent,
-                            fontSize: 10,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

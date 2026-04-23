@@ -55,6 +55,8 @@ class HeatmapCalendarWidget extends StatelessWidget {
             lastDay: DateTime.utc(2030, 12, 31),
             focusedDay: focusedDate,
             calendarFormat: CalendarFormat.month,
+            pageJumpingEnabled: true,
+            pageAnimationEnabled: false,
             onPageChanged: onPageChanged,
             headerStyle: const HeaderStyle(
               formatButtonVisible: false,

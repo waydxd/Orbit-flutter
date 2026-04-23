@@ -184,6 +184,26 @@ class CalendarViewModel extends BaseViewModel {
     }, showLoading: false);
   }
 
+  /// Loads events for the requested calendar window without mutating shared state.
+  Future<List<EventModel>> loadEventsForRange({
+    required String userId,
+    required DateTime eventRangeAnchor,
+    List<DateTime> mergeEventAnchors = const [],
+    bool fullYearRange = false,
+  }) async {
+    final primary = eventRangeAnchor;
+    final anchors = <DateTime>[primary, ...mergeEventAnchors];
+    final (rangeStart, rangeEnd) = anchors.length == 1
+        ? eventQueryRange(primary, fullYear: fullYearRange)
+        : unionEventQueryRange(anchors, fullYear: fullYearRange);
+
+    return _calendarRepository.getEvents(
+      userId: userId,
+      startTime: rangeStart,
+      endTime: rangeEnd,
+    );
+  }
+
   Future<void> fetchAll({
     required String userId,
     DateTime? eventRangeAnchor,
