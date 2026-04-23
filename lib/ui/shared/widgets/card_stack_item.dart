@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../core/themes/app_colors.dart';
-import '../../core/themes/hashtag_palette.dart';
 
 /// Data model for a card in the card stack carousel.
 class CardStackItem {
   final String id;
   final String title;
   final String? description;
+  final List<String> hashtags;
   final String? imageSrc;
   final String? href;
   final String? ctaLabel;
@@ -20,6 +20,7 @@ class CardStackItem {
     required this.id,
     required this.title,
     this.description,
+    this.hashtags = const [],
     this.imageSrc,
     this.href,
     this.ctaLabel,
@@ -35,15 +36,17 @@ class CardStackItem {
     required String title,
     String? description,
     DateTime? dueDate,
+    List<String> hashtags = const [],
   }) {
     return CardStackItem(
       id: id,
       title: title,
       description: description,
+      hashtags: hashtags,
       dateTime: dueDate,
       isTask: true,
       tag: 'Task',
-      tagColor: AppColors.secondary,
+      tagColor: AppColors.info,
     );
   }
 
@@ -54,19 +57,15 @@ class CardStackItem {
     DateTime? startTime,
     List<String> hashtags = const [],
   }) {
-    final accent = accentForEventDisplay(title: title, hashtags: hashtags);
-    final tagLabel = hashtags.isNotEmpty
-        ? '#${stripLeadingHashtagForDisplay(hashtags.first)}'
-        : 'Event';
-
     return CardStackItem(
       id: id,
       title: title,
       description: description,
+      hashtags: hashtags,
       dateTime: startTime,
       isTask: false,
-      tag: tagLabel,
-      tagColor: accent,
+      tag: 'Event',
+      tagColor: AppColors.primary,
     );
   }
 }

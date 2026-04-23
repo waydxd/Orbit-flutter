@@ -122,6 +122,7 @@ class _HomePageState extends State<HomePage> {
                                 title: item.title,
                                 description: item.description,
                                 dueDate: item.dueDate,
+                                hashtags: item.hashtags,
                               );
                             } else {
                               final event = item as EventModel;

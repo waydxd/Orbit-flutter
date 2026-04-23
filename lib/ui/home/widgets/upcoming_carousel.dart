@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/themes/app_colors.dart';
+import '../../core/widgets/hashtag_chip.dart';
 import '../../shared/widgets/card_stack_item.dart';
 
 /// Horizontal [PageView] carousel for upcoming tasks/events.
@@ -200,6 +201,11 @@ class _UpcomingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hashtags =
+        item.hashtags.where((tag) => tag.trim().isNotEmpty).toList();
+    final visibleHashtags = hashtags.take(3).toList();
+    final overflowCount = hashtags.length - visibleHashtags.length;
+
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -226,8 +232,9 @@ class _UpcomingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (item.tag != null) ...[
+                if (item.tag != null)
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -245,8 +252,6 @@ class _UpcomingCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Spacer(),
-                ],
                 if (item.dateTime != null)
                   Text(
                     DateFormat('MMM d, h:mm a').format(item.dateTime!),
@@ -258,7 +263,7 @@ class _UpcomingCard extends StatelessWidget {
                   ),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 10),
             Text(
               item.title,
               style: const TextStyle(
@@ -269,7 +274,7 @@ class _UpcomingCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 8),
             Text(
               item.description?.isNotEmpty == true
                   ? item.description!
@@ -281,6 +286,44 @@ class _UpcomingCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
+            if (visibleHashtags.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ...visibleHashtags.asMap().entries.map(
+                      (entry) => Padding(
+                        padding: EdgeInsets.only(right: entry.key == visibleHashtags.length - 1 ? 0 : 6),
+                        child: HashtagChipCompact(tag: entry.value),
+                      ),
+                    ),
+                    if (overflowCount > 0) ...[
+                      if (visibleHashtags.isNotEmpty) const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6B7280).withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '+$overflowCount',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+            const Spacer(),
           ],
         ),
       ),
