@@ -69,7 +69,7 @@ jobs:
         run: ls -l build/app/outputs/flutter-apk || true
 
       - name: Create/update GitHub Release and upload APK
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: github.ref_type == 'tag'
         with:
           # Upload the built APK(s) to the release. Use newline-separated globs if needed.
