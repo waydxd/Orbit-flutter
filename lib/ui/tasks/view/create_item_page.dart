@@ -219,6 +219,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
   final TextEditingController _detailsController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final FocusNode _eventDetailsFocusNode = FocusNode();
+  bool _suppressLocationSuggestions = false;
+  String? _lastSelectedLocationSuggestion;
 
   DateTime _nextWholeHour(DateTime from) {
     final local = from.toLocal();
@@ -1824,24 +1826,45 @@ class _CreateItemPageState extends State<CreateItemPage> {
           ? TextEditingValue(text: initialLocation)
           : null,
       optionsBuilder: (TextEditingValue textEditingValue) async {
-        if (textEditingValue.text.isEmpty) {
+        final query = textEditingValue.text.trim();
+        if (query.isEmpty) {
           return const Iterable<String>.empty();
         }
-        return await LocationService.getPlaceSuggestions(textEditingValue.text);
+        if (_suppressLocationSuggestions &&
+            query == _lastSelectedLocationSuggestion) {
+          return const Iterable<String>.empty();
+        }
+        return await LocationService.getPlaceSuggestions(query);
       },
       onSelected: (String selection) {
         _locationController.text = selection;
+        _lastSelectedLocationSuggestion = selection;
+        _suppressLocationSuggestions = true;
+        FocusManager.instance.primaryFocus?.unfocus();
         _scheduleBufferCheck();
       },
       fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-        controller.addListener(() {
-          _locationController.text = controller.text;
-          if (isEvent) _scheduleBufferCheck();
-        });
         return TextField(
           controller: controller,
           focusNode: focusNode,
           onEditingComplete: onEditingComplete,
+          onTap: () {
+            if (_suppressLocationSuggestions) {
+              setState(() {
+                _suppressLocationSuggestions = false;
+              });
+            }
+          },
+          onChanged: (value) {
+            _locationController.text = value;
+            if (value != _lastSelectedLocationSuggestion &&
+                _suppressLocationSuggestions) {
+              setState(() {
+                _suppressLocationSuggestions = false;
+              });
+            }
+            if (isEvent) _scheduleBufferCheck();
+          },
           decoration: InputDecoration(
             hintText: 'Location',
             hintStyle: TextStyle(color: Colors.grey.shade400),
