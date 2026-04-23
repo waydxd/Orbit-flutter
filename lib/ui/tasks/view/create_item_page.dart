@@ -239,6 +239,13 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _nameController.addListener(_onTextChanged);
     _detailsController.addListener(_onTextChanged);
 
+    if (widget.parsedResult != null) {
+      // Parsed text is assigned before listeners are attached, so trigger once.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _onTextChanged();
+      });
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && isEvent) _scheduleBufferCheck();
     });
