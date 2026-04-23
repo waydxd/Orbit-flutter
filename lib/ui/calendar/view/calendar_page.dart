@@ -205,7 +205,9 @@ class _CalendarPageState extends State<CalendarPage>
   /// Snap / min height for week view (updated from [MediaQuery] in [didChangeDependencies]).
   double _weekHeight = 200.0;
   double _currentHeight = 200.0;
-  final double _monthHeight = 420.0;
+  static const double _kMonthHeightForFourRows = 300.0;
+  static const double _kMonthHeightForFiveRows = 350.0;
+  static const double _kMonthHeightForSixRows = 400.0;
 
   /// Minimum height for the Ongoing timeline panel (scales with screen so it is not a hard 220px).
   static const double _kMinOngoingHeightFloor = 152.0;
@@ -214,6 +216,26 @@ class _CalendarPageState extends State<CalendarPage>
   /// Minimum height reserved for Ongoing when the calendar is in week or month mode.
   double _minOngoingPanelHeight(double screenHeight) => math.max(
       _kMinOngoingHeightFloor, screenHeight * _kMinOngoingHeightScreenFraction);
+
+  int _weekRowCountForMonth(DateTime monthDay) {
+    final firstDayOfMonth = DateTime(monthDay.year, monthDay.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(monthDay.year, monthDay.month);
+    final leadingOffset = firstDayOfMonth.weekday % 7; // Sunday-start grid
+    return ((leadingOffset + daysInMonth) / 7).ceil();
+  }
+
+  double _monthHeightForFocusedDay() {
+    final rowCount = _weekRowCountForMonth(_focusedDay);
+    switch (rowCount) {
+      case 4:
+        return _kMonthHeightForFourRows;
+      case 6:
+        return _kMonthHeightForSixRows;
+      case 5:
+      default:
+        return _kMonthHeightForFiveRows;
+    }
+  }
 
   /// Max calendar strip height (`_currentHeight`) while week/month so Ongoing keeps at least [_minOngoingPanelHeight].
   double _maxCalendarStripHeightNonYear(
@@ -525,11 +547,12 @@ class _CalendarPageState extends State<CalendarPage>
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
     final previousMode = _viewMode;
+    final monthHeight = _monthHeightForFocusedDay();
 
     final double raw = _currentHeight + details.delta.dy;
 
     CalendarViewMode newMode;
-    if (raw > _monthHeight + 100) {
+    if (raw > monthHeight + 100) {
       newMode = CalendarViewMode.year;
     } else if (raw > _weekHeight + 50) {
       newMode = CalendarViewMode.month;
@@ -568,6 +591,7 @@ class _CalendarPageState extends State<CalendarPage>
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
     final double yearHeight = screenHeight - topPadding;
+    final monthHeight = _monthHeightForFocusedDay();
 
     double targetHeight;
     CalendarViewMode targetMode;
@@ -575,27 +599,27 @@ class _CalendarPageState extends State<CalendarPage>
     final double velocity = details.velocity.pixelsPerSecond.dy;
 
     if (velocity > 500) {
-      if (_currentHeight < _monthHeight) {
-        targetHeight = _monthHeight;
+      if (_currentHeight < monthHeight) {
+        targetHeight = monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
         targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
       }
     } else if (velocity < -500) {
-      if (_currentHeight > _monthHeight) {
-        targetHeight = _monthHeight;
+      if (_currentHeight > monthHeight) {
+        targetHeight = monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
         targetHeight = _weekHeight;
         targetMode = CalendarViewMode.week;
       }
     } else {
-      if (_currentHeight > (_monthHeight + yearHeight) / 2) {
+      if (_currentHeight > (monthHeight + yearHeight) / 2) {
         targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
-      } else if (_currentHeight > (_weekHeight + _monthHeight) / 2) {
-        targetHeight = _monthHeight;
+      } else if (_currentHeight > (_weekHeight + monthHeight) / 2) {
+        targetHeight = monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
         targetHeight = _weekHeight;
@@ -861,9 +885,11 @@ class _CalendarPageState extends State<CalendarPage>
             .where((e) => EventRecurrence.occursOnDay(e, day))
             .toList();
       },
-      availableGestures: _calendarFormat == CalendarFormat.week
-          ? AvailableGestures.none
-          : AvailableGestures.all,
+      availableCalendarFormats: const {
+        CalendarFormat.month: 'Month',
+        CalendarFormat.week: 'Week',
+      },
+      availableGestures: AvailableGestures.horizontalSwipe,
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
@@ -873,6 +899,7 @@ class _CalendarPageState extends State<CalendarPage>
         _jumpTimelineToDay(selectedDay, animate: false);
       },
       onFormatChanged: (format) {
+        if (format == CalendarFormat.twoWeeks) return;
         if (_calendarFormat != format) {
           setState(() {
             _calendarFormat = format;
@@ -882,6 +909,14 @@ class _CalendarPageState extends State<CalendarPage>
       onPageChanged: (focusedDay) {
         setState(() {
           _focusedDay = focusedDay;
+          if (_viewMode == CalendarViewMode.month) {
+            _currentHeight = _clampStripHeightForMode(
+              _monthHeightForFocusedDay(),
+              CalendarViewMode.month,
+              MediaQuery.sizeOf(context).height,
+              MediaQuery.paddingOf(context).top,
+            );
+          }
         });
         _refetchEventsForCalendar(fullYearRange: false);
       },
@@ -1194,7 +1229,7 @@ class _CalendarPageState extends State<CalendarPage>
                 _viewMode = CalendarViewMode.month;
                 _calendarFormat = CalendarFormat.month;
                 _currentHeight = math.min(
-                  _monthHeight,
+                  _monthHeightForFocusedDay(),
                   _maxCalendarContentHeight(
                     MediaQuery.sizeOf(context).height,
                     MediaQuery.paddingOf(context).top,

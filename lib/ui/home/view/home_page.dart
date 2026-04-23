@@ -65,10 +65,10 @@ class _HomePageState extends State<HomePage> {
               final pastEvents =
                   todayEvents.where((e) => e.endTime.isBefore(now)).length;
 
-              // Today's Statistics tasks: due today (local) or no due date
+              // Today's Statistics tasks: due today only (local date).
               final todayTasks = viewModel.tasks.where((t) {
                 final d = t.dueDate;
-                if (d == null) return true;
+                if (d == null) return false;
                 return d.year == now.year &&
                     d.month == now.month &&
                     d.day == now.day;
