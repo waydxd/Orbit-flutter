@@ -63,7 +63,7 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK (universal)
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=HUGGING_FACE_API_KEY=${{ secrets.HF_TOKEN }}
 
       - name: List produced APKs
         run: ls -l build/app/outputs/flutter-apk || true
