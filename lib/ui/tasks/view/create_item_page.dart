@@ -193,12 +193,14 @@ class CreateItemPage extends StatefulWidget {
   final EventModel? editEvent;
   final TaskModel? editTask;
   final NlpParseResult? parsedResult;
+  final DateTime? initialDateTime;
 
   const CreateItemPage({
     this.initialIsEvent = true,
     this.editEvent,
     this.editTask,
     this.parsedResult,
+    this.initialDateTime,
     super.key,
   }) : assert(
           editEvent == null || editTask == null,
@@ -218,10 +220,36 @@ class _CreateItemPageState extends State<CreateItemPage> {
   final TextEditingController _locationController = TextEditingController();
   final FocusNode _eventDetailsFocusNode = FocusNode();
 
+  DateTime _nextWholeHour(DateTime from) {
+    final local = from.toLocal();
+    return DateTime(local.year, local.month, local.day, local.hour + 1);
+  }
+
+  void _applyCreateDefaults() {
+    final seedDate = widget.initialDateTime ?? DateTime.now();
+    final normalizedDate = DateTime(seedDate.year, seedDate.month, seedDate.day);
+    final nextHour = _nextWholeHour(DateTime.now());
+    final defaultStart = DateTime(
+      normalizedDate.year,
+      normalizedDate.month,
+      normalizedDate.day,
+      nextHour.hour,
+      nextHour.minute,
+    );
+    final defaultEnd = defaultStart.add(const Duration(hours: 1));
+    _startDate = defaultStart;
+    _startTime = TimeOfDay.fromDateTime(defaultStart);
+    _endDate = defaultEnd;
+    _endTime = TimeOfDay.fromDateTime(defaultEnd);
+    _deadlineDate = defaultStart;
+    _deadlineTime = TimeOfDay.fromDateTime(defaultStart);
+  }
+
   @override
   void initState() {
     super.initState();
     _eventDetailsFocusNode.addListener(_onEventDetailsFocusChanged);
+    _applyCreateDefaults();
     if (widget.editEvent != null) {
       isEvent = true;
       _prefillFromEditEvent();
@@ -346,11 +374,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   DateTime _startDate = DateTime.now();
-  TimeOfDay _startTime = TimeOfDay.now();
-  DateTime _endDate = DateTime.now().add(const Duration(hours: 1));
-  TimeOfDay _endTime = TimeOfDay.fromDateTime(
-    DateTime.now().add(const Duration(hours: 1)),
-  );
+  TimeOfDay _startTime = const TimeOfDay(hour: 0, minute: 0);
+  DateTime _endDate = DateTime.now();
+  TimeOfDay _endTime = const TimeOfDay(hour: 1, minute: 0);
 
   bool _isAllDay = false;
   TimeOfDay? _savedStartTimeBeforeAllDay;
@@ -546,14 +572,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
           } else {
             _startDate = newDateTime;
             _startTime = TimeOfDay.fromDateTime(newDateTime);
-
-            final currentEnd = DateTime(_endDate.year, _endDate.month,
-                _endDate.day, _endTime.hour, _endTime.minute);
-            if (currentEnd.isBefore(newDateTime)) {
-              final newEnd = newDateTime.add(const Duration(hours: 1));
-              _endDate = newEnd;
-              _endTime = TimeOfDay.fromDateTime(newEnd);
-            }
+            final newEnd = newDateTime.add(const Duration(hours: 1));
+            _endDate = newEnd;
+            _endTime = TimeOfDay.fromDateTime(newEnd);
           }
         });
       },
@@ -1020,7 +1041,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     final initial = _deadlineDate != null
         ? DateTime(_deadlineDate!.year, _deadlineDate!.month,
             _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute)
-        : DateTime.now();
+        : _startDate;
 
     await _showDateTimePicker(
       context,

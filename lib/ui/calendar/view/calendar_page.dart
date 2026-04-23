@@ -273,6 +273,10 @@ class _CalendarPageState extends State<CalendarPage>
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _selectedDay == null) return;
+      context.read<CalendarViewModel>().setSelectedCalendarDay(_selectedDay!);
+    });
     _timetableScrollController = ScrollController();
     _timetableScrollController.addListener(_onTimelineScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -384,6 +388,7 @@ class _CalendarPageState extends State<CalendarPage>
         _calendarFormat = CalendarFormat.week;
         _currentHeight = _weekHeight;
       });
+      context.read<CalendarViewModel>().setSelectedCalendarDay(normalized);
       _timetableInitialScrollApplied = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -399,6 +404,7 @@ class _CalendarPageState extends State<CalendarPage>
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
     });
+    context.read<CalendarViewModel>().setSelectedCalendarDay(selectedDay);
   }
 
   void _maybeInvalidateTimelineScrollFlag(
@@ -479,6 +485,7 @@ class _CalendarPageState extends State<CalendarPage>
       _selectedDay = visibleDay;
       _focusedDay = visibleDay;
     });
+    context.read<CalendarViewModel>().setSelectedCalendarDay(visibleDay);
   }
 
   void _scheduleTimetableDataFetch(DateTime visibleDay) {
@@ -896,6 +903,7 @@ class _CalendarPageState extends State<CalendarPage>
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
+        context.read<CalendarViewModel>().setSelectedCalendarDay(selectedDay);
         _jumpTimelineToDay(selectedDay, animate: false);
       },
       onFormatChanged: (format) {
