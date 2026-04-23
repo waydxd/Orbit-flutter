@@ -241,8 +241,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
     _startTime = TimeOfDay.fromDateTime(defaultStart);
     _endDate = defaultEnd;
     _endTime = TimeOfDay.fromDateTime(defaultEnd);
-    _deadlineDate = defaultStart;
-    _deadlineTime = TimeOfDay.fromDateTime(defaultStart);
+    _deadlineDate = null;
+    _deadlineTime = null;
   }
 
   @override
@@ -736,12 +736,15 @@ class _CreateItemPageState extends State<CreateItemPage> {
                   ),
                 ),
                 const Spacer(),
-                Switch.adaptive(
-                  value: _isAllDay,
-                  onChanged: _onAllDayChanged,
-                  activeThumbColor: const Color(0xFF6366F1),
-                  activeTrackColor:
-                      const Color(0xFF6366F1).withValues(alpha: 0.35),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Switch.adaptive(
+                    value: _isAllDay,
+                    onChanged: _onAllDayChanged,
+                    activeThumbColor: const Color(0xFF6366F1),
+                    activeTrackColor:
+                        const Color(0xFF6366F1).withValues(alpha: 0.35),
+                  ),
                 ),
               ],
             ),
@@ -998,43 +1001,102 @@ class _CreateItemPageState extends State<CreateItemPage> {
     return Container(
       decoration: _fieldDecoration(),
       clipBehavior: Clip.antiAlias,
-      child: GestureDetector(
-        onTap: _selectDeadlineDateTime,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Text(
-                'Deadline',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  valueText,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                Text(
+                  'Deadline',
                   style: TextStyle(
-                    color: hasDeadline
-                        ? const Color(0xFF1F2937)
-                        : Colors.grey.shade500,
+                    color: Colors.grey.shade600,
                     fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
-                  textAlign: TextAlign.end,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                Switch.adaptive(
+                  value: hasDeadline,
+                  onChanged: _onDeadlineToggleChanged,
+                  activeThumbColor: const Color(0xFF6366F1),
+                  activeTrackColor:
+                      const Color(0xFF6366F1).withValues(alpha: 0.35),
+                ),
+              ],
+            ),
+          ),
+          if (hasDeadline) ...[
+            Divider(
+              height: 1,
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey.shade200,
+            ),
+            GestureDetector(
+              onTap: _selectDeadlineDateTime,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Row(
+                  children: [
+                    Text(
+                      'Due date',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        valueText,
+                        style: const TextStyle(
+                          color: Color(0xFF1F2937),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.end,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey.shade400,
+                      size: 22,
+                    ),
+                  ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
-            ],
-          ),
-        ),
+            ),
+          ],
+        ],
       ),
     );
+  }
+
+  void _onDeadlineToggleChanged(bool enabled) {
+    setState(() {
+      if (!enabled) {
+        _deadlineDate = null;
+        _deadlineTime = null;
+        return;
+      }
+
+      final fallback = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _startTime.hour,
+        _startTime.minute,
+      );
+      _deadlineDate = fallback;
+      _deadlineTime = TimeOfDay.fromDateTime(fallback);
+    });
   }
 
   Future<void> _selectDeadlineDateTime() async {

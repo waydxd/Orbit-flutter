@@ -133,22 +133,21 @@ Widget _calendarTaskCard(
           ),
           const SizedBox(height: 4),
           Text(
-            subtitle,
-            style: TextStyle(color: onMuted, fontSize: 14),
+            time,
+            style: TextStyle(
+              color: onAccent,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              time,
-              style: TextStyle(
-                color: onAccent,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          Text(
+            subtitle,
+            style: TextStyle(color: onMuted, fontSize: 14),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1568,6 +1567,11 @@ class _TimelineDayRow extends StatelessWidget {
                           color: Colors.redAccent,
                           shape: BoxShape.circle,
                         ),
+                      ),
+                      Container(
+                        width: 6,
+                        height: 2,
+                        color: Colors.redAccent,
                       ),
                       const Expanded(
                         child: Divider(
