@@ -945,7 +945,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildTaskTitleSection() {
     return Container(
       decoration: _fieldDecoration(),
-      clipBehavior: Clip.antiAlias,
       child: TextField(
         controller: _nameController,
         decoration: InputDecoration(
@@ -1673,7 +1672,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildEventTitleLocationSection() {
     return Container(
       decoration: _fieldDecoration(),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1808,16 +1806,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Widget _buildEventDetailsField() {
-    final focused = _eventDetailsFocusNode.hasFocus;
     return Container(
       height: 150,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: focused ? const Color(0xFF6366F1) : Colors.grey.shade200,
-          width: focused ? 2 : 1,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -1826,7 +1819,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           Positioned.fill(
