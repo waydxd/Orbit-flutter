@@ -40,15 +40,13 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
         final success = await authViewModel
             .requestPasswordReset(_emailController.text.trim());
         if (success && mounted) {
-          setState(() {
-            _isOtpSent = true;
-          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Password reset code sent to your email!'),
               backgroundColor: AppColors.success,
             ),
           );
+          Navigator.of(context).pop();
         }
       } else {
         final success = await authViewModel.confirmPasswordReset(
