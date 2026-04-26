@@ -24,7 +24,10 @@ class CalendarImportExportPage extends StatefulWidget {
 }
 
 class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
-  bool _busy = false;
+  bool _importing = false;
+  bool _exporting = false;
+
+  bool get _anyBusy => _importing || _exporting;
 
   String _originalFileNameForImport(PlatformFile file, String? selectedPath) {
     final n = file.name.trim();
@@ -46,6 +49,16 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
         const SnackBar(
           content: Text('Sign in to import events'),
           backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (_exporting) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Wait for the export to finish, then try again.'),
         ),
       );
       return;
@@ -92,7 +105,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
       return;
     }
 
-    setState(() => _busy = true);
+    setState(() => _importing = true);
     try {
       // Backend: POST /api/v1/integration/import (multipart/form-data: file)
       final api = ApiClient();
@@ -182,7 +195,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _importing = false);
     }
   }
 
@@ -201,7 +214,17 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
       return;
     }
 
-    setState(() => _busy = true);
+    if (_importing) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Wait for the import to finish, then try again.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _exporting = true);
     try {
       final integration = IntegrationApiService();
       final resp = await integration.getExport<List<int>>(
@@ -250,7 +273,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _exporting = false);
     }
   }
 
@@ -282,7 +305,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                         size: 32,
                       ),
                       onPressed:
-                          _busy ? null : () => Navigator.pop(context),
+                          _anyBusy ? null : () => Navigator.pop(context),
                     ),
                   ],
                 ),
@@ -332,8 +355,8 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                onPressed: _busy ? null : _importIcs,
-                                icon: _busy
+                                onPressed: _importing ? null : _importIcs,
+                                icon: _importing
                                     ? const SizedBox(
                                         width: 20,
                                         height: 20,
@@ -343,7 +366,8 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                                         ),
                                       )
                                     : const Icon(Icons.upload_file_rounded),
-                                label: Text(_busy ? 'Working…' : 'Import file'),
+                                label: Text(
+                                    _importing ? 'Working…' : 'Import file'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
@@ -378,9 +402,19 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
-                                onPressed: _busy ? null : _exportIcs,
-                                icon: const Icon(Icons.ios_share_rounded),
-                                label: const Text('Export to .ics'),
+                                onPressed: _exporting ? null : _exportIcs,
+                                icon: _exporting
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      )
+                                    : const Icon(Icons.ios_share_rounded),
+                                label: Text(
+                                    _exporting ? 'Working…' : 'Export to .ics'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.textPrimary,
                                   side: BorderSide(
