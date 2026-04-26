@@ -332,195 +332,204 @@ class _ProfilePageState extends State<ProfilePage> {
             child: SafeArea(
               child: authViewModel.isLoading && user == null
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Profile',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: AppColors.textSecondary
-                                      .withValues(alpha: 0.7),
-                                  fontWeight: FontWeight.w500,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.chevron_left,
+                                  color: Color(0xFF6366F1),
+                                  size: 32,
                                 ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 20),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            splashRadius: 22,
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _ProfileHeaderCard(
-                            initials: _initialsForUser(user),
-                            title: user?.displayName ?? 'Your profile',
-                            subtitle: user?.email ?? 'Signed in account',
-                            isVerified: user?.emailVerified ?? false,
-                            isUploadingPhoto: _isUploadingProfilePhoto,
-                            avatarVersion: _avatarVersion,
-                            profilePictureUrl: user?.profilePicture,
-                            localImageBytes: _pendingAvatarBytes,
-                            onTapPhoto:
-                                user != null ? _changeProfilePhoto : null,
-                          ),
-                          if (authViewModel.error != null) ...[
-                            const SizedBox(height: 16),
-                            _ErrorBanner(message: authViewModel.error!),
-                          ],
-                          const SizedBox(height: 18),
-                          Form(
-                            key: _formKey,
+                        ),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _SectionCard(
-                                  title: 'Basic information',
+                                _ProfileHeaderCard(
+                                  initials: _initialsForUser(user),
+                                  title: user?.displayName ?? 'Your profile',
+                                  subtitle: user?.email ?? 'Signed in account',
+                                  isVerified: user?.emailVerified ?? false,
+                                  isUploadingPhoto: _isUploadingProfilePhoto,
+                                  avatarVersion: _avatarVersion,
+                                  profilePictureUrl: user?.profilePicture,
+                                  localImageBytes: _pendingAvatarBytes,
+                                  onTapPhoto: user != null
+                                      ? _changeProfilePhoto
+                                      : null,
+                                ),
+                                if (authViewModel.error != null) ...[
+                                  const SizedBox(height: 16),
+                                  _ErrorBanner(
+                                      message: authViewModel.error!),
+                                ],
+                                const SizedBox(height: 18),
+                                Form(
+                                  key: _formKey,
                                   child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: _buildTextField(
-                                              controller: _firstNameController,
-                                              label: 'First name',
+                                      _SectionCard(
+                                        title: 'Basic information',
+                                        child: Column(
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: _buildTextField(
+                                                    controller:
+                                                        _firstNameController,
+                                                    label: 'First name',
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: _buildTextField(
+                                                    controller:
+                                                        _lastNameController,
+                                                    label: 'Last name',
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: _buildTextField(
-                                              controller: _lastNameController,
-                                              label: 'Last name',
+                                            const SizedBox(height: 14),
+                                            _buildTextField(
+                                              controller: _usernameController,
+                                              label: 'User ID',
+                                              validator: _validateUsername,
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 14),
+                                            _buildReadOnlyField(
+                                              label: 'Email',
+                                              value: user?.email ?? '',
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      const SizedBox(height: 14),
-                                      _buildTextField(
-                                        controller: _usernameController,
-                                        label: 'User ID',
-                                        validator: _validateUsername,
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _buildReadOnlyField(
-                                        label: 'Email',
-                                        value: user?.email ?? '',
+                                      const SizedBox(height: 18),
+                                      _SectionCard(
+                                        title: 'Preferences',
+                                        child: Column(
+                                          children: [
+                                            ModernDropdownField<String>(
+                                              label: 'Region',
+                                              icon: Icons.public_rounded,
+                                              value: _selectedRegion,
+                                              searchable: true,
+                                              searchHint: 'Search countries...',
+                                              displayStringForValue: (code) =>
+                                                  RegionTimezoneData
+                                                      .regionDisplayName(code),
+                                              items: RegionTimezoneData
+                                                  .regions.keys
+                                                  .toList(),
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  _selectedRegion = value;
+                                                });
+                                              },
+                                            ),
+                                            const SizedBox(height: 14),
+                                            ModernDropdownField<String>(
+                                              label: 'Timezone',
+                                              icon: Icons.schedule_rounded,
+                                              value: _selectedTimezone,
+                                              searchable: true,
+                                              searchHint: 'Search timezones...',
+                                              displayStringForValue: (tz) =>
+                                                  RegionTimezoneData
+                                                      .timezoneDisplayName(tz),
+                                              items:
+                                                  RegionTimezoneData.timezones,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  _selectedTimezone = value;
+                                                });
+                                              },
+                                            ),
+                                            const SizedBox(height: 14),
+                                            ModernDropdownField<String>(
+                                              label: 'Gender',
+                                              icon: Icons.person_outline_rounded,
+                                              value: _selectedGender,
+                                              displayStringForValue: (key) =>
+                                                  _genderLabels[key] ?? key,
+                                              items:
+                                                  _genderLabels.keys.toList(),
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  _selectedGender = value;
+                                                });
+                                              },
+                                            ),
+                                            const SizedBox(height: 14),
+                                            _BirthDateField(
+                                              birthDate: _birthDate,
+                                              onPickDate: _pickBirthDate,
+                                              onClear: _birthDate == null
+                                                  ? null
+                                                  : () {
+                                                      setState(() {
+                                                        _birthDate = null;
+                                                      });
+                                                    },
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 18),
-                                _SectionCard(
-                                  title: 'Preferences',
-                                  child: Column(
-                                    children: [
-                                      ModernDropdownField<String>(
-                                        label: 'Region',
-                                        icon: Icons.public_rounded,
-                                        value: _selectedRegion,
-                                        searchable: true,
-                                        searchHint: 'Search countries...',
-                                        displayStringForValue: (code) =>
-                                            RegionTimezoneData
-                                                .regionDisplayName(code),
-                                        items: RegionTimezoneData.regions.keys
-                                            .toList(),
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _selectedRegion = value;
-                                          });
-                                        },
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: authViewModel.isLoading
+                                        ? null
+                                        : _saveProfile,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(18),
                                       ),
-                                      const SizedBox(height: 14),
-                                      ModernDropdownField<String>(
-                                        label: 'Timezone',
-                                        icon: Icons.schedule_rounded,
-                                        value: _selectedTimezone,
-                                        searchable: true,
-                                        searchHint: 'Search timezones...',
-                                        displayStringForValue: (tz) =>
-                                            RegionTimezoneData
-                                                .timezoneDisplayName(tz),
-                                        items: RegionTimezoneData.timezones,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _selectedTimezone = value;
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(height: 14),
-                                      ModernDropdownField<String>(
-                                        label: 'Gender',
-                                        icon: Icons.person_outline_rounded,
-                                        value: _selectedGender,
-                                        displayStringForValue: (key) =>
-                                            _genderLabels[key] ?? key,
-                                        items: _genderLabels.keys.toList(),
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _selectedGender = value;
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _BirthDateField(
-                                        birthDate: _birthDate,
-                                        onPickDate: _pickBirthDate,
-                                        onClear: _birthDate == null
-                                            ? null
-                                            : () {
-                                                setState(() {
-                                                  _birthDate = null;
-                                                });
-                                              },
-                                      ),
-                                    ],
+                                    ),
+                                    child: authViewModel.isLoading
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                            ),
+                                          )
+                                        : const Text('Save profile'),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed:
-                                  authViewModel.isLoading ? null : _saveProfile,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              child: authViewModel.isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
-                                      ),
-                                    )
-                                  : const Text('Save profile'),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
             ),
           ),

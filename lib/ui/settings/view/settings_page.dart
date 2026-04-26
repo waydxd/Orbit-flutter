@@ -28,27 +28,40 @@ class SettingsPage extends StatelessWidget {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        splashRadius: 22,
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.primary,
-                          size: 22,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: Color(0xFF6366F1),
+                            size: 32,
+                          ),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                      ),
-                      const SizedBox(height: 28),
-                      _SettingsGroup(
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, inner) {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: inner.maxHeight,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 10),
+                                _SettingsGroup(
                         children: [
                           Consumer<AuthViewModel>(
                             builder: (context, authViewModel, child) {
@@ -95,11 +108,16 @@ class SettingsPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
-                      const _LogoutButton(),
-                    ],
+                                const SizedBox(height: 32),
+                                const _LogoutButton(),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
+                ],
               );
             },
           ),

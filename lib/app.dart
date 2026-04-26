@@ -106,6 +106,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
       // Keep splash visible until initial calendar/task data is loaded.
       if (authViewModel.isAuthenticated) {
+        // Session restore only stores id + email; fetch profile so name/username
+        // are available before any screen (e.g. Settings) reads displayName.
+        await authViewModel.loadProfile(showLoading: false).timeout(
+          const Duration(seconds: 6),
+          onTimeout: () {
+            debugPrint('Initial profile load timed out, continuing app');
+            return false;
+          },
+        );
         final userId = authViewModel.currentUser?.id;
         if (userId != null) {
           await calendarViewModel.fetchAll(userId: userId).timeout(
