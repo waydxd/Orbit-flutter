@@ -1089,15 +1089,12 @@ class _CreateItemPageState extends State<CreateItemPage> {
         return;
       }
 
-      final fallback = DateTime(
+      _deadlineDate = DateTime(
         _startDate.year,
         _startDate.month,
         _startDate.day,
-        _startTime.hour,
-        _startTime.minute,
       );
-      _deadlineDate = fallback;
-      _deadlineTime = TimeOfDay.fromDateTime(fallback);
+      _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
     });
   }
 
