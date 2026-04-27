@@ -89,7 +89,7 @@ dependencies:
   timezone: ^0.11.0
 
   # WebSocket for chat streaming
-  web_socket_channel: ^2.4.0
+  web_socket_channel: ^3.0.3
   grpc: ^5.1.0
   protobuf: ^6.0.0
 
