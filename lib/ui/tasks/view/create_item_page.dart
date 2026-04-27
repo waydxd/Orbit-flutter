@@ -401,15 +401,20 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Timer? _debounceTimer;
 
   static const Duration _bufferMargin = Duration(minutes: 10);
+  /// Only show the travel-time progress bar if the request takes longer than
+  /// this, so fast responses do not flash a line under the location field.
+  static const Duration _bufferLoadingRevealDelay = Duration(milliseconds: 450);
   String? _bufferWarningText;
   bool _bufferCheckLoading = false;
   Timer? _bufferDebounceTimer;
+  Timer? _bufferLoadingRevealTimer;
   int _bufferCheckSeq = 0;
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
     _bufferDebounceTimer?.cancel();
+    _bufferLoadingRevealTimer?.cancel();
     _nameController.removeListener(_onTextChanged);
     _detailsController.removeListener(_onTextChanged);
     _nameController.dispose();
@@ -451,6 +456,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Future<void> _runBufferTimeCheck() async {
     if (!mounted || !isEvent) return;
     final seq = ++_bufferCheckSeq;
+    _bufferLoadingRevealTimer?.cancel();
+    _bufferLoadingRevealTimer = null;
+    if (_bufferCheckLoading && mounted) {
+      setState(() => _bufferCheckLoading = false);
+    }
 
     void clearWarning() {
       if (!mounted) return;
@@ -498,13 +508,18 @@ class _CreateItemPageState extends State<CreateItemPage> {
     }
 
     if (!mounted) return;
-    setState(() => _bufferCheckLoading = true);
+    _bufferLoadingRevealTimer = Timer(_bufferLoadingRevealDelay, () {
+      if (!mounted || seq != _bufferCheckSeq) return;
+      setState(() => _bufferCheckLoading = true);
+    });
 
     final travelSec = await TravelTimeService.drivingDurationSeconds(
       originAddress: prior.location.trim(),
       destinationAddress: loc,
     );
 
+    _bufferLoadingRevealTimer?.cancel();
+    _bufferLoadingRevealTimer = null;
     if (!mounted || seq != _bufferCheckSeq) return;
     setState(() => _bufferCheckLoading = false);
 
@@ -1505,6 +1520,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
             _bufferWarningText = null;
             _bufferCheckLoading = false;
             _bufferDebounceTimer?.cancel();
+            _bufferLoadingRevealTimer?.cancel();
+            _bufferLoadingRevealTimer = null;
           }
         });
         if (isEvent) _scheduleBufferCheck();

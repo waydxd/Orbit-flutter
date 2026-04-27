@@ -513,13 +513,21 @@ class _CalendarPageState extends State<CalendarPage>
       if (userId == null) return;
       final anchor = _focusedDay;
       final d = DateTime(anchor.year, anchor.month, anchor.day);
+      final mergeEventAnchors = <DateTime>[
+        d.subtract(const Duration(days: 1)),
+        d.add(const Duration(days: 1)),
+      ];
+      final selected = _selectedDay;
+      if (selected != null) {
+        final s = DateTime(selected.year, selected.month, selected.day);
+        if (!isSameDay(s, d)) {
+          mergeEventAnchors.add(s);
+        }
+      }
       context.read<CalendarViewModel>().fetchAll(
             userId: userId,
             eventRangeAnchor: d,
-            mergeEventAnchors: [
-              d.subtract(const Duration(days: 1)),
-              d.add(const Duration(days: 1)),
-            ],
+            mergeEventAnchors: mergeEventAnchors,
             fullYearRange: fullYearRange,
             showLoading: false,
           );
