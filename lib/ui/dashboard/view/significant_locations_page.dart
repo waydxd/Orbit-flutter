@@ -556,7 +556,7 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
             if (filteredStayPoints.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: _buildSectionTitle(
-                  'Stay point locations',
+                  'Stay Points',
                   filteredStayPoints.length,
                   Icons.location_on,
                   AppColors.primary,
@@ -611,6 +611,13 @@ class _SignificantLocationsPageState extends State<SignificantLocationsPage> {
                     color: AppColors.textTertiary,
                   ),
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  fillColor: Colors.transparent,
+                  filled: false,
                   contentPadding: EdgeInsets.symmetric(vertical: 6),
                   isDense: true,
                 ),
