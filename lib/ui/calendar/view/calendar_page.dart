@@ -24,6 +24,9 @@ const double _kTimetableLaneGap = 2.0;
 const double _kTimelineVerticalOffset = 10.0;
 const double _kNowLineCenterOffset = 8.0;
 
+double _timelineYForHourFraction(double hourFraction) =>
+    hourFraction * _kTimetableHourHeight + _kTimelineVerticalOffset;
+
 /// One calendar day row height in the infinite vertical timeline.
 const double _kDayRowExtent = 24 * _kTimetableHourHeight;
 
@@ -1434,8 +1437,7 @@ class _TimelineDayRow extends StatelessWidget {
     final now = DateTime.now();
     final showNowLine = isSameDay(dayMidnight, now);
     final nowLabel = DateFormat('HH:mm').format(now);
-    final nowLineY = (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
-        _kTimelineVerticalOffset;
+    final nowLineY = _timelineYForHourFraction(now.hour + now.minute / 60.0);
 
     return SizedBox(
       height: _kDayRowExtent,
@@ -1497,8 +1499,7 @@ class _TimelineDayRow extends StatelessWidget {
                 // Full hour scale (80px/hour): height matches start→end duration.
                 final startMin = seg.start.difference(dayMidnight).inMinutes;
                 final endMin = seg.end.difference(dayMidnight).inMinutes;
-                final topPx = (startMin / 60.0) * _kTimetableHourHeight +
-                    _kTimelineVerticalOffset;
+                final topPx = _timelineYForHourFraction(startMin / 60.0);
                 final heightPx = math.max(
                   4.0,
                   ((endMin - startMin) / 60.0) * _kTimetableHourHeight,
@@ -1537,7 +1538,7 @@ class _TimelineDayRow extends StatelessWidget {
                     (duration > 0 ? duration : 0.5) * _kTimetableHourHeight -
                         20;
                 return Positioned(
-                  top: startH * _kTimetableHourHeight + 10,
+                  top: _timelineYForHourFraction(startH),
                   left: leftMargin,
                   right: 0,
                   height: cardHeight.clamp(120.0, double.infinity),
