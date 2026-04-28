@@ -19,7 +19,7 @@ class _ForgotPasswordFormState extends State<ForgotPasswordForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isOtpSent = false;
+  final bool _isOtpSent = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
