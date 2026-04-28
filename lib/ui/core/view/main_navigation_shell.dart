@@ -51,8 +51,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 
   Future<void> _openCreateItem() async {
+    final selectedCalendarDay =
+        context.read<CalendarViewModel>().selectedCalendarDay;
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const CreateItemPage()),
+      MaterialPageRoute(
+        builder: (context) => CreateItemPage(
+          initialDateTime: selectedCalendarDay,
+        ),
+      ),
     );
   }
 

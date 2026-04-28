@@ -24,7 +24,10 @@ class CalendarImportExportPage extends StatefulWidget {
 }
 
 class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
-  bool _busy = false;
+  bool _importing = false;
+  bool _exporting = false;
+
+  bool get _anyBusy => _importing || _exporting;
 
   String _originalFileNameForImport(PlatformFile file, String? selectedPath) {
     final n = file.name.trim();
@@ -46,6 +49,16 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
         const SnackBar(
           content: Text('Sign in to import events'),
           backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (_exporting) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Wait for the export to finish, then try again.'),
         ),
       );
       return;
@@ -92,7 +105,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
       return;
     }
 
-    setState(() => _busy = true);
+    setState(() => _importing = true);
     try {
       // Backend: POST /api/v1/integration/import (multipart/form-data: file)
       final api = ApiClient();
@@ -182,7 +195,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _importing = false);
     }
   }
 
@@ -201,7 +214,17 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
       return;
     }
 
-    setState(() => _busy = true);
+    if (_importing) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Wait for the import to finish, then try again.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _exporting = true);
     try {
       final integration = IntegrationApiService();
       final resp = await integration.getExport<List<int>>(
@@ -250,7 +273,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _exporting = false);
     }
   }
 
@@ -267,117 +290,150 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                IconButton(
-                  onPressed: _busy ? null : () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 22,
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Import / Export',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        color: Color(0xFF6366F1),
+                        size: 32,
                       ),
+                      onPressed: _anyBusy ? null : () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Use iCalendar (.ics) or CSV (.csv) to move events between Orbit and other calendar apps (Google Calendar, Apple Calendar, Outlook, etc.). Import/export is handled by the Orbit backend.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                ),
-                const SizedBox(height: 18),
-                _SectionCard(
-                  title: 'Import',
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 6),
                       Text(
-                        'Choose an .ics or .csv file. Each row or event in the file will be added to your Orbit calendar.',
+                        'Import / Export',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Use iCalendar (.ics) or CSV (.csv) to move events between Orbit and other calendar apps (Google Calendar, Apple Calendar, Outlook, etc.). Import/export is handled by the Orbit backend.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AppColors.textSecondary,
+                              height: 1.4,
                             ),
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _busy ? null : _importIcs,
-                          icon: _busy
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                      const SizedBox(height: 18),
+                      _SectionCard(
+                        title: 'Import',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Choose an .ics or .csv file. Each row or event in the file will be added to your Orbit calendar.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
                                   ),
-                                )
-                              : const Icon(Icons.upload_file_rounded),
-                          label: Text(_busy ? 'Working…' : 'Import file'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _importing ? null : _importIcs,
+                                icon: _importing
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.upload_file_rounded),
+                                label: Text(
+                                    _importing ? 'Working…' : 'Import file'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      _SectionCard(
+                        title: 'Export',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Exports events from roughly one year ago through two years ahead. Share or save the generated .ics file.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _exporting ? null : _exportIcs,
+                                icon: _exporting
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      )
+                                    : const Icon(Icons.ios_share_rounded),
+                                label: Text(
+                                    _exporting ? 'Working…' : 'Export to .ics'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textPrimary,
+                                  side: BorderSide(
+                                    color: AppColors.grey300
+                                        .withValues(alpha: 0.9),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
-                _SectionCard(
-                  title: 'Export',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Exports events from roughly one year ago through two years ahead. Share or save the generated .ics file.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _busy ? null : _exportIcs,
-                          icon: const Icon(Icons.ios_share_rounded),
-                          label: const Text('Export to .ics'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: BorderSide(
-                              color: AppColors.grey300.withValues(alpha: 0.9),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

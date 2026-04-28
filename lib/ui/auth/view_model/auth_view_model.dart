@@ -86,6 +86,7 @@ class AuthViewModel extends BaseViewModel {
             final user = result['user'] as UserModel;
             await _persistAuthenticatedSession(token, user);
             _scheduleFcmTokenRegistration();
+            await loadProfile(showLoading: false);
 
             return true;
           } catch (e) {
@@ -158,6 +159,7 @@ class AuthViewModel extends BaseViewModel {
             final user = result['user'] as UserModel;
             await _persistAuthenticatedSession(token, user);
             _scheduleFcmTokenRegistration();
+            await loadProfile(showLoading: false);
 
             return true;
           } catch (e) {
@@ -350,7 +352,11 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
-  Future<bool> loadProfile() async {
+  /// Fetches the current user from the server and updates [currentUser].
+  ///
+  /// When [showLoading] is false, global loading is not toggled (use after
+  /// login or session restore so headers like Settings show the real name).
+  Future<bool> loadProfile({bool showLoading = true}) async {
     if (!_isAuthenticated && _currentUser == null) {
       setError('Please login again to view your profile');
       return false;
@@ -390,7 +396,7 @@ class AuthViewModel extends BaseViewModel {
             setError(errorMessage);
             return false;
           }
-        }, showLoading: true) ??
+        }, showLoading: showLoading) ??
         false;
   }
 

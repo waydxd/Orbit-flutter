@@ -58,75 +58,89 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 22,
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.primary,
-                    size: 22,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        color: Color(0xFF6366F1),
+                        size: 32,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      Text(
+                        'Notifications',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Control which reminders Orbit is allowed to send.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                      ),
+                      const SizedBox(height: 18),
+                      _SectionCard(
+                        title: 'Event & Task notifications',
+                        child: _loading
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  _ToggleTile(
+                                    title: 'Event notifications',
+                                    subtitle:
+                                        'Reminders for upcoming calendar events.',
+                                    value: _eventsEnabled,
+                                    onChanged: _setEvents,
+                                  ),
+                                  const _DividerLine(),
+                                  _ToggleTile(
+                                    title: 'Task notifications',
+                                    subtitle:
+                                        'Reminders for tasks and due dates.',
+                                    value: _tasksEnabled,
+                                    onChanged: _setTasks,
+                                  ),
+                                ],
+                              ),
+                      ),
+                      const SizedBox(height: 14),
+                      const _HintCard(
+                        text:
+                            'If you turned on these toggles but still don’t receive notifications, check system notification permissions for Orbit in your phone settings.',
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Notifications',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Control which reminders Orbit is allowed to send.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                ),
-                const SizedBox(height: 18),
-                _SectionCard(
-                  title: 'Event & Task notifications',
-                  child: _loading
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      : Column(
-                          children: [
-                            _ToggleTile(
-                              title: 'Event notifications',
-                              subtitle:
-                                  'Reminders for upcoming calendar events.',
-                              value: _eventsEnabled,
-                              onChanged: _setEvents,
-                            ),
-                            const _DividerLine(),
-                            _ToggleTile(
-                              title: 'Task notifications',
-                              subtitle: 'Reminders for tasks and due dates.',
-                              value: _tasksEnabled,
-                              onChanged: _setTasks,
-                            ),
-                          ],
-                        ),
-                ),
-                const SizedBox(height: 14),
-                const _HintCard(
-                  text:
-                      'If you turned on these toggles but still don’t receive notifications, check system notification permissions for Orbit in your phone settings.',
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -58,137 +58,158 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 22,
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.primary,
-                    size: 22,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        color: Color(0xFF6366F1),
+                        size: 32,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      Text(
+                        'Time & Date',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Choose the timezone used for dates and reminders.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                      ),
+                      const SizedBox(height: 18),
+                      _SectionCard(
+                        title: 'Timezone',
+                        child: _loading
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ModernDropdownField<String>(
+                                    label: 'Timezone',
+                                    icon: Icons.schedule_rounded,
+                                    value: _selectedTimezoneId,
+                                    searchable: true,
+                                    searchHint: 'Search timezones...',
+                                    displayStringForValue: (tz) =>
+                                        RegionTimezoneData.timezoneDisplayName(
+                                            tz),
+                                    items: RegionTimezoneData.timezones,
+                                    onChanged: (value) => _setTimezone(value),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _InfoRow(
+                                    label: 'Current selection',
+                                    value: _selectedTimezoneId == null
+                                        ? 'System default'
+                                        : RegionTimezoneData
+                                            .timezoneDisplayName(
+                                            _selectedTimezoneId!,
+                                          ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _InfoRow(
+                                    label: 'Device timezone',
+                                    value: _deviceTimezoneId == null
+                                        ? 'Unknown'
+                                        : RegionTimezoneData
+                                            .timezoneDisplayName(
+                                            _deviceTimezoneId!,
+                                          ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: _selectedTimezoneId == null
+                                              ? null
+                                              : () => _setTimezone(null),
+                                          style: OutlinedButton.styleFrom(
+                                            backgroundColor: Colors.white
+                                                .withValues(alpha: 0.7),
+                                            side: BorderSide(
+                                              color: AppColors.grey300
+                                                  .withValues(alpha: 0.9),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'Use system default',
+                                            style: TextStyle(
+                                                color: AppColors.textPrimary),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: _deviceTimezoneId == null
+                                              ? null
+                                              : () => _setTimezone(
+                                                    _deviceTimezoneId,
+                                                  ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                            ),
+                                          ),
+                                          child:
+                                              const Text('Use device timezone'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Time & Date',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Choose the timezone used for dates and reminders.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                ),
-                const SizedBox(height: 18),
-                _SectionCard(
-                  title: 'Timezone',
-                  child: _loading
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ModernDropdownField<String>(
-                              label: 'Timezone',
-                              icon: Icons.schedule_rounded,
-                              value: _selectedTimezoneId,
-                              searchable: true,
-                              searchHint: 'Search timezones...',
-                              displayStringForValue: (tz) =>
-                                  RegionTimezoneData.timezoneDisplayName(tz),
-                              items: RegionTimezoneData.timezones,
-                              onChanged: (value) => _setTimezone(value),
-                            ),
-                            const SizedBox(height: 12),
-                            _InfoRow(
-                              label: 'Current selection',
-                              value: _selectedTimezoneId == null
-                                  ? 'System default'
-                                  : RegionTimezoneData.timezoneDisplayName(
-                                      _selectedTimezoneId!,
-                                    ),
-                            ),
-                            const SizedBox(height: 6),
-                            _InfoRow(
-                              label: 'Device timezone',
-                              value: _deviceTimezoneId == null
-                                  ? 'Unknown'
-                                  : RegionTimezoneData.timezoneDisplayName(
-                                      _deviceTimezoneId!,
-                                    ),
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: _selectedTimezoneId == null
-                                        ? null
-                                        : () => _setTimezone(null),
-                                    style: OutlinedButton.styleFrom(
-                                      backgroundColor:
-                                          Colors.white.withValues(alpha: 0.7),
-                                      side: BorderSide(
-                                        color: AppColors.grey300
-                                            .withValues(alpha: 0.9),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'Use system default',
-                                      style: TextStyle(
-                                          color: AppColors.textPrimary),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: _deviceTimezoneId == null
-                                        ? null
-                                        : () => _setTimezone(_deviceTimezoneId),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                    ),
-                                    child: const Text('Use device timezone'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -60,16 +60,31 @@ class CalendarViewModel extends BaseViewModel {
   /// Last anchor used for a successful event list fetch (calendar focused month/year).
   DateTime? _lastEventFetchAnchor;
   bool _lastFetchFullYear = false;
+  DateTime? _selectedCalendarDay;
 
   List<EventModel> get events => _events;
   List<TaskModel> get tasks => _tasks;
   List<HabitSuggestion> get habitSuggestions => _habitSuggestions;
+  DateTime? get selectedCalendarDay => _selectedCalendarDay;
 
   /// Whether there are any pending habit suggestions
   bool get hasHabitSuggestions => _habitSuggestions.isNotEmpty;
 
   /// Number of pending habit suggestions
   int get habitSuggestionsCount => _habitSuggestions.length;
+
+  void setSelectedCalendarDay(DateTime day) {
+    final normalized = DateTime(day.year, day.month, day.day);
+    final current = _selectedCalendarDay;
+    if (current != null &&
+        current.year == normalized.year &&
+        current.month == normalized.month &&
+        current.day == normalized.day) {
+      return;
+    }
+    _selectedCalendarDay = normalized;
+    notifyListeners();
+  }
 
   CalendarViewModel({
     CalendarRepository? calendarRepository,
@@ -182,6 +197,26 @@ class CalendarViewModel extends BaseViewModel {
       _tasks = fetchedTasks;
       notifyListeners();
     }, showLoading: false);
+  }
+
+  /// Loads events for the requested calendar window without mutating shared state.
+  Future<List<EventModel>> loadEventsForRange({
+    required String userId,
+    required DateTime eventRangeAnchor,
+    List<DateTime> mergeEventAnchors = const [],
+    bool fullYearRange = false,
+  }) async {
+    final primary = eventRangeAnchor;
+    final anchors = <DateTime>[primary, ...mergeEventAnchors];
+    final (rangeStart, rangeEnd) = anchors.length == 1
+        ? eventQueryRange(primary, fullYear: fullYearRange)
+        : unionEventQueryRange(anchors, fullYear: fullYearRange);
+
+    return _calendarRepository.getEvents(
+      userId: userId,
+      startTime: rangeStart,
+      endTime: rangeEnd,
+    );
   }
 
   Future<void> fetchAll({

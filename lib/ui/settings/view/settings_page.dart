@@ -28,78 +28,102 @@ class SettingsPage extends StatelessWidget {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        splashRadius: 22,
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.primary,
-                          size: 22,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: Color(0xFF6366F1),
+                            size: 32,
+                          ),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                      ),
-                      const SizedBox(height: 28),
-                      _SettingsGroup(
-                        children: [
-                          Consumer<AuthViewModel>(
-                            builder: (context, authViewModel, child) {
-                              final user = authViewModel.currentUser;
-                              return _ProfileTile(
-                                title: user?.displayName ?? 'User name',
-                                subtitle: user?.email ?? 'Profile',
-                                profilePictureUrl: user?.profilePicture,
-                                initials: _initialsForUser(
-                                  displayName: user?.displayName,
-                                  email: user?.email,
-                                ),
-                                onTap: () => _openProfilePage(context),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      _SettingsGroup(
-                        children: [
-                          _SettingsTile(
-                            icon: Icons.notifications_none_rounded,
-                            title: 'Notification',
-                            onTap: () => _openNotificationSettings(context),
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.access_time_rounded,
-                            title: 'Time & Date',
-                            onTap: () => _openTimeDateSettings(context),
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.location_on_outlined,
-                            title: 'GPS',
-                            onTap: () => _openGpsSettings(context),
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.event_note_rounded,
-                            title: 'Import / Export calendar',
-                            onTap: () => _openCalendarImportExport(context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-                      const _LogoutButton(),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, inner) {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: inner.maxHeight,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 10),
+                                _SettingsGroup(
+                                  children: [
+                                    Consumer<AuthViewModel>(
+                                      builder: (context, authViewModel, child) {
+                                        final user = authViewModel.currentUser;
+                                        return _ProfileTile(
+                                          title:
+                                              user?.displayName ?? 'User name',
+                                          subtitle: user?.email ?? 'Profile',
+                                          profilePictureUrl:
+                                              user?.profilePicture,
+                                          initials: _initialsForUser(
+                                            displayName: user?.displayName,
+                                            email: user?.email,
+                                          ),
+                                          onTap: () =>
+                                              _openProfilePage(context),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 18),
+                                _SettingsGroup(
+                                  children: [
+                                    _SettingsTile(
+                                      icon: Icons.notifications_none_rounded,
+                                      title: 'Notification',
+                                      onTap: () =>
+                                          _openNotificationSettings(context),
+                                    ),
+                                    const _DividerLine(),
+                                    _SettingsTile(
+                                      icon: Icons.access_time_rounded,
+                                      title: 'Time & Date',
+                                      onTap: () =>
+                                          _openTimeDateSettings(context),
+                                    ),
+                                    const _DividerLine(),
+                                    _SettingsTile(
+                                      icon: Icons.location_on_outlined,
+                                      title: 'GPS',
+                                      onTap: () => _openGpsSettings(context),
+                                    ),
+                                    const _DividerLine(),
+                                    _SettingsTile(
+                                      icon: Icons.event_note_rounded,
+                                      title: 'Import / Export calendar',
+                                      onTap: () =>
+                                          _openCalendarImportExport(context),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 32),
+                                const _LogoutButton(),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               );
             },
           ),

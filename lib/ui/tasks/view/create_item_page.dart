@@ -193,12 +193,14 @@ class CreateItemPage extends StatefulWidget {
   final EventModel? editEvent;
   final TaskModel? editTask;
   final NlpParseResult? parsedResult;
+  final DateTime? initialDateTime;
 
   const CreateItemPage({
     this.initialIsEvent = true,
     this.editEvent,
     this.editTask,
     this.parsedResult,
+    this.initialDateTime,
     super.key,
   }) : assert(
           editEvent == null || editTask == null,
@@ -217,11 +219,40 @@ class _CreateItemPageState extends State<CreateItemPage> {
   final TextEditingController _detailsController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final FocusNode _eventDetailsFocusNode = FocusNode();
+  bool _suppressLocationSuggestions = false;
+  String? _lastSelectedLocationSuggestion;
+
+  DateTime _nextWholeHour(DateTime from) {
+    final local = from.toLocal();
+    return DateTime(local.year, local.month, local.day, local.hour + 1);
+  }
+
+  void _applyCreateDefaults() {
+    final seedDate = widget.initialDateTime ?? DateTime.now();
+    final normalizedDate =
+        DateTime(seedDate.year, seedDate.month, seedDate.day);
+    final nextHour = _nextWholeHour(DateTime.now());
+    final defaultStart = DateTime(
+      normalizedDate.year,
+      normalizedDate.month,
+      normalizedDate.day,
+      nextHour.hour,
+      nextHour.minute,
+    );
+    final defaultEnd = defaultStart.add(const Duration(hours: 1));
+    _startDate = defaultStart;
+    _startTime = TimeOfDay.fromDateTime(defaultStart);
+    _endDate = defaultEnd;
+    _endTime = TimeOfDay.fromDateTime(defaultEnd);
+    _deadlineDate = null;
+    _deadlineTime = null;
+  }
 
   @override
   void initState() {
     super.initState();
     _eventDetailsFocusNode.addListener(_onEventDetailsFocusChanged);
+    _applyCreateDefaults();
     if (widget.editEvent != null) {
       isEvent = true;
       _prefillFromEditEvent();
@@ -238,6 +269,13 @@ class _CreateItemPageState extends State<CreateItemPage> {
     // Auto-predict hashtags when text changes (event + task)
     _nameController.addListener(_onTextChanged);
     _detailsController.addListener(_onTextChanged);
+
+    if (widget.parsedResult != null) {
+      // Parsed text is assigned before listeners are attached, so trigger once.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _onTextChanged();
+      });
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && isEvent) _scheduleBufferCheck();
@@ -339,11 +377,9 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   DateTime _startDate = DateTime.now();
-  TimeOfDay _startTime = TimeOfDay.now();
-  DateTime _endDate = DateTime.now().add(const Duration(hours: 1));
-  TimeOfDay _endTime = TimeOfDay.fromDateTime(
-    DateTime.now().add(const Duration(hours: 1)),
-  );
+  TimeOfDay _startTime = const TimeOfDay(hour: 0, minute: 0);
+  DateTime _endDate = DateTime.now();
+  TimeOfDay _endTime = const TimeOfDay(hour: 1, minute: 0);
 
   bool _isAllDay = false;
   TimeOfDay? _savedStartTimeBeforeAllDay;
@@ -366,15 +402,21 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Timer? _debounceTimer;
 
   static const Duration _bufferMargin = Duration(minutes: 10);
+
+  /// Only show the travel-time progress bar if the request takes longer than
+  /// this, so fast responses do not flash a line under the location field.
+  static const Duration _bufferLoadingRevealDelay = Duration(milliseconds: 450);
   String? _bufferWarningText;
   bool _bufferCheckLoading = false;
   Timer? _bufferDebounceTimer;
+  Timer? _bufferLoadingRevealTimer;
   int _bufferCheckSeq = 0;
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
     _bufferDebounceTimer?.cancel();
+    _bufferLoadingRevealTimer?.cancel();
     _nameController.removeListener(_onTextChanged);
     _detailsController.removeListener(_onTextChanged);
     _nameController.dispose();
@@ -416,6 +458,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Future<void> _runBufferTimeCheck() async {
     if (!mounted || !isEvent) return;
     final seq = ++_bufferCheckSeq;
+    _bufferLoadingRevealTimer?.cancel();
+    _bufferLoadingRevealTimer = null;
+    if (_bufferCheckLoading && mounted) {
+      setState(() => _bufferCheckLoading = false);
+    }
 
     void clearWarning() {
       if (!mounted) return;
@@ -463,16 +510,29 @@ class _CreateItemPageState extends State<CreateItemPage> {
     }
 
     if (!mounted) return;
-    setState(() => _bufferCheckLoading = true);
+    _bufferLoadingRevealTimer = Timer(_bufferLoadingRevealDelay, () {
+      if (!mounted || seq != _bufferCheckSeq) return;
+      setState(() => _bufferCheckLoading = true);
+    });
 
-    final travelSec = await TravelTimeService.drivingDurationSeconds(
-      originAddress: prior.location.trim(),
-      destinationAddress: loc,
-    );
-
-    if (!mounted || seq != _bufferCheckSeq) return;
-    setState(() => _bufferCheckLoading = false);
-
+    int? travelSec;
+    try {
+      travelSec = await TravelTimeService.drivingDurationSeconds(
+        originAddress: prior.location.trim(),
+        destinationAddress: loc,
+      );
+    } catch (_) {
+      if (mounted && seq == _bufferCheckSeq) {
+        setState(() => _bufferWarningText = null);
+      }
+      return;
+    } finally {
+      _bufferLoadingRevealTimer?.cancel();
+      _bufferLoadingRevealTimer = null;
+      if (mounted && seq == _bufferCheckSeq) {
+        setState(() => _bufferCheckLoading = false);
+      }
+    }
     if (travelSec == null) {
       if (mounted && seq == _bufferCheckSeq) {
         setState(() => _bufferWarningText = null);
@@ -539,13 +599,24 @@ class _CreateItemPageState extends State<CreateItemPage> {
           } else {
             _startDate = newDateTime;
             _startTime = TimeOfDay.fromDateTime(newDateTime);
-
-            final currentEnd = DateTime(_endDate.year, _endDate.month,
-                _endDate.day, _endTime.hour, _endTime.minute);
-            if (currentEnd.isBefore(newDateTime)) {
-              final newEnd = newDateTime.add(const Duration(hours: 1));
-              _endDate = newEnd;
-              _endTime = TimeOfDay.fromDateTime(newEnd);
+            final startDt = DateTime(
+              _startDate.year,
+              _startDate.month,
+              _startDate.day,
+              _startTime.hour,
+              _startTime.minute,
+            );
+            var endDt = DateTime(
+              _endDate.year,
+              _endDate.month,
+              _endDate.day,
+              _endTime.hour,
+              _endTime.minute,
+            );
+            if (!endDt.isAfter(startDt)) {
+              endDt = startDt.add(const Duration(hours: 1));
+              _endDate = endDt;
+              _endTime = TimeOfDay.fromDateTime(endDt);
             }
           }
         });
@@ -708,12 +779,15 @@ class _CreateItemPageState extends State<CreateItemPage> {
                   ),
                 ),
                 const Spacer(),
-                Switch.adaptive(
-                  value: _isAllDay,
-                  onChanged: _onAllDayChanged,
-                  activeThumbColor: const Color(0xFF6366F1),
-                  activeTrackColor:
-                      const Color(0xFF6366F1).withValues(alpha: 0.35),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Switch.adaptive(
+                    value: _isAllDay,
+                    onChanged: _onAllDayChanged,
+                    activeThumbColor: const Color(0xFF6366F1),
+                    activeTrackColor:
+                        const Color(0xFF6366F1).withValues(alpha: 0.35),
+                  ),
                 ),
               ],
             ),
@@ -938,7 +1012,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildTaskTitleSection() {
     return Container(
       decoration: _fieldDecoration(),
-      clipBehavior: Clip.antiAlias,
       child: TextField(
         controller: _nameController,
         decoration: InputDecoration(
@@ -971,50 +1044,106 @@ class _CreateItemPageState extends State<CreateItemPage> {
     return Container(
       decoration: _fieldDecoration(),
       clipBehavior: Clip.antiAlias,
-      child: GestureDetector(
-        onTap: _selectDeadlineDateTime,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Text(
-                'Deadline',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  valueText,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                Text(
+                  'Deadline',
                   style: TextStyle(
-                    color: hasDeadline
-                        ? const Color(0xFF1F2937)
-                        : Colors.grey.shade500,
+                    color: Colors.grey.shade600,
                     fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
-                  textAlign: TextAlign.end,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                Switch.adaptive(
+                  value: hasDeadline,
+                  onChanged: _onDeadlineToggleChanged,
+                  activeThumbColor: const Color(0xFF6366F1),
+                  activeTrackColor:
+                      const Color(0xFF6366F1).withValues(alpha: 0.35),
+                ),
+              ],
+            ),
+          ),
+          if (hasDeadline) ...[
+            Divider(
+              height: 1,
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey.shade200,
+            ),
+            GestureDetector(
+              onTap: _selectDeadlineDateTime,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Row(
+                  children: [
+                    Text(
+                      'Due date',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        valueText,
+                        style: const TextStyle(
+                          color: Color(0xFF1F2937),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.end,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey.shade400,
+                      size: 22,
+                    ),
+                  ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22),
-            ],
-          ),
-        ),
+            ),
+          ],
+        ],
       ),
     );
+  }
+
+  void _onDeadlineToggleChanged(bool enabled) {
+    setState(() {
+      if (!enabled) {
+        _deadlineDate = null;
+        _deadlineTime = null;
+        return;
+      }
+
+      _deadlineDate = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+      );
+      _deadlineTime = const TimeOfDay(hour: 23, minute: 59);
+    });
   }
 
   Future<void> _selectDeadlineDateTime() async {
     final initial = _deadlineDate != null
         ? DateTime(_deadlineDate!.year, _deadlineDate!.month,
             _deadlineDate!.day, _deadlineTime!.hour, _deadlineTime!.minute)
-        : DateTime.now();
+        : _startDate;
 
     await _showDateTimePicker(
       context,
@@ -1417,6 +1546,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
             _bufferWarningText = null;
             _bufferCheckLoading = false;
             _bufferDebounceTimer?.cancel();
+            _bufferLoadingRevealTimer?.cancel();
+            _bufferLoadingRevealTimer = null;
           }
         });
         if (isEvent) _scheduleBufferCheck();
@@ -1666,7 +1797,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Widget _buildEventTitleLocationSection() {
     return Container(
       decoration: _fieldDecoration(),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1736,24 +1866,45 @@ class _CreateItemPageState extends State<CreateItemPage> {
           ? TextEditingValue(text: initialLocation)
           : null,
       optionsBuilder: (TextEditingValue textEditingValue) async {
-        if (textEditingValue.text.isEmpty) {
+        final query = textEditingValue.text.trim();
+        if (query.isEmpty) {
           return const Iterable<String>.empty();
         }
-        return await LocationService.getPlaceSuggestions(textEditingValue.text);
+        if (_suppressLocationSuggestions &&
+            query == _lastSelectedLocationSuggestion) {
+          return const Iterable<String>.empty();
+        }
+        return await LocationService.getPlaceSuggestions(query);
       },
       onSelected: (String selection) {
         _locationController.text = selection;
+        _lastSelectedLocationSuggestion = selection;
+        _suppressLocationSuggestions = true;
+        FocusManager.instance.primaryFocus?.unfocus();
         _scheduleBufferCheck();
       },
       fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-        controller.addListener(() {
-          _locationController.text = controller.text;
-          if (isEvent) _scheduleBufferCheck();
-        });
         return TextField(
           controller: controller,
           focusNode: focusNode,
           onEditingComplete: onEditingComplete,
+          onTap: () {
+            if (_suppressLocationSuggestions) {
+              setState(() {
+                _suppressLocationSuggestions = false;
+              });
+            }
+          },
+          onChanged: (value) {
+            _locationController.text = value;
+            if (value != _lastSelectedLocationSuggestion &&
+                _suppressLocationSuggestions) {
+              setState(() {
+                _suppressLocationSuggestions = false;
+              });
+            }
+            if (isEvent) _scheduleBufferCheck();
+          },
           decoration: InputDecoration(
             hintText: 'Location',
             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -1801,16 +1952,11 @@ class _CreateItemPageState extends State<CreateItemPage> {
   }
 
   Widget _buildEventDetailsField() {
-    final focused = _eventDetailsFocusNode.hasFocus;
     return Container(
       height: 150,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: focused ? const Color(0xFF6366F1) : Colors.grey.shade200,
-          width: focused ? 2 : 1,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -1819,7 +1965,6 @@ class _CreateItemPageState extends State<CreateItemPage> {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           Positioned.fill(

@@ -22,6 +22,10 @@ const double _kTimetableLaneGap = 2.0;
 /// Pushes timeline blocks down so they line up with the hour-label row (see
 /// [HabitSuggestion] cards, which use the same offset).
 const double _kTimelineVerticalOffset = 10.0;
+const double _kNowLineCenterOffset = 8.0;
+
+double _timelineYForHourFraction(double hourFraction) =>
+    hourFraction * _kTimetableHourHeight + _kTimelineVerticalOffset;
 
 /// One calendar day row height in the infinite vertical timeline.
 const double _kDayRowExtent = 24 * _kTimetableHourHeight;
@@ -133,22 +137,21 @@ Widget _calendarTaskCard(
           ),
           const SizedBox(height: 4),
           Text(
-            subtitle,
-            style: TextStyle(color: onMuted, fontSize: 14),
+            time,
+            style: TextStyle(
+              color: onAccent,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              time,
-              style: TextStyle(
-                color: onAccent,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          Text(
+            subtitle,
+            style: TextStyle(color: onMuted, fontSize: 14),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -205,7 +208,9 @@ class _CalendarPageState extends State<CalendarPage>
   /// Snap / min height for week view (updated from [MediaQuery] in [didChangeDependencies]).
   double _weekHeight = 200.0;
   double _currentHeight = 200.0;
-  final double _monthHeight = 420.0;
+  static const double _kMonthHeightForFourRows = 300.0;
+  static const double _kMonthHeightForFiveRows = 350.0;
+  static const double _kMonthHeightForSixRows = 400.0;
 
   /// Minimum height for the Ongoing timeline panel (scales with screen so it is not a hard 220px).
   static const double _kMinOngoingHeightFloor = 152.0;
@@ -214,6 +219,26 @@ class _CalendarPageState extends State<CalendarPage>
   /// Minimum height reserved for Ongoing when the calendar is in week or month mode.
   double _minOngoingPanelHeight(double screenHeight) => math.max(
       _kMinOngoingHeightFloor, screenHeight * _kMinOngoingHeightScreenFraction);
+
+  int _weekRowCountForMonth(DateTime monthDay) {
+    final firstDayOfMonth = DateTime(monthDay.year, monthDay.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(monthDay.year, monthDay.month);
+    final leadingOffset = firstDayOfMonth.weekday % 7; // Sunday-start grid
+    return ((leadingOffset + daysInMonth) / 7).ceil();
+  }
+
+  double _monthHeightForFocusedDay() {
+    final rowCount = _weekRowCountForMonth(_focusedDay);
+    switch (rowCount) {
+      case 4:
+        return _kMonthHeightForFourRows;
+      case 6:
+        return _kMonthHeightForSixRows;
+      case 5:
+      default:
+        return _kMonthHeightForFiveRows;
+    }
+  }
 
   /// Max calendar strip height (`_currentHeight`) while week/month so Ongoing keeps at least [_minOngoingPanelHeight].
   double _maxCalendarStripHeightNonYear(
@@ -232,6 +257,7 @@ class _CalendarPageState extends State<CalendarPage>
   /// Vertical infinite day timeline (replaces PageView).
   late final ScrollController _timetableScrollController;
   Timer? _timetableFetchDebounce;
+  Timer? _nowLineRefreshTimer;
   bool _timetableInitialScrollApplied = false;
   bool _timelineApplyScheduled = false;
 
@@ -251,11 +277,16 @@ class _CalendarPageState extends State<CalendarPage>
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _selectedDay == null) return;
+      context.read<CalendarViewModel>().setSelectedCalendarDay(_selectedDay!);
+    });
     _timetableScrollController = ScrollController();
     _timetableScrollController.addListener(_onTimelineScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applyInitialTimelineScrollIfNeeded();
     });
+    _startNowLineRefreshTimer();
   }
 
   @override
@@ -279,10 +310,32 @@ class _CalendarPageState extends State<CalendarPage>
   @override
   void dispose() {
     _timetableFetchDebounce?.cancel();
+    _nowLineRefreshTimer?.cancel();
     _timetableScrollController.removeListener(_onTimelineScroll);
     _timetableScrollController.dispose();
     _yearScrollController.dispose();
     super.dispose();
+  }
+
+  void _startNowLineRefreshTimer() {
+    _nowLineRefreshTimer?.cancel();
+    final now = DateTime.now();
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+    final initialDelay = nextMinute.difference(now);
+    _nowLineRefreshTimer = Timer(initialDelay, () {
+      if (!mounted) return;
+      setState(() {});
+      _nowLineRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (!mounted) return;
+        setState(() {});
+      });
+    });
   }
 
   void _resetYearScrollControllerForMonth(
@@ -362,6 +415,7 @@ class _CalendarPageState extends State<CalendarPage>
         _calendarFormat = CalendarFormat.week;
         _currentHeight = _weekHeight;
       });
+      context.read<CalendarViewModel>().setSelectedCalendarDay(normalized);
       _timetableInitialScrollApplied = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -377,6 +431,7 @@ class _CalendarPageState extends State<CalendarPage>
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
     });
+    context.read<CalendarViewModel>().setSelectedCalendarDay(selectedDay);
   }
 
   void _maybeInvalidateTimelineScrollFlag(
@@ -457,6 +512,7 @@ class _CalendarPageState extends State<CalendarPage>
       _selectedDay = visibleDay;
       _focusedDay = visibleDay;
     });
+    context.read<CalendarViewModel>().setSelectedCalendarDay(visibleDay);
   }
 
   void _scheduleTimetableDataFetch(DateTime visibleDay) {
@@ -485,13 +541,21 @@ class _CalendarPageState extends State<CalendarPage>
       if (userId == null) return;
       final anchor = _focusedDay;
       final d = DateTime(anchor.year, anchor.month, anchor.day);
+      final mergeEventAnchors = <DateTime>[
+        d.subtract(const Duration(days: 1)),
+        d.add(const Duration(days: 1)),
+      ];
+      final selected = _selectedDay;
+      if (selected != null) {
+        final s = DateTime(selected.year, selected.month, selected.day);
+        if (!isSameDay(s, d)) {
+          mergeEventAnchors.add(s);
+        }
+      }
       context.read<CalendarViewModel>().fetchAll(
             userId: userId,
             eventRangeAnchor: d,
-            mergeEventAnchors: [
-              d.subtract(const Duration(days: 1)),
-              d.add(const Duration(days: 1)),
-            ],
+            mergeEventAnchors: mergeEventAnchors,
             fullYearRange: fullYearRange,
             showLoading: false,
           );
@@ -525,11 +589,12 @@ class _CalendarPageState extends State<CalendarPage>
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
     final previousMode = _viewMode;
+    final monthHeight = _monthHeightForFocusedDay();
 
     final double raw = _currentHeight + details.delta.dy;
 
     CalendarViewMode newMode;
-    if (raw > _monthHeight + 100) {
+    if (raw > monthHeight + 100) {
       newMode = CalendarViewMode.year;
     } else if (raw > _weekHeight + 50) {
       newMode = CalendarViewMode.month;
@@ -568,6 +633,7 @@ class _CalendarPageState extends State<CalendarPage>
     final double screenHeight = MediaQuery.of(context).size.height;
     final double topPadding = MediaQuery.of(context).padding.top;
     final double yearHeight = screenHeight - topPadding;
+    final monthHeight = _monthHeightForFocusedDay();
 
     double targetHeight;
     CalendarViewMode targetMode;
@@ -575,27 +641,27 @@ class _CalendarPageState extends State<CalendarPage>
     final double velocity = details.velocity.pixelsPerSecond.dy;
 
     if (velocity > 500) {
-      if (_currentHeight < _monthHeight) {
-        targetHeight = _monthHeight;
+      if (_currentHeight < monthHeight) {
+        targetHeight = monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
         targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
       }
     } else if (velocity < -500) {
-      if (_currentHeight > _monthHeight) {
-        targetHeight = _monthHeight;
+      if (_currentHeight > monthHeight) {
+        targetHeight = monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
         targetHeight = _weekHeight;
         targetMode = CalendarViewMode.week;
       }
     } else {
-      if (_currentHeight > (_monthHeight + yearHeight) / 2) {
+      if (_currentHeight > (monthHeight + yearHeight) / 2) {
         targetHeight = yearHeight;
         targetMode = CalendarViewMode.year;
-      } else if (_currentHeight > (_weekHeight + _monthHeight) / 2) {
-        targetHeight = _monthHeight;
+      } else if (_currentHeight > (_weekHeight + monthHeight) / 2) {
+        targetHeight = monthHeight;
         targetMode = CalendarViewMode.month;
       } else {
         targetHeight = _weekHeight;
@@ -861,18 +927,22 @@ class _CalendarPageState extends State<CalendarPage>
             .where((e) => EventRecurrence.occursOnDay(e, day))
             .toList();
       },
-      availableGestures: _calendarFormat == CalendarFormat.week
-          ? AvailableGestures.none
-          : AvailableGestures.all,
+      availableCalendarFormats: const {
+        CalendarFormat.month: 'Month',
+        CalendarFormat.week: 'Week',
+      },
+      availableGestures: AvailableGestures.horizontalSwipe,
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
           _selectedDay = selectedDay;
           _focusedDay = focusedDay;
         });
+        context.read<CalendarViewModel>().setSelectedCalendarDay(selectedDay);
         _jumpTimelineToDay(selectedDay, animate: false);
       },
       onFormatChanged: (format) {
+        if (format == CalendarFormat.twoWeeks) return;
         if (_calendarFormat != format) {
           setState(() {
             _calendarFormat = format;
@@ -882,6 +952,14 @@ class _CalendarPageState extends State<CalendarPage>
       onPageChanged: (focusedDay) {
         setState(() {
           _focusedDay = focusedDay;
+          if (_viewMode == CalendarViewMode.month) {
+            _currentHeight = _clampStripHeightForMode(
+              _monthHeightForFocusedDay(),
+              CalendarViewMode.month,
+              MediaQuery.sizeOf(context).height,
+              MediaQuery.paddingOf(context).top,
+            );
+          }
         });
         _refetchEventsForCalendar(fullYearRange: false);
       },
@@ -1194,7 +1272,7 @@ class _CalendarPageState extends State<CalendarPage>
                 _viewMode = CalendarViewMode.month;
                 _calendarFormat = CalendarFormat.month;
                 _currentHeight = math.min(
-                  _monthHeight,
+                  _monthHeightForFocusedDay(),
                   _maxCalendarContentHeight(
                     MediaQuery.sizeOf(context).height,
                     MediaQuery.paddingOf(context).top,
@@ -1382,6 +1460,8 @@ class _TimelineDayRow extends StatelessWidget {
     final laneLayouts = layoutTimetableSegmentsForDay(intervals);
     final now = DateTime.now();
     final showNowLine = isSameDay(dayMidnight, now);
+    final nowLabel = DateFormat('HH:mm').format(now);
+    final nowLineY = _timelineYForHourFraction(now.hour + now.minute / 60.0);
 
     return SizedBox(
       height: _kDayRowExtent,
@@ -1403,13 +1483,25 @@ class _TimelineDayRow extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: 50,
-                        child: Text(
-                          '${i.toString().padLeft(2, '0')}:00',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        child: Builder(
+                          builder: (context) {
+                            final hourLabel =
+                                '${i.toString().padLeft(2, '0')}:00';
+                            final hourTop = i * _kTimetableHourHeight;
+                            final hideHourLabel = showNowLine &&
+                                (nowLineY - hourTop).abs() < 16.0;
+                            if (hideHourLabel) {
+                              return const SizedBox.shrink();
+                            }
+                            return Text(
+                              hourLabel,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            );
+                          },
                         ),
                       ),
                       Expanded(
@@ -1431,8 +1523,7 @@ class _TimelineDayRow extends StatelessWidget {
                 // Full hour scale (80px/hour): height matches start→end duration.
                 final startMin = seg.start.difference(dayMidnight).inMinutes;
                 final endMin = seg.end.difference(dayMidnight).inMinutes;
-                final topPx = (startMin / 60.0) * _kTimetableHourHeight +
-                    _kTimelineVerticalOffset;
+                final topPx = _timelineYForHourFraction(startMin / 60.0);
                 final heightPx = math.max(
                   4.0,
                   ((endMin - startMin) / 60.0) * _kTimetableHourHeight,
@@ -1471,7 +1562,7 @@ class _TimelineDayRow extends StatelessWidget {
                     (duration > 0 ? duration : 0.5) * _kTimetableHourHeight -
                         20;
                 return Positioned(
-                  top: startH * _kTimetableHourHeight + 10,
+                  top: _timelineYForHourFraction(startH),
                   left: leftMargin,
                   right: 0,
                   height: cardHeight.clamp(120.0, double.infinity),
@@ -1488,8 +1579,8 @@ class _TimelineDayRow extends StatelessWidget {
               }),
               if (showNowLine)
                 Positioned(
-                  top: (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
-                      _kTimelineVerticalOffset,
+                  // The indicator line is vertically centered in this row.
+                  top: nowLineY - _kNowLineCenterOffset,
                   left: 0,
                   right: 0,
                   child: Row(
@@ -1497,10 +1588,10 @@ class _TimelineDayRow extends StatelessWidget {
                       SizedBox(
                         width: 50,
                         child: Text(
-                          DateFormat('HH:mm').format(now),
+                          nowLabel,
                           style: const TextStyle(
                             color: Colors.redAccent,
-                            fontSize: 10,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1512,6 +1603,11 @@ class _TimelineDayRow extends StatelessWidget {
                           color: Colors.redAccent,
                           shape: BoxShape.circle,
                         ),
+                      ),
+                      Container(
+                        width: 6,
+                        height: 2,
+                        color: Colors.redAccent,
                       ),
                       const Expanded(
                         child: Divider(
