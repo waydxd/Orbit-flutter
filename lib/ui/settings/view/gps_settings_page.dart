@@ -117,13 +117,11 @@ class _GpsSettingsPageState extends State<GpsSettingsPage> {
                       const SizedBox(height: 6),
                       Text(
                         'GPS',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -188,8 +186,7 @@ class _GpsSettingsPageState extends State<GpsSettingsPage> {
                                               color: AppColors.grey300
                                                   .withValues(alpha: 0.9),
                                             ),
-                                            padding: const EdgeInsets
-                                                .symmetric(
+                                            padding: const EdgeInsets.symmetric(
                                               vertical: 14,
                                             ),
                                             shape: RoundedRectangleBorder(
@@ -214,8 +211,7 @@ class _GpsSettingsPageState extends State<GpsSettingsPage> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: AppColors.primary,
                                             foregroundColor: Colors.white,
-                                            padding: const EdgeInsets
-                                                .symmetric(
+                                            padding: const EdgeInsets.symmetric(
                                               vertical: 14,
                                             ),
                                             elevation: 0,

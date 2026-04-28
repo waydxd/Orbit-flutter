@@ -367,14 +367,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                   avatarVersion: _avatarVersion,
                                   profilePictureUrl: user?.profilePicture,
                                   localImageBytes: _pendingAvatarBytes,
-                                  onTapPhoto: user != null
-                                      ? _changeProfilePhoto
-                                      : null,
+                                  onTapPhoto:
+                                      user != null ? _changeProfilePhoto : null,
                                 ),
                                 if (authViewModel.error != null) ...[
                                   const SizedBox(height: 16),
-                                  _ErrorBanner(
-                                      message: authViewModel.error!),
+                                  _ErrorBanner(message: authViewModel.error!),
                                 ],
                                 const SizedBox(height: 18),
                                 Form(
@@ -464,7 +462,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                             const SizedBox(height: 14),
                                             ModernDropdownField<String>(
                                               label: 'Gender',
-                                              icon: Icons.person_outline_rounded,
+                                              icon:
+                                                  Icons.person_outline_rounded,
                                               value: _selectedGender,
                                               displayStringForValue: (key) =>
                                                   _genderLabels[key] ?? key,

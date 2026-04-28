@@ -304,8 +304,7 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                         color: Color(0xFF6366F1),
                         size: 32,
                       ),
-                      onPressed:
-                          _anyBusy ? null : () => Navigator.pop(context),
+                      onPressed: _anyBusy ? null : () => Navigator.pop(context),
                     ),
                   ],
                 ),
@@ -320,13 +319,11 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                       const SizedBox(height: 6),
                       Text(
                         'Import / Export',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -421,8 +418,8 @@ class _CalendarImportExportPageState extends State<CalendarImportExportPage> {
                                     color: AppColors.grey300
                                         .withValues(alpha: 0.9),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18),
                                   ),

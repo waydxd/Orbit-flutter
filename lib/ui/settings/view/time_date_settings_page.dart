@@ -87,13 +87,11 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                       const SizedBox(height: 6),
                       Text(
                         'Time & Date',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -133,7 +131,8 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                     label: 'Current selection',
                                     value: _selectedTimezoneId == null
                                         ? 'System default'
-                                        : RegionTimezoneData.timezoneDisplayName(
+                                        : RegionTimezoneData
+                                            .timezoneDisplayName(
                                             _selectedTimezoneId!,
                                           ),
                                   ),
@@ -142,7 +141,8 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                     label: 'Device timezone',
                                     value: _deviceTimezoneId == null
                                         ? 'Unknown'
-                                        : RegionTimezoneData.timezoneDisplayName(
+                                        : RegionTimezoneData
+                                            .timezoneDisplayName(
                                             _deviceTimezoneId!,
                                           ),
                                   ),
@@ -161,8 +161,7 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                               color: AppColors.grey300
                                                   .withValues(alpha: 0.9),
                                             ),
-                                            padding: const EdgeInsets
-                                                .symmetric(
+                                            padding: const EdgeInsets.symmetric(
                                               vertical: 14,
                                             ),
                                             shape: RoundedRectangleBorder(
@@ -188,8 +187,7 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: AppColors.primary,
                                             foregroundColor: Colors.white,
-                                            padding: const EdgeInsets
-                                                .symmetric(
+                                            padding: const EdgeInsets.symmetric(
                                               vertical: 14,
                                             ),
                                             elevation: 0,
@@ -198,8 +196,8 @@ class _TimeDateSettingsPageState extends State<TimeDateSettingsPage> {
                                                   BorderRadius.circular(18),
                                             ),
                                           ),
-                                          child: const Text(
-                                              'Use device timezone'),
+                                          child:
+                                              const Text('Use device timezone'),
                                         ),
                                       ),
                                     ],

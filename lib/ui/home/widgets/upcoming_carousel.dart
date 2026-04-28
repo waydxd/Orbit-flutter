@@ -293,11 +293,14 @@ class _UpcomingCard extends StatelessWidget {
                 child: Row(
                   children: [
                     ...visibleHashtags.asMap().entries.map(
-                      (entry) => Padding(
-                        padding: EdgeInsets.only(right: entry.key == visibleHashtags.length - 1 ? 0 : 6),
-                        child: HashtagChipCompact(tag: entry.value),
-                      ),
-                    ),
+                          (entry) => Padding(
+                            padding: EdgeInsets.only(
+                                right: entry.key == visibleHashtags.length - 1
+                                    ? 0
+                                    : 6),
+                            child: HashtagChipCompact(tag: entry.value),
+                          ),
+                        ),
                     if (overflowCount > 0) ...[
                       if (visibleHashtags.isNotEmpty) const SizedBox(width: 6),
                       Container(
@@ -306,7 +309,8 @@ class _UpcomingCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6B7280).withValues(alpha: 0.14),
+                          color:
+                              const Color(0xFF6B7280).withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

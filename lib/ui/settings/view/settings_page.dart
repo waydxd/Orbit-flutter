@@ -62,52 +62,58 @@ class SettingsPage extends StatelessWidget {
                               children: [
                                 const SizedBox(height: 10),
                                 _SettingsGroup(
-                        children: [
-                          Consumer<AuthViewModel>(
-                            builder: (context, authViewModel, child) {
-                              final user = authViewModel.currentUser;
-                              return _ProfileTile(
-                                title: user?.displayName ?? 'User name',
-                                subtitle: user?.email ?? 'Profile',
-                                profilePictureUrl: user?.profilePicture,
-                                initials: _initialsForUser(
-                                  displayName: user?.displayName,
-                                  email: user?.email,
+                                  children: [
+                                    Consumer<AuthViewModel>(
+                                      builder: (context, authViewModel, child) {
+                                        final user = authViewModel.currentUser;
+                                        return _ProfileTile(
+                                          title:
+                                              user?.displayName ?? 'User name',
+                                          subtitle: user?.email ?? 'Profile',
+                                          profilePictureUrl:
+                                              user?.profilePicture,
+                                          initials: _initialsForUser(
+                                            displayName: user?.displayName,
+                                            email: user?.email,
+                                          ),
+                                          onTap: () =>
+                                              _openProfilePage(context),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
-                                onTap: () => _openProfilePage(context),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      _SettingsGroup(
-                        children: [
-                          _SettingsTile(
-                            icon: Icons.notifications_none_rounded,
-                            title: 'Notification',
-                            onTap: () => _openNotificationSettings(context),
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.access_time_rounded,
-                            title: 'Time & Date',
-                            onTap: () => _openTimeDateSettings(context),
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.location_on_outlined,
-                            title: 'GPS',
-                            onTap: () => _openGpsSettings(context),
-                          ),
-                          const _DividerLine(),
-                          _SettingsTile(
-                            icon: Icons.event_note_rounded,
-                            title: 'Import / Export calendar',
-                            onTap: () => _openCalendarImportExport(context),
-                          ),
-                        ],
-                      ),
+                                const SizedBox(height: 18),
+                                _SettingsGroup(
+                                  children: [
+                                    _SettingsTile(
+                                      icon: Icons.notifications_none_rounded,
+                                      title: 'Notification',
+                                      onTap: () =>
+                                          _openNotificationSettings(context),
+                                    ),
+                                    const _DividerLine(),
+                                    _SettingsTile(
+                                      icon: Icons.access_time_rounded,
+                                      title: 'Time & Date',
+                                      onTap: () =>
+                                          _openTimeDateSettings(context),
+                                    ),
+                                    const _DividerLine(),
+                                    _SettingsTile(
+                                      icon: Icons.location_on_outlined,
+                                      title: 'GPS',
+                                      onTap: () => _openGpsSettings(context),
+                                    ),
+                                    const _DividerLine(),
+                                    _SettingsTile(
+                                      icon: Icons.event_note_rounded,
+                                      title: 'Import / Export calendar',
+                                      onTap: () =>
+                                          _openCalendarImportExport(context),
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 32),
                                 const _LogoutButton(),
                               ],

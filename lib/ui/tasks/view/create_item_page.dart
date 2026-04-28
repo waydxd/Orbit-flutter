@@ -229,7 +229,8 @@ class _CreateItemPageState extends State<CreateItemPage> {
 
   void _applyCreateDefaults() {
     final seedDate = widget.initialDateTime ?? DateTime.now();
-    final normalizedDate = DateTime(seedDate.year, seedDate.month, seedDate.day);
+    final normalizedDate =
+        DateTime(seedDate.year, seedDate.month, seedDate.day);
     final nextHour = _nextWholeHour(DateTime.now());
     final defaultStart = DateTime(
       normalizedDate.year,
@@ -401,6 +402,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
   Timer? _debounceTimer;
 
   static const Duration _bufferMargin = Duration(minutes: 10);
+
   /// Only show the travel-time progress bar if the request takes longer than
   /// this, so fast responses do not flash a line under the location field.
   static const Duration _bufferLoadingRevealDelay = Duration(milliseconds: 450);
