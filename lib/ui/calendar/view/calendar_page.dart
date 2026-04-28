@@ -1433,7 +1433,8 @@ class _TimelineDayRow extends StatelessWidget {
     final now = DateTime.now();
     final showNowLine = isSameDay(dayMidnight, now);
     final nowLabel = DateFormat('HH:mm').format(now);
-    final nowLineTop = (now.hour + now.minute / 60.0) * _kTimetableHourHeight;
+    final nowLineTop = (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
+        _kTimelineVerticalOffset;
 
     return SizedBox(
       height: _kDayRowExtent,
