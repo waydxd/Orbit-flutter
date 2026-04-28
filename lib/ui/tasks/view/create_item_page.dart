@@ -515,16 +515,24 @@ class _CreateItemPageState extends State<CreateItemPage> {
       setState(() => _bufferCheckLoading = true);
     });
 
-    final travelSec = await TravelTimeService.drivingDurationSeconds(
-      originAddress: prior.location.trim(),
-      destinationAddress: loc,
-    );
-
-    _bufferLoadingRevealTimer?.cancel();
-    _bufferLoadingRevealTimer = null;
-    if (!mounted || seq != _bufferCheckSeq) return;
-    setState(() => _bufferCheckLoading = false);
-
+    int? travelSec;
+    try {
+      travelSec = await TravelTimeService.drivingDurationSeconds(
+        originAddress: prior.location.trim(),
+        destinationAddress: loc,
+      );
+    } catch (_) {
+      if (mounted && seq == _bufferCheckSeq) {
+        setState(() => _bufferWarningText = null);
+      }
+      return;
+    } finally {
+      _bufferLoadingRevealTimer?.cancel();
+      _bufferLoadingRevealTimer = null;
+      if (mounted && seq == _bufferCheckSeq) {
+        setState(() => _bufferCheckLoading = false);
+      }
+    }
     if (travelSec == null) {
       if (mounted && seq == _bufferCheckSeq) {
         setState(() => _bufferWarningText = null);
