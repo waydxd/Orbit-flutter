@@ -22,6 +22,7 @@ const double _kTimetableLaneGap = 2.0;
 /// Pushes timeline blocks down so they line up with the hour-label row (see
 /// [HabitSuggestion] cards, which use the same offset).
 const double _kTimelineVerticalOffset = 10.0;
+const double _kNowLineCenterOffset = 8.0;
 
 /// One calendar day row height in the infinite vertical timeline.
 const double _kDayRowExtent = 24 * _kTimetableHourHeight;
@@ -1433,7 +1434,7 @@ class _TimelineDayRow extends StatelessWidget {
     final now = DateTime.now();
     final showNowLine = isSameDay(dayMidnight, now);
     final nowLabel = DateFormat('HH:mm').format(now);
-    final nowLineTop = (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
+    final nowLineY = (now.hour + now.minute / 60.0) * _kTimetableHourHeight +
         _kTimelineVerticalOffset;
 
     return SizedBox(
@@ -1462,7 +1463,7 @@ class _TimelineDayRow extends StatelessWidget {
                                 '${i.toString().padLeft(2, '0')}:00';
                             final hourTop = i * _kTimetableHourHeight;
                             final hideHourLabel = showNowLine &&
-                                (nowLineTop - hourTop).abs() < 16.0;
+                                (nowLineY - hourTop).abs() < 16.0;
                             if (hideHourLabel) {
                               return const SizedBox.shrink();
                             }
@@ -1553,7 +1554,8 @@ class _TimelineDayRow extends StatelessWidget {
               }),
               if (showNowLine)
                 Positioned(
-                  top: nowLineTop,
+                  // The indicator line is vertically centered in this row.
+                  top: nowLineY - _kNowLineCenterOffset,
                   left: 0,
                   right: 0,
                   child: Row(
