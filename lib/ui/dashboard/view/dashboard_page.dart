@@ -109,20 +109,31 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final anchor = DateTime(focusedDay.year, focusedDay.month, focusedDay.day);
     final requestId = ++_heatmapRequestId;
-    final events = await context.read<CalendarViewModel>().loadEventsForRange(
-          userId: userId,
-          eventRangeAnchor: anchor,
-          mergeEventAnchors: [
-            anchor.subtract(const Duration(days: 1)),
-            anchor.add(const Duration(days: 1)),
-          ],
-          fullYearRange: false,
-        );
 
-    if (!mounted || requestId != _heatmapRequestId) return;
-    setState(() {
-      _heatmapRecords = _generateRecordsFromEvents(events);
-    });
+    try {
+      final events = await context.read<CalendarViewModel>().loadEventsForRange(
+            userId: userId,
+            eventRangeAnchor: anchor,
+            mergeEventAnchors: [
+              anchor.subtract(const Duration(days: 1)),
+              anchor.add(const Duration(days: 1)),
+            ],
+            fullYearRange: false,
+          );
+
+      if (!mounted || requestId != _heatmapRequestId) return;
+      setState(() {
+        _heatmapRecords = _generateRecordsFromEvents(events);
+      });
+    } catch (_) {
+      if (!mounted || requestId != _heatmapRequestId) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to load heatmap data right now.'),
+        ),
+      );
+    }
   }
 
   Widget _buildHeader() {
