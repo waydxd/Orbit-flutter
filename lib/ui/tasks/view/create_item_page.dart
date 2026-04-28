@@ -591,9 +591,25 @@ class _CreateItemPageState extends State<CreateItemPage> {
           } else {
             _startDate = newDateTime;
             _startTime = TimeOfDay.fromDateTime(newDateTime);
-            final newEnd = newDateTime.add(const Duration(hours: 1));
-            _endDate = newEnd;
-            _endTime = TimeOfDay.fromDateTime(newEnd);
+            final startDt = DateTime(
+              _startDate.year,
+              _startDate.month,
+              _startDate.day,
+              _startTime.hour,
+              _startTime.minute,
+            );
+            var endDt = DateTime(
+              _endDate.year,
+              _endDate.month,
+              _endDate.day,
+              _endTime.hour,
+              _endTime.minute,
+            );
+            if (!endDt.isAfter(startDt)) {
+              endDt = startDt.add(const Duration(hours: 1));
+              _endDate = endDt;
+              _endTime = TimeOfDay.fromDateTime(endDt);
+            }
           }
         });
       },
