@@ -257,6 +257,7 @@ class _CalendarPageState extends State<CalendarPage>
   /// Vertical infinite day timeline (replaces PageView).
   late final ScrollController _timetableScrollController;
   Timer? _timetableFetchDebounce;
+  Timer? _nowLineRefreshTimer;
   bool _timetableInitialScrollApplied = false;
   bool _timelineApplyScheduled = false;
 
@@ -285,6 +286,7 @@ class _CalendarPageState extends State<CalendarPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applyInitialTimelineScrollIfNeeded();
     });
+    _startNowLineRefreshTimer();
   }
 
   @override
@@ -308,10 +310,32 @@ class _CalendarPageState extends State<CalendarPage>
   @override
   void dispose() {
     _timetableFetchDebounce?.cancel();
+    _nowLineRefreshTimer?.cancel();
     _timetableScrollController.removeListener(_onTimelineScroll);
     _timetableScrollController.dispose();
     _yearScrollController.dispose();
     super.dispose();
+  }
+
+  void _startNowLineRefreshTimer() {
+    _nowLineRefreshTimer?.cancel();
+    final now = DateTime.now();
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+    final initialDelay = nextMinute.difference(now);
+    _nowLineRefreshTimer = Timer(initialDelay, () {
+      if (!mounted) return;
+      setState(() {});
+      _nowLineRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (!mounted) return;
+        setState(() {});
+      });
+    });
   }
 
   void _resetYearScrollControllerForMonth(
